@@ -1,5 +1,6 @@
 from mysticquest import Room, House, Hero
 
+
 def help_menu():
     str = """
     Directions:
@@ -9,6 +10,7 @@ def help_menu():
       E: Go East
       Q: Quit the game
     """
+
 
 def make_house(raw):
     house = House()
@@ -20,6 +22,7 @@ def make_house(raw):
                           eval(room[3].strip())))
     return house
 
+
 def create_mansion(filename):
     f = open(filename, 'r')
     raw_data = f.read()
@@ -29,28 +32,36 @@ def create_mansion(filename):
     the_mansion = make_house(raw_rooms)
     return the_mansion
 
+
+def sanitize_input():
+    direction = raw_input('> ')
+    direction = direction[0].upper()   
+
+    return direction
+
+
 def game_loop(our_hero):
     print(our_hero)
     while True:
-        direction = raw_input('> ')
-        direction = direction[0].upper()   
+        direction = sanitize_input()
         if direction == 'N':
-            our_hero.go_north()
-            print(our_hero)
+            if our_hero.go_north(): 
+                print(our_hero)
         elif direction == 'S':
-            our_hero.go_south()
-            print(our_hero)
+            if our_hero.go_south():
+                print(our_hero)
         elif direction == 'E':
-            our_hero.go_east()
-            print(our_hero)
+            if our_hero.go_east():
+                print(our_hero)
         elif direction == 'W':
-            our_hero.go_west()
-            print(our_hero)
+            if our_hero.go_west():
+                print(our_hero)
         elif direction == 'Q':
             print("Thanks for playing!")
             exit(0)
         else:     
             print('Choice not valid, Try again')
+
 
 def main():
     the_mansion = create_mansion("StoryBoard.txt")

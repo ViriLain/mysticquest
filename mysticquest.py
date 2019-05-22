@@ -41,6 +41,7 @@ class Hero:
 
     def go_north(self):
         if 'N' not in self.location.doors:
+            print("There is no path North")
             return False
         
         north_room_id = self.location.doors['N']
@@ -50,6 +51,7 @@ class Hero:
 
     def go_south(self):
         if 'S' not in self.location.doors:
+            print("There is no path South")
             return False
 
         south_room_id = self.location.doors['S']
@@ -59,6 +61,7 @@ class Hero:
 
     def go_west(self):
         if 'W' not in self.location.doors:
+            print("There is no path West")
             return False
         
         west_room_id = self.location.doors['W']
@@ -68,12 +71,10 @@ class Hero:
 
     def go_east(self):
         if 'E' not in self.location.doors:
+            print("There is no path East")
             return False
 
         east_room_id = self.location.doors['E']
         self.location = self.house.get_room_by_id(east_room_id)
         return True
-
-
-    
 
