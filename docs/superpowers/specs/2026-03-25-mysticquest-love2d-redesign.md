@@ -58,7 +58,7 @@ Rooms are defined in JSON, one file per region. The system auto-loads all files 
   "items": ["rusty_key"],
   "enemies": ["shadow_rat"],
   "on_enter": "flicker_lights",
-  "searched": false
+  "searchable": true
 }
 ```
 
@@ -77,7 +77,7 @@ Events are simple string keys that map to hardcoded Lua functions in an event re
 Supported events:
 - **Visual effects:** `"flicker_lights"`, `"screen_glitch"`, `"fade_to_black"` — trigger a terminal effect on entry
 - **Dialogue:** `"dialogue:some_key"` — display a narrative text block from a dialogue table (first visit only)
-- **Gate check:** `"require:item_id"` — if the player lacks the item, display a message and block entry (push them back)
+- **Gate check:** `"require:item_id"` — if the player lacks the item, display a message and block entry (player remains in their previous room; the movement simply fails like an invalid exit)
 - **Boss trigger:** `"boss:enemy_id"` — force a combat encounter on entry (first visit only)
 
 Events fire on first entry only by default. The set of fired events is tracked in save data. This is intentionally limited — if we need more complex scripting later, we can expand the registry without changing the data format.
@@ -100,7 +100,7 @@ The player interacts via typed commands. The parser splits input into verb + tar
 | `drop <item>` | — | item name | Drop an item in the current room (not key items) |
 | `use <item>` | `equip` | item name | Equip a weapon or use a consumable |
 | `attack <target>` | `fight`, `hit` | enemy name | Initiate or continue combat with an enemy |
-| `defend` | `block` | — | During combat: take half damage this round |
+| `defend` | `block` | — | During combat: final damage from next enemy hit is halved (applied after formula, rounded down, min 1) |
 | `flee` | `run` | — | During combat: attempt to escape (70% success, fail = take a hit) |
 | `inventory` | `i` | — | List carried items, weapons, and equipped weapon |
 | `stats` | `status` | — | Show HP, level, XP, attack, defense |
@@ -203,8 +203,47 @@ Attack bonus range: +2 to +40, scaled so that a player at level 8 with a Darknes
 
 - Simple list of items and weapons
 - Key items (quest-related) stored separately, can't be dropped
-- Consumables: health potions, stat buffs (found in rooms or dropped by enemies)
+- Consumables: used via `use <item>` command, consumed on use
 - Equip one weapon at a time, swap anytime
+
+**Item data format (`items.json`):**
+
+```json
+{
+  "small_potion": {
+    "name": "Small Potion",
+    "type": "consumable",
+    "effect": "heal",
+    "value": 10,
+    "description": "A small vial of red liquid. Restores 10 HP."
+  },
+  "dark_crown": {
+    "name": "Dark Crown",
+    "type": "key",
+    "description": "A crown of black iron that whispers when you hold it."
+  }
+}
+```
+
+**Consumable items:**
+
+| Item | Effect | Value | Found In |
+|------|--------|-------|----------|
+| Small Potion | Heal | +10 HP | Manor enemies, room loot |
+| Potion | Heal | +25 HP | Wilds rooms, enemy drops |
+| Large Potion | Heal | +50 HP | Darkness rooms, boss drops |
+| Strength Tonic | Buff | +3 Attack for next 3 combat rounds | Wastes rooms |
+| Iron Shield | Passive | +3 Defense (equippable, separate from weapon) | Wilds rooms |
+| Steel Shield | Passive | +6 Defense | Darkness rooms |
+
+**Key items (quest-related, not consumable):**
+
+| Item | Purpose |
+|------|---------|
+| `dark_crown` | Ending 2 trigger |
+| `ancient_map` | Ending 3 trigger |
+| `red_mushroom`, `grey_mushroom`, `green_mushroom`, `orange_mushroom` | Secret ending triggers |
+| `rusty_key` | Opens a locked door in the Manor (gate check event) |
 
 ### Progression & Soft Gating
 
@@ -241,6 +280,15 @@ Attack bonus range: +2 to +40, scaled so that a player at level 8 with a Darknes
 
 ### Ending Data Format (`endings.json`)
 
+Valid `trigger_type` values and their required fields:
+
+| trigger_type | Required fields | Description |
+|-------------|----------------|-------------|
+| `boss_defeated` | `trigger_value` (enemy ID) | Fires when the named boss is killed |
+| `choice` | `trigger_room`, `trigger_item` | Fires when player uses the item in the room; presents a choice prompt |
+| `exploration` | `trigger_room`, `trigger_item`, `rooms_percent` | Fires when player enters room with item AND has visited N% of rooms |
+| `multi_item_use` | `trigger_room`, `trigger_items` (array) | Fires when all items in the list have been used in the room |
+
 ```json
 {
   "the_hero": {
@@ -254,8 +302,28 @@ Attack bonus range: +2 to +40, scaled so that a player at level 8 with a Darknes
     "trigger_type": "choice",
     "trigger_room": "darkness_stronghold",
     "trigger_item": "dark_crown",
+    "choice_prompt": "The crown pulses with dark energy.",
+    "choice_options": ["attack", "use dark crown"],
+    "choice_trigger": 1,
     "title": "The Usurper",
     "terminal_effect": "red_corruption",
+    "text": ["...ending text lines..."]
+  },
+  "the_wanderer": {
+    "trigger_type": "exploration",
+    "trigger_room": "wastes_ruins",
+    "trigger_item": "ancient_map",
+    "rooms_percent": 80,
+    "title": "The Wanderer",
+    "terminal_effect": "warm_amber",
+    "text": ["...ending text lines..."]
+  },
+  "the_enlightened": {
+    "trigger_type": "multi_item_use",
+    "trigger_room": "hidden_shroomy_diner",
+    "trigger_items": ["red_mushroom", "grey_mushroom", "green_mushroom", "orange_mushroom"],
+    "title": "The Enlightened",
+    "terminal_effect": "psychedelic",
     "text": ["...ending text lines..."]
   }
 }
