@@ -2,7 +2,7 @@
 
 ## Overview
 
-MysticQuest is a text-based adventure game being rebuilt as a Love2D game with a CRT terminal aesthetic. The player types commands into what appears to be an old CRT monitor, exploring a mysterious mansion and the dark world beyond it. The terminal itself reacts to the game world — glitching in evil areas, glowing warmly in safe ones, going psychedelic in hidden zones.
+MysticQuest is a text-based adventure game being rebuilt as a Love2D game with a CRT terminal aesthetic. The player boots up what appears to be an old school project — a text adventure made by a kid years ago. The game is charming, rough around the edges, and full of personality. But something is wrong with it. As the player explores deeper, they discover that the game has been corrupted by something that wasn't in the original code. The terminal reacts to the game world — glitching in corrupted areas, glowing warmly in the kid's untouched zones, going psychedelic in their secret playground.
 
 **Tech stack:** Love2D 11.5 (Lua)
 
@@ -11,8 +11,63 @@ MysticQuest is a text-based adventure game being rebuilt as a Love2D game with a
 - Light RPG progression — level up, find weapons, get stronger through exploration
 - Multiple endings — at least 3 main + 1 secret, based on choices and exploration
 - The terminal is alive — the CRT aesthetic reacts dynamically to the game world
+- Meta narrative — you're playing a kid's old school project that has been infected by something
 
-**Tone:** Atmospheric dark fantasy on the main path. Weird humor and fourth-wall breaks hidden as easter eggs for curious players.
+**Tone:** The meta layer is medium-overt: the game boots with a faux loading screen hinting at its origins, developer notes appear in a distinct style, and attentive players piece together the story. The game never breaks character to explain itself. The kid's voice comes through in notes and design choices; the corruption is felt through tone shifts, unfamiliar writing, and terminal instability.
+
+---
+
+## Meta Narrative
+
+### The Frame
+
+The player is not just playing a text adventure — they're playing a text adventure that a kid made for a school project around 2009. The "terminal" is the kid's old program. The game has been sitting untouched for years, and something has gotten into it.
+
+### Boot Sequence
+
+The game opens with a faux system boot:
+
+```
+LOADING PROJECT...
+MYSTICQUEST.EXE
+LAST MODIFIED: 05/14/2009
+WARNING: FILE INTEGRITY CHECK FAILED
+LOADING ANYWAY...
+```
+
+This sets the tone: something is off, but the game runs. The boot sequence returns in each ending with different outcomes (see Endings).
+
+### Developer Notes
+
+A lore collectible found by searching rooms. Rendered in a distinct visual style (different color, comment syntax like `// this is so cool`). They tell the story of the kid who made this project.
+
+**Progression of developer note tone by region:**
+
+- **Manor** (early, fun): `// this room is so cool`, `// mrs. henderson said I need more descriptions lol`, `// TODO: add a dragon here maybe`
+- **Wilds** (personality): `// me and jake made this part during lunch`, `// the clearing is based on the field behind school`
+- **Wastes** (ambitious): `// I want this part to feel like lord of the rings`, `// nobody is going to find this area lol`
+- **Darkness** (uneasy): `// I didn't write this room`, `// who changed the description?`, `// something keeps adding rooms when I'm not editing`
+- **Hidden** (warm, untouched): `// this is my favorite part :)`, `// don't tell mrs henderson about the shroom diner`, `// me and jake were cracking up making this`
+
+Developer notes are stored in room data as an optional `dev_note` field. They appear when the player searches a room, after any item/loot results.
+
+### The Corruption as Unreliable Narrator
+
+In the Darkness region, room descriptions contain text that doesn't match the kid's voice — more eloquent, more menacing, slightly *wrong*. The kid wrote rooms like "Its actually quite annoying because you keep going up and down." The corruption writes rooms with cold precision and alien intent. The contrast is the horror.
+
+The Evil King's dialogue feels authored by something other than a middle schooler. It doesn't use the kid's slang, humor, or voice. It speaks to the player, not to the character.
+
+The terminal effects in the Darkness (glitches, red tint, screen shake) are the game struggling against whatever rewrote those areas — not just atmosphere, but the program fighting back.
+
+### How Regions Map to the Meta Layer
+
+| Region | Meta Meaning | Feel |
+|--------|-------------|------|
+| **The Manor** | The kid's best work — polished (for a middle schooler), atmospheric, they were proud of this | Charming, earnest |
+| **The Wilds** | Where the kid explored and had fun with friends, less polished but full of personality | Warm, loose |
+| **The Wastes** | The ambitious stretch — the kid reaching for something bigger, not quite landing it | Aspirational, a little empty |
+| **The Darkness** | Not the kid's work. Something else wrote this. The rooms don't match the voice. | Unsettling, alien |
+| **The Hidden** | The kid's playground — where they goofed off, made inside jokes, had pure fun | Joyful, safe, human |
 
 ---
 
@@ -58,7 +113,8 @@ Rooms are defined in JSON, one file per region. The system auto-loads all files 
   "items": ["rusty_key"],
   "enemies": ["shadow_rat"],
   "on_enter": "flicker_lights",
-  "searchable": true
+  "searchable": true,
+  "dev_note": "// this room is so cool"
 }
 ```
 
@@ -67,6 +123,7 @@ Rooms are defined in JSON, one file per region. The system auto-loads all files 
 - Exits support all 6 directions: north, south, east, west, up, down
 - Optional `on_enter` field for scripted events (see Events section below)
 - `searchable`: whether the room has hidden items to find (runtime search state tracked in save data, not here)
+- `dev_note`: optional developer comment found when searching (rendered in comment style, distinct from room text)
 - `enemies` is a list of enemy IDs referencing `enemies.json`
 - Adding a new region = drop in a new JSON file
 
@@ -262,21 +319,25 @@ Attack bonus range: +2 to +40, scaled so that a player at level 8 with a Darknes
 - Defeat the Evil King in the Stronghold through combat
 - Requires good gear and decent level
 - Terminal displays triumphant message, text turns gold, CRT flicker calms to steady glow
+- **Meta:** The boot sequence replays clean: `FILE INTEGRITY: RESTORED`. You purged the corruption. The kid's game is safe again.
 
 ### Ending 2: "The Usurper"
 - **Trigger:** Player has key item `dark_crown` (found in room `darkness_oblivion_gate` after defeating the Oblivion Gate guardian) AND enters the Evil Stronghold. A choice prompt appears: "The crown pulses with dark energy. [attack] or [use dark crown]?"
 - Choosing "use dark crown" triggers this ending. You take the Evil King's place.
 - Terminal shifts to red permanently, text becomes corrupted
+- **Meta:** The boot sequence replays corrupted. `LAST MODIFIED:` changes to today's date. You're the new infection.
 
 ### Ending 3: "The Wanderer"
 - **Trigger:** Player has visited 80%+ of all non-Hidden rooms (counted as unique room IDs entered, tracked in save data) AND has key item `ancient_map` (found by searching the Ruins room). A hidden exit appears in the Ruins: "You notice a passage behind the rubble, marked on your ancient map..."
 - Peaceful resolution — you leave the world behind, having seen everything
 - Terminal fades to warm amber, peaceful tone plays
+- **Meta:** You find a hidden `EXIT_GAME.BAT` — a backdoor the kid left in their own project. The terminal shuts down peacefully. The kid knew how to leave.
 
 ### Secret Ending: "The Enlightened"
 - **Trigger:** Player is in Joe's Shroomy Diner and uses the items `red_mushroom`, `grey_mushroom`, `green_mushroom`, and `orange_mushroom` (all found in the Shroomy Forest and Diner rooms). Using the last one triggers the ending.
 - Terminal goes full psychedelic — rainbow text, screen wobbles, game "breaks" in funny ways
 - Fourth-wall breaking dialogue, credits roll sideways, joke stats screen
+- **Meta:** The game reverts to its original, uncorrupted state. Pure middle school energy. The kid's voice is everywhere — their jokes, their excitement, their unfinished TODO comments. The corruption never happened. It's joyful.
 
 ### Ending Data Format (`endings.json`)
 
