@@ -413,8 +413,9 @@ local test_files = {
     "tests.test_save",
 }
 
--- Adjust package path to find game modules
-package.path = "game/?.lua;" .. package.path
+-- Adjust package path: tests run from project root via `lua game/tests/run_tests.lua`
+-- This sets paths so both `require("src.world")` and `require("lib.json")` resolve under game/
+package.path = "game/?.lua;game/?/init.lua;" .. package.path
 
 for _, mod in ipairs(test_files) do
     local ok, err = pcall(require, mod)
@@ -517,11 +518,7 @@ function World:get_room(room_id)
     return self.rooms[room_id]
 end
 
-function World:get_exits(room_id)
-    local room = self.rooms[room_id]
-    if not room then return {} end
-    return room.exits or {}
-end
+-- get_exits is defined below with dynamic exit support
 
 function World:get_adjacent_room(room_id, direction)
     local exits = self:get_exits(room_id)
@@ -542,6 +539,57 @@ function World:non_hidden_room_count()
     return count
 end
 
+-- Enemy alive/dead tracking per room
+function World:mark_enemy_dead(room_id, enemy_id)
+    local room = self.rooms[room_id]
+    if not room then return end
+    if not room._dead_enemies then room._dead_enemies = {} end
+    room._dead_enemies[enemy_id] = true
+end
+
+function World:is_enemy_dead(room_id, enemy_id)
+    local room = self.rooms[room_id]
+    if not room or not room._dead_enemies then return false end
+    return room._dead_enemies[enemy_id] == true
+end
+
+function World:get_living_enemies(room_id)
+    local room = self.rooms[room_id]
+    if not room or not room.enemies then return {} end
+    local living = {}
+    for _, enemy_id in ipairs(room.enemies) do
+        if not self:is_enemy_dead(room_id, enemy_id) then
+            table.insert(living, enemy_id)
+        end
+    end
+    return living
+end
+
+-- Dynamic exits (for Wanderer ending hidden exit)
+function World:add_dynamic_exit(room_id, direction, target_room_id)
+    local room = self.rooms[room_id]
+    if not room then return end
+    if not room._dynamic_exits then room._dynamic_exits = {} end
+    room._dynamic_exits[direction] = target_room_id
+end
+
+function World:get_exits(room_id)
+    local room = self.rooms[room_id]
+    if not room then return {} end
+    local exits = {}
+    -- Copy static exits
+    for dir, target in pairs(room.exits or {}) do
+        exits[dir] = target
+    end
+    -- Merge dynamic exits
+    if room._dynamic_exits then
+        for dir, target in pairs(room._dynamic_exits) do
+            exits[dir] = target
+        end
+    end
+    return exits
+end
+
 return World
 ```
 
@@ -554,7 +602,7 @@ return World
 -- We need to mock love.filesystem for testing outside Love2D
 -- For now, test load_region_from_string directly
 
-package.path = "game/?.lua;" .. package.path
+-- package.path set by run_tests.lua
 local World = require("src.world")
 
 local test_json = [[
@@ -628,7 +676,7 @@ end)
 
 - [ ] **Step 5: Run tests**
 
-Run: `cd game && lua tests/run_tests.lua`
+Run: `lua game/tests/run_tests.lua` (from project root)
 Expected: All world tests pass. Other test files not found yet (that's fine).
 
 - [ ] **Step 6: Wire world into game — display room on load**
@@ -717,7 +765,7 @@ return Commands
 - [ ] **Step 2: Write command parser tests `tests/test_commands.lua`**
 
 ```lua
-package.path = "game/?.lua;" .. package.path
+-- package.path set by run_tests.lua
 local Commands = require("src.commands")
 
 test("parse direction shortcut 'n'", function()
@@ -775,7 +823,7 @@ end)
 
 - [ ] **Step 3: Run tests**
 
-Run: `cd game && lua tests/run_tests.lua`
+Run: `lua game/tests/run_tests.lua` (from project root)
 Expected: All command parser tests pass.
 
 - [ ] **Step 4: Wire commands into game — movement working**
@@ -784,9 +832,10 @@ In `Game`, when player presses Enter with input:
 1. Parse with `Commands.parse(input)`
 2. For `go` verb: check `world:get_adjacent_room(current_room, target)`. If valid, move player, display new room. If not, display "You can't go that way."
 3. For `look`: redisplay current room.
-4. For `help`: display command list.
-5. For `quit`: `love.event.quit()`.
-6. Unknown verb: "I don't understand that."
+4. For `drop`: remove item from inventory, add to current room's items list. Block for key items.
+5. For `help`: display command list.
+6. For `quit`: `love.event.quit()`.
+7. Unknown verb: "I don't understand that."
 
 - [ ] **Step 5: Run and verify movement**
 
@@ -836,6 +885,7 @@ function Player.new(start_room)
     self.defending = false    -- true if defend was chosen this round
     self.buff_attack = 0      -- temporary attack buff
     self.buff_rounds = 0      -- rounds remaining on buff
+    self.used_items_in_room = {}  -- tracks key items "used" in current room (for multi_item_use endings)
     return self
 end
 
@@ -844,9 +894,16 @@ function Player:total_attack()
     -- weapon bonus added during combat from weapon data
 end
 
-function Player:total_defense()
-    return self.defense
-    -- shield bonus added from item data
+function Player:total_defense(item_data)
+    local base = self.defense
+    if self.equipped_shield and item_data and item_data[self.equipped_shield] then
+        base = base + item_data[self.equipped_shield].value
+    end
+    return base
+end
+
+function Player:equip_shield(item_id)
+    self.equipped_shield = item_id
 end
 
 function Player:xp_to_next_level()
@@ -946,7 +1003,7 @@ return Player
 - [ ] **Step 2: Write player tests `tests/test_player.lua`**
 
 ```lua
-package.path = "game/?.lua;" .. package.path
+-- package.path set by run_tests.lua
 local Player = require("src.player")
 
 test("Player starts with correct stats", function()
@@ -1083,13 +1140,27 @@ end)
     "name": "Rusty Key",
     "type": "key",
     "description": "An old iron key. It might open something in the manor."
+  },
+  "iron_shield": {
+    "name": "Iron Shield",
+    "type": "shield",
+    "effect": "defense",
+    "value": 3,
+    "description": "A battered iron shield. Provides +3 defense."
+  },
+  "strength_tonic": {
+    "name": "Strength Tonic",
+    "type": "consumable",
+    "effect": "buff_attack",
+    "value": 3,
+    "description": "A fizzing red tonic. +3 Attack for 3 combat rounds."
   }
 }
 ```
 
 - [ ] **Step 5: Run tests**
 
-Run: `cd game && lua tests/run_tests.lua`
+Run: `lua game/tests/run_tests.lua` (from project root)
 Expected: All player tests pass.
 
 - [ ] **Step 6: Wire player into game — inventory and stats commands**
@@ -1183,9 +1254,7 @@ function Combat:get_player_attack()
 end
 
 function Combat:get_player_defense()
-    local base = self.player:total_defense()
-    -- Shield bonus would be added here
-    return base
+    return self.player:total_defense(self.item_data)
 end
 
 function Combat:player_attack()
@@ -1204,6 +1273,7 @@ function Combat:player_attack()
     end
 
     self:enemy_turn()
+    self:tick_buffs()
 end
 
 function Combat:player_defend()
@@ -1236,8 +1306,24 @@ function Combat:player_use_item(item_id)
         self.player:heal(item.value)
         self.player:remove_item(item_id)
         table.insert(self.messages, string.format("You use %s. Restored %d HP.", item.name, item.value))
+    elseif item.effect == "buff_attack" then
+        self.player.buff_attack = item.value
+        self.player.buff_rounds = 3
+        self.player:remove_item(item_id)
+        table.insert(self.messages, string.format("You use %s. Attack +%d for 3 rounds!", item.name, item.value))
     end
     self:enemy_turn()
+end
+
+function Combat:tick_buffs()
+    -- Call at end of each combat round
+    if self.player.buff_rounds > 0 then
+        self.player.buff_rounds = self.player.buff_rounds - 1
+        if self.player.buff_rounds <= 0 then
+            self.player.buff_attack = 0
+            table.insert(self.messages, "Your strength buff fades.")
+        end
+    end
 end
 
 function Combat:enemy_turn()
@@ -1266,12 +1352,33 @@ end
 function Combat:enemy_defeated()
     self.finished = true
     self.result = "win"
+    self.loot_items = {}    -- items to add to room after combat
+    self.loot_weapons = {}  -- weapons to add to room after combat
     table.insert(self.messages, string.format("You defeated the %s!", self.enemy.name))
 
+    -- Grant XP
     local leveled = self.player:add_xp(self.enemy.xp)
     table.insert(self.messages, string.format("Gained %d XP.", self.enemy.xp))
     if leveled then
         table.insert(self.messages, string.format("LEVEL UP! You are now level %d!", self.player.level))
+    end
+
+    -- Drop item loot
+    if self.enemy.loot then
+        for _, item_id in ipairs(self.enemy.loot) do
+            table.insert(self.loot_items, item_id)
+            local item = self.item_data[item_id]
+            local name = item and item.name or item_id
+            table.insert(self.messages, string.format("The %s dropped %s!", self.enemy.name, name))
+        end
+    end
+
+    -- Drop weapon loot
+    if self.enemy.loot_weapon then
+        table.insert(self.loot_weapons, self.enemy.loot_weapon)
+        local weapon = self.weapon_data[self.enemy.loot_weapon]
+        local name = weapon and weapon.name or self.enemy.loot_weapon
+        table.insert(self.messages, string.format("The %s dropped %s!", self.enemy.name, name))
     end
 end
 
@@ -1287,7 +1394,7 @@ return Combat
 - [ ] **Step 3: Write combat tests `tests/test_combat.lua`**
 
 ```lua
-package.path = "game/?.lua;" .. package.path
+-- package.path set by run_tests.lua
 local Player = require("src.player")
 local Combat = require("src.combat")
 
@@ -1363,7 +1470,7 @@ end)
 
 - [ ] **Step 4: Run tests**
 
-Run: `cd game && lua tests/run_tests.lua`
+Run: `lua game/tests/run_tests.lua` (from project root)
 Expected: All combat tests pass.
 
 - [ ] **Step 5: Wire combat into game state machine**
@@ -1721,7 +1828,7 @@ return Save
 - [ ] **Step 2: Write save/load tests `tests/test_save.lua`**
 
 ```lua
-package.path = "game/?.lua;" .. package.path
+-- package.path set by run_tests.lua
 local Player = require("src.player")
 local World = require("src.world")
 local Save = require("src.save")
@@ -1758,7 +1865,7 @@ end)
 
 - [ ] **Step 3: Run tests**
 
-Run: `cd game && lua tests/run_tests.lua`
+Run: `lua game/tests/run_tests.lua` (from project root)
 Expected: Save round-trip test passes.
 
 - [ ] **Step 4: Wire save/load commands in game**
@@ -2125,19 +2232,28 @@ function Endings:check_trigger(ending, player, world, context)
             and context.choice_made == ending.choice_options[ending.choice_trigger + 1]
 
     elseif t == "exploration" then
-        if player.current_room ~= ending.trigger_room then return false end
+        -- Check conditions: right room + right item + enough exploration
         if not player:has_key_item(ending.trigger_item) then return false end
         local pct = (player:visited_count() / world:non_hidden_room_count()) * 100
-        return pct >= ending.rooms_percent
+        if pct < ending.rooms_percent then return false end
+        -- Conditions met: add dynamic hidden exit to trigger room if not already added
+        -- The hidden exit leads to a special ending room (defined in endings.json as trigger_exit_target)
+        if ending.trigger_exit_target then
+            world:add_dynamic_exit(ending.trigger_room, ending.trigger_exit_dir or "down", ending.trigger_exit_target)
+        end
+        -- The ending itself triggers when the player enters the exit target room
+        return player.current_room == (ending.trigger_exit_target or ending.trigger_room)
 
     elseif t == "multi_item_use" then
         if player.current_room ~= ending.trigger_room then return false end
+        -- Mushrooms are key items. When player "uses" one in the trigger room,
+        -- it gets tracked in player.used_items_in_room (set of item_id -> true).
+        -- Check if ALL trigger items have been used in this room.
+        if not player.used_items_in_room then return false end
         for _, item_id in ipairs(ending.trigger_items) do
-            if not player:has_key_item(item_id) then return false end
+            if not player.used_items_in_room[item_id] then return false end
         end
-        -- All mushrooms collected and in the right room
-        return context.item_just_used and
-            self:is_trigger_item(ending, context.item_just_used)
+        return true
     end
 
     return false
@@ -2176,7 +2292,16 @@ In the `ending` state:
 
 - [ ] **Step 4: Implement the choice prompt for Usurper ending**
 
-When entering the Evil Stronghold with the dark_crown, display a special choice prompt with highlighted options. Player types their choice. Parse and check endings.
+Implement a `dialogue` game state for choice moments. When entering the Evil Stronghold with the dark_crown:
+1. Switch to `dialogue` state
+2. Display the choice prompt text in a highlighted color (amber/gold)
+3. Display numbered options: `[1] Attack  [2] Use Dark Crown`
+4. In dialogue state, only accept `1`, `2`, or the option text as valid input
+5. On selection, set `context.choice_made` and check endings
+6. The dialogue state blocks normal command input — only the presented choices are valid
+7. Render the options with a distinct border or highlight color to signal "this matters"
+
+This same dialogue state is reused for any future choice moments.
 
 - [ ] **Step 5: Run and verify**
 
@@ -2359,7 +2484,7 @@ git commit -m "fix: balance pass on enemies, weapons, and XP curve"
 | 2 | Terminal rendering, typewriter, input | 1 |
 | 3 | World system, room loading | 1, 2 |
 | 4 | Command parser, movement | 2, 3 |
-| 5 | Player stats, inventory, items | 4 |
+| 5 | Player stats, inventory, items | 1 (module), 4 (wiring) |
 | 6 | Combat system | 5 |
 | 7 | Visual effects (shake, flash, tint) | 2 |
 | 8 | Room events (gates, dialogue, boss) | 3, 7 |
