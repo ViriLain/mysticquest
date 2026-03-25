@@ -64,22 +64,107 @@ Rooms are defined in JSON, one file per region. The system auto-loads all files 
 
 - String-based IDs (readable, no collisions when adding regions)
 - Exits reference room IDs so regions can cross-connect freely
-- Optional `on_enter` field for scripted events (screen effects, dialogue, locked doors)
+- Exits support all 6 directions: north, south, east, west, up, down
+- Optional `on_enter` field for scripted events (see Events section below)
+- `searchable`: whether the room has hidden items to find (runtime search state tracked in save data, not here)
+- `enemies` is a list of enemy IDs referencing `enemies.json`
 - Adding a new region = drop in a new JSON file
+
+### Room Events (`on_enter`)
+
+Events are simple string keys that map to hardcoded Lua functions in an event registry. No scripting DSL — keep it simple.
+
+Supported events:
+- **Visual effects:** `"flicker_lights"`, `"screen_glitch"`, `"fade_to_black"` — trigger a terminal effect on entry
+- **Dialogue:** `"dialogue:some_key"` — display a narrative text block from a dialogue table (first visit only)
+- **Gate check:** `"require:item_id"` — if the player lacks the item, display a message and block entry (push them back)
+- **Boss trigger:** `"boss:enemy_id"` — force a combat encounter on entry (first visit only)
+
+Events fire on first entry only by default. The set of fired events is tracked in save data. This is intentionally limited — if we need more complex scripting later, we can expand the registry without changing the data format.
 
 ---
 
 ## Game Systems
 
+### Commands
+
+The player interacts via typed commands. The parser splits input into verb + target.
+
+| Command | Aliases | Args | Behavior |
+|---------|---------|------|----------|
+| `go <dir>` | `move <dir>` | north/south/east/west/up/down | Move to adjacent room if exit exists |
+| `n`, `s`, `e`, `w` | — | — | Direction shortcuts (also `u`, `d` for up/down) |
+| `look` | `l` | — | Redisplay current room description, list visible items/enemies |
+| `search` | `examine` | — | Search room for hidden items (once per room) |
+| `take <item>` | `get`, `pick up` | item name | Pick up a visible item or weapon from the room |
+| `drop <item>` | — | item name | Drop an item in the current room (not key items) |
+| `use <item>` | `equip` | item name | Equip a weapon or use a consumable |
+| `attack <target>` | `fight`, `hit` | enemy name | Initiate or continue combat with an enemy |
+| `defend` | `block` | — | During combat: take half damage this round |
+| `flee` | `run` | — | During combat: attempt to escape (70% success, fail = take a hit) |
+| `inventory` | `i` | — | List carried items, weapons, and equipped weapon |
+| `stats` | `status` | — | Show HP, level, XP, attack, defense |
+| `help` | `?` | — | Show command list |
+| `save` | — | — | Save game to file |
+| `load` | — | — | Load saved game |
+| `quit` | `q` | — | Exit the game |
+
+Unrecognized commands get: "I don't understand that. Type 'help' for commands."
+
+Parser is case-insensitive. Multi-word item/enemy names matched by longest prefix (e.g., "take iron sword" matches "Iron Sword").
+
 ### Combat (Light RPG)
 
-- Hero has: HP, attack, defense, level, XP
-- Enemies have: HP, attack, defense, XP reward, loot table
-- Each round: choose attack, defend (half damage taken), use item, or flee
-- Damage formula: `attack - defense + small random range` (predictable but not static)
-- Defeating enemies grants XP. Level up every N XP — boosts HP and attack
-- Equipped weapon adds to attack stat. Armor items add to defense
-- Boss fights: same system but bosses have more HP, hit harder, maybe a special move every few turns
+**Player starting stats:**
+- HP: 30, Attack: 5, Defense: 2, Level: 1, XP: 0
+
+**Leveling:**
+- XP to next level: `level * 25` (so 25, 50, 75, 100...)
+- Per level: +8 HP, +2 Attack, +1 Defense
+- Max level: 15 (soft cap — enemies in Darkness are tuned for ~level 8-10)
+
+**Damage formula:**
+- `damage = max(1, attacker_attack - defender_defense + random(-2, 2))`
+- Minimum 1 damage always (no zero-damage stalemates)
+- Critical hit: 10% chance, deals 2x damage
+- Applies identically to player and enemies
+- Weapon adds to player attack. Armor/shield items add to player defense.
+
+**Combat flow:**
+- Each round: choose attack, defend (half damage taken next enemy hit), use item, or flee
+- Flee: 70% success chance. On failure, enemy gets a free hit.
+- Enemy attacks after player action (unless player fled successfully or killed the enemy)
+- Boss fights: same system but bosses may have a special attack every 3 rounds (extra damage + screen effect)
+
+**Enemy data format (`enemies.json`):**
+
+```json
+{
+  "shadow_rat": {
+    "name": "Shadow Rat",
+    "hp": 10, "attack": 3, "defense": 1,
+    "xp": 8,
+    "loot": ["small_potion"],
+    "region": "manor",
+    "description": "A rat wreathed in unnatural shadow."
+  }
+}
+```
+
+**Representative enemy stat blocks:**
+
+| Enemy | Region | HP | Atk | Def | XP | Loot |
+|-------|--------|----|-----|-----|----|------|
+| Shadow Rat | Manor | 10 | 3 | 1 | 8 | Small Potion |
+| Cellar Shade (mini-boss) | Manor | 35 | 7 | 3 | 30 | Iron Sword |
+| Forest Wolf | Wilds | 20 | 6 | 2 | 15 | — |
+| Mountain Troll (boss) | Wilds | 60 | 12 | 5 | 50 | Mjolnir |
+| Grave Wraith | Darkness | 40 | 14 | 6 | 35 | Dark Essence |
+| The Evil King (final boss) | Darkness | 150 | 22 | 10 | — | — |
+| Sand Golem | Wastes | 50 | 10 | 8 | 40 | Excalibur |
+| Milo (joke boss) | Hidden | 25 | 5 | 1 | 100 | FALCON PUNCH |
+
+Enemies are assigned to rooms by ID reference in the room JSON. Each enemy instance in a room is independent (track alive/dead state per room in save data).
 
 Combat feedback:
 - Screen shake on hit
@@ -96,7 +181,23 @@ Cut from 56 to ~20 weapons with meaningful tiers, spread across regions for natu
 - **Darkness:** Anduril, Ragnarok (needed for endgame)
 - **Hidden:** Badger on a Stick, FALCON PUNCH (joke weapons that are actually strong)
 
-Damage range roughly 5 to 100, scaled to enemy HP pools.
+**Weapon stat blocks (~20 weapons, representative):**
+
+| Weapon | Region | Attack Bonus | Notes |
+|--------|--------|-------------|-------|
+| Rusty Dagger | Manor | +2 | Starting-tier |
+| Iron Sword | Manor | +5 | Cellar Shade drop |
+| Steel Sword | Wilds | +8 | Found in clearing |
+| Spear | Wilds | +10 | Found in mountains |
+| Mjolnir | Wilds | +15 | Mountain Troll boss drop |
+| Excalibur | Wastes | +20 | Sand Golem drop |
+| Masamune | Wastes | +25 | Hidden in Ruins |
+| Anduril | Darkness | +30 | Found in Shadowlands |
+| Ragnarok | Darkness | +35 | Found before final boss |
+| Badger on a Stick | Hidden | +30 | Joke weapon, strong |
+| FALCON PUNCH | Hidden | +40 | Milo drop, best weapon in the game |
+
+Attack bonus range: +2 to +40, scaled so that a player at level 8 with a Darkness-tier weapon can comfortably fight the Evil King. A player with Hidden-tier joke weapons can stomp everything.
 
 ### Inventory
 
@@ -124,29 +225,48 @@ Damage range roughly 5 to 100, scaled to enemy HP pools.
 - Terminal displays triumphant message, text turns gold, CRT flicker calms to steady glow
 
 ### Ending 2: "The Usurper"
-- Find a hidden dark crown/cursed artifact in the Alternate Dimension / Oblivion Gate area
-- Bring it to the Evil King — option to "use dark crown" instead of attacking
-- You take his place. Terminal shifts to red permanently, text becomes corrupted
-- Rewards thorough exploration of the dark path
+- **Trigger:** Player has key item `dark_crown` (found in room `darkness_oblivion_gate` after defeating the Oblivion Gate guardian) AND enters the Evil Stronghold. A choice prompt appears: "The crown pulses with dark energy. [attack] or [use dark crown]?"
+- Choosing "use dark crown" triggers this ending. You take the Evil King's place.
+- Terminal shifts to red permanently, text becomes corrupted
 
 ### Ending 3: "The Wanderer"
-- Explore ~80%+ of all rooms and find a hidden exit in the Ruins
+- **Trigger:** Player has visited 80%+ of all non-Hidden rooms (counted as unique room IDs entered, tracked in save data) AND has key item `ancient_map` (found by searching the Ruins room). A hidden exit appears in the Ruins: "You notice a passage behind the rubble, marked on your ancient map..."
 - Peaceful resolution — you leave the world behind, having seen everything
 - Terminal fades to warm amber, peaceful tone plays
-- Rewards completionists
 
 ### Secret Ending: "The Enlightened"
-- Eat everything at Joe's Shroomy Diner
+- **Trigger:** Player is in Joe's Shroomy Diner and uses the items `red_mushroom`, `grey_mushroom`, `green_mushroom`, and `orange_mushroom` (all found in the Shroomy Forest and Diner rooms). Using the last one triggers the ending.
 - Terminal goes full psychedelic — rainbow text, screen wobbles, game "breaks" in funny ways
 - Fourth-wall breaking dialogue, credits roll sideways, joke stats screen
-- Pure reward for finding and engaging with the hidden area
+
+### Ending Data Format (`endings.json`)
+
+```json
+{
+  "the_hero": {
+    "trigger_type": "boss_defeated",
+    "trigger_value": "evil_king",
+    "title": "The Hero",
+    "terminal_effect": "gold_glow",
+    "text": ["...ending text lines..."]
+  },
+  "the_usurper": {
+    "trigger_type": "choice",
+    "trigger_room": "darkness_stronghold",
+    "trigger_item": "dark_crown",
+    "title": "The Usurper",
+    "terminal_effect": "red_corruption",
+    "text": ["...ending text lines..."]
+  }
+}
+```
 
 ### Soft Gating for Endings
 
 - Ending 2 requires finding a non-obvious item in an optional area — exploration-gated
-- Ending 3 requires visiting most rooms — naturally locks behind curiosity and persistence
-- Secret ending requires reaching the Hidden region, which itself is behind the hardest area
-- None locked behind hard doors
+- Ending 3 requires visiting 80%+ rooms (non-Hidden) + finding the ancient map — naturally locks behind curiosity
+- Secret ending requires reaching the Hidden region (behind the Darkness, the hardest area) + collecting 4 mushroom items
+- None locked behind hard doors — all gated by exploration and item discovery
 
 ### Choice Moments
 
@@ -253,8 +373,17 @@ mysticquest/
 - **Data-driven:** Rooms, weapons, enemies, endings all in JSON. Change the game without touching Lua.
 - **Region auto-loading:** `world.lua` scans `data/regions/` and loads every JSON file it finds.
 - **State machine:** Game has clear states (menu, exploring, combat, dialogue, ending) — each handles input and rendering differently.
-- **Save system:** Serialize player state + visited rooms + world state to a JSON file.
+- **Save system:** Serialize to a JSON file containing: player stats (HP, attack, defense, level, XP), inventory (items + weapons + equipped weapon), current room ID, set of visited room IDs, set of searched room IDs, set of fired `on_enter` events, per-room enemy alive/dead state, and any collected key items. Loaded on "load" command or from menu.
 - **Modular effects:** `effects.lua` is a queue — anything can push an effect (shake, flash, tint) and they layer and expire independently.
+
+### Menu & Game Over
+
+**Title screen:** CRT boot sequence animation, then:
+- New Game
+- Continue (grayed out if no save exists)
+- Quit
+
+**Game over (HP reaches 0):** Screen flickers, text corrupts, "YOU HAVE FALLEN" displays. Options: Load last save, or Quit to menu. No permadeath — the save system is the player's safety net.
 
 ### Love2D Specifics
 
