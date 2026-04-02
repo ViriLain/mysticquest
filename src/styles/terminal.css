@@ -1,0 +1,104 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&display=swap');
+
+.terminal {
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  font-size: 16px;
+  line-height: 1.25;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.terminal-header {
+  flex-shrink: 0;
+  white-space: pre;
+  padding-bottom: 4px;
+}
+
+.terminal-separator {
+  flex-shrink: 0;
+  height: 1px;
+  margin-bottom: 6px;
+}
+
+.terminal-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+
+.terminal-content::-webkit-scrollbar {
+  display: none;
+}
+
+.terminal-line {
+  white-space: pre-wrap;
+  word-break: break-all;
+  min-height: 1.25em;
+}
+
+.terminal-input-separator {
+  flex-shrink: 0;
+  height: 1px;
+  margin-top: 6px;
+}
+
+.terminal-input-area {
+  flex-shrink: 0;
+  white-space: pre;
+  min-height: 1.25em;
+}
+
+.terminal-input-hidden {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* Menu overlay */
+.menu-overlay {
+  position: absolute;
+  inset: 0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-left: 60px;
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  font-size: 16px;
+}
+
+.menu-title {
+  margin-bottom: 3em;
+}
+
+.menu-option {
+  padding: 4px 0;
+  cursor: pointer;
+  white-space: pre;
+}
+
+/* Minimap overlay */
+.minimap-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  background: rgba(10, 10, 10, 0.97);
+}
+
+.minimap-canvas {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  display: block;
+}
+
+.minimap-canvas:active {
+  cursor: grabbing;
+}

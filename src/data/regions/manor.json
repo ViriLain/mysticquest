@@ -1,0 +1,159 @@
+{
+  "rooms": [
+    {
+      "id": "manor_entry",
+      "name": "Entry",
+      "region": "manor",
+      "description": "You are inside the entry room of an old manor. It is reasonably large, with old chairs and a coat rack on the west wall. The walls are upholstered, and an ornate chandelier hangs from the ceiling. A window to the south is the room's only source of light.",
+      "exits": {"north": "manor_entrance_hall", "south": "manor_yard"},
+      "items": ["small_potion"],
+      "weapons": ["rusty_dagger"],
+      "enemies": ["shadow_rat"],
+      "searchable": true,
+      "search_items": ["rusty_key"],
+      "dev_note": "// this is the starting room!! so cool"
+    },
+    {
+      "id": "manor_entrance_hall",
+      "name": "Entrance Hall",
+      "region": "manor",
+      "description": "A faintly lit and fairly long passage. Two large glass doors stand in the center, with faint lightning visible through them. The floor is covered with a tacky bear rug. Unlit candles line the walls.",
+      "exits": {"west": "manor_west_entertaining", "north": "manor_main_hall", "east": "manor_east_entertaining", "south": "manor_entry"},
+      "items": [],
+      "enemies": [],
+      "searchable": false,
+      "on_enter": "flicker_lights",
+      "dev_note": "// mrs. henderson said I need more descriptions lol"
+    },
+    {
+      "id": "manor_west_entertaining",
+      "name": "West Entertaining Room",
+      "region": "manor",
+      "description": "A dusty room with a grand piano in the corner. The keys are yellowed and some are missing. Old portraits hang crooked on the walls, their eyes seeming to follow you. Theres a fireplace but it hasnt been lit in forever.",
+      "exits": {"east": "manor_entrance_hall", "north": "manor_west_wing"},
+      "items": [],
+      "enemies": ["shadow_rat"],
+      "searchable": true,
+      "search_items": ["small_potion"],
+      "dev_note": "// I want to add a piano puzzle here eventually"
+    },
+    {
+      "id": "manor_east_entertaining",
+      "name": "East Entertaining Room",
+      "region": "manor",
+      "description": "This room has a big dining table with chairs all around it. Theres still plates and cups on the table like everyone just left in the middle of dinner. Some of the food is still there but its all grey and gross now.",
+      "exits": {"west": "manor_entrance_hall", "north": "manor_east_wing"},
+      "items": [],
+      "enemies": ["manor_ghost"],
+      "searchable": true,
+      "search_items": ["small_potion"],
+      "dev_note": "// the ghost here is pretty spooky I think"
+    },
+    {
+      "id": "manor_main_hall",
+      "name": "Main Hall",
+      "region": "manor",
+      "description": "The main hall is huge. Like really huge. A massive staircase goes up to the second floor and theres suits of armor on both sides. One of them is missing its head. The carpet is red and goes all the way up the stairs.",
+      "exits": {"south": "manor_entrance_hall", "west": "manor_west_wing", "east": "manor_east_wing", "north": "manor_north_wing"},
+      "items": ["potion"],
+      "enemies": [],
+      "searchable": false,
+      "npcs": ["manor_merchant"],
+      "dev_note": "// this is so cool it feels like a real castle"
+    },
+    {
+      "id": "manor_west_wing",
+      "name": "West Wing",
+      "region": "manor",
+      "description": "The west wing is dark and cold. The wallpaper is peeling off the walls and you can see something moving behind it sometimes. There are doors to rooms but most of them are locked or stuck. One window is broken and wind blows through.",
+      "exits": {"south": "manor_west_entertaining", "east": "manor_main_hall", "north": "manor_library"},
+      "items": [],
+      "enemies": ["shadow_rat"],
+      "searchable": false,
+      "dev_note": "// TODO: add a dragon here maybe"
+    },
+    {
+      "id": "manor_east_wing",
+      "name": "East Wing",
+      "region": "manor",
+      "description": "The east wing smells like old books and dust. Paintings of people you dont know cover every wall. At the end of the hall theres a big mirror but your reflection looks wrong somehow. Like its a second too slow.",
+      "exits": {"south": "manor_east_entertaining", "west": "manor_main_hall"},
+      "items": ["iron_shield"],
+      "enemies": ["manor_ghost"],
+      "searchable": true,
+      "search_items": ["strength_tonic"],
+      "dev_note": "// the mirror thing is super creepy right??"
+    },
+    {
+      "id": "manor_north_wing",
+      "name": "North Wing",
+      "region": "manor",
+      "description": "The north wing is where the bedrooms are. Most doors are locked but you can see through the keyholes. The beds are all made perfectly which is weird because nobody lives here anymore. At the end of the hall stairs go down.",
+      "exits": {"south": "manor_main_hall", "down": "manor_wine_cellar", "west": "manor_library"},
+      "items": [],
+      "enemies": [],
+      "searchable": true,
+      "search_items": ["potion"]
+    },
+    {
+      "id": "manor_library",
+      "name": "Library",
+      "region": "manor",
+      "description": "Bookshelves go from the floor all the way to the ceiling which is really high up. Theres a ladder on wheels that slides around. Most of the books are too old to read but some of them have weird symbols on them. A spiral staircase goes up to a dome.",
+      "exits": {"south": "manor_west_wing", "east": "manor_north_wing", "up": "manor_library_dome"},
+      "items": [],
+      "enemies": [],
+      "searchable": true,
+      "search_items": ["small_potion"],
+      "dev_note": "// I read that librarys in old houses are always haunted"
+    },
+    {
+      "id": "manor_library_dome",
+      "name": "Library Dome",
+      "region": "manor",
+      "description": "You climb up to the top of the library where theres a glass dome. You can see the sky through it and at night you can probably see the stars. Theres a desk up here with papers scattered everywhere and a telescope pointing at nothing.",
+      "exits": {"down": "manor_library"},
+      "items": [],
+      "weapons": ["hammer"],
+      "enemies": [],
+      "searchable": true,
+      "search_items": ["ancient_map"],
+      "dev_note": "// this is my favorite room in the manor :)"
+    },
+    {
+      "id": "manor_wine_cellar",
+      "name": "Wine Cellar",
+      "region": "manor",
+      "description": "The cellar is cold and damp. Wine racks line the walls but most bottles are broken. Something dark moves in the shadows between the racks. It smells like old wine and something else... something wrong. The darkness down here feels thicker somehow.",
+      "exits": {"up": "manor_north_wing", "south": "manor_dungeon"},
+      "items": ["potion"],
+      "enemies": ["cellar_shade"],
+      "searchable": false,
+      "dev_note": "// boss fight!! the cellar shade is really hard"
+    },
+    {
+      "id": "manor_dungeon",
+      "name": "Dungeon",
+      "region": "manor",
+      "description": "Under the cellar theres an actual dungeon with chains on the walls and old cages. Its really dark and your torch barely lights anything. The walls have scratch marks on them. Something was kept down here a long time ago. You hope its not still here.",
+      "exits": {"north": "manor_wine_cellar"},
+      "items": ["large_potion"],
+      "weapons": ["iron_sword"],
+      "enemies": [],
+      "searchable": true,
+      "search_items": ["strength_tonic"],
+      "dev_note": "// this is like the darkest part of the manor. so epic"
+    },
+    {
+      "id": "manor_yard",
+      "name": "Yard",
+      "region": "manor",
+      "description": "The yard has not been trimmed in ages. Overgrown grass covers the paths and trees have grown wild. To the west you can see a dark forest. To the south a dusty path leads away from the manor into unknown lands.",
+      "exits": {"north": "manor_entry", "west": "wilds_forest_entrance", "south": "wastes_path"},
+      "items": [],
+      "enemies": [],
+      "searchable": false,
+      "dev_note": "// the yard connects to the wilds and the wastes"
+    }
+  ]
+}

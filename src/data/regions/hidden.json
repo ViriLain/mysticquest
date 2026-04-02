@@ -1,0 +1,52 @@
+{
+  "rooms": [
+    {
+      "id": "hidden_shroomy_forest",
+      "name": "Shroomy Forest",
+      "region": "hidden",
+      "description": "WOAH what is this place?? The mushrooms here are HUGE like taller than you huge. They glow all different colors and the air smells like pizza for some reason. Everything is bouncy. You bounce when you walk. The trees have smiley faces. This rules.",
+      "exits": {"north": "wilds_clearing", "east": "hidden_diner"},
+      "items": ["red_mushroom", "grey_mushroom"],
+      "enemies": [],
+      "searchable": true,
+      "search_items": ["large_potion"],
+      "npcs": ["hidden_cat_friend"],
+      "dev_note": "// this is my favorite part :)"
+    },
+    {
+      "id": "hidden_diner",
+      "name": "Joe's Shroomy Diner",
+      "region": "hidden",
+      "description": "Welcome to Joe's Shroomy Diner! The best (and only) diner in the shroom dimension! The menu has stuff like Mushroom Surprise and Fungus Fries and Spore Smoothie. The waiter is a mushroom person named Carl and he says everything is on the house.",
+      "exits": {"west": "hidden_shroomy_forest", "south": "hidden_imagination_box"},
+      "items": ["green_mushroom", "orange_mushroom"],
+      "enemies": [],
+      "searchable": true,
+      "search_items": ["potion"],
+      "dev_note": "// don't tell mrs henderson about the shroom diner"
+    },
+    {
+      "id": "hidden_imagination_box",
+      "name": "Imagination Box",
+      "region": "hidden",
+      "description": "Its literally a cardboard box but when you go inside its INFINITE. The walls change to whatever you think about. Right now its a space station. No wait now its underwater. No wait now its a pizza restaurant on the moon. This is the best room ever made in any game.",
+      "exits": {"north": "hidden_diner", "east": "hidden_hobbit_hole"},
+      "items": [],
+      "weapons": ["badger_on_stick"],
+      "enemies": [],
+      "searchable": false,
+      "dev_note": "// jake said this room is dumb but jake is wrong"
+    },
+    {
+      "id": "hidden_hobbit_hole",
+      "name": "Hobbit Hiding Hole",
+      "region": "hidden",
+      "description": "A cozy little hobbit hole with a round green door. Inside theres a fireplace and a comfy chair and a table with tea and biscuits. But also theres a very suspicious looking cat sitting on the chair. The cat introduces itself as Milo and challenges you to a duel.",
+      "exits": {"west": "hidden_imagination_box"},
+      "items": [],
+      "enemies": ["milo"],
+      "searchable": false,
+      "dev_note": "// milo is based on my cat lol. he drops the best weapon in the game"
+    }
+  ]
+}

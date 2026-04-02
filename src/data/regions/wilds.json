@@ -1,0 +1,102 @@
+{
+  "rooms": [
+    {
+      "id": "wilds_forest_entrance",
+      "name": "Forest Entrance",
+      "region": "wilds",
+      "description": "The trees start getting thicker here and the path from the manor disappears into leaves and stuff. You can hear birds and also something bigger moving around in the woods. Its actually pretty cool looking with the sunlight coming through the branches.",
+      "exits": {"east": "manor_yard", "north": "wilds_northern_forest", "west": "wilds_central_forest"},
+      "items": ["small_potion"],
+      "enemies": ["forest_wolf"],
+      "searchable": false,
+      "dev_note": "// me and jake made this part during lunch"
+    },
+    {
+      "id": "wilds_northern_forest",
+      "name": "Northern Forest",
+      "region": "wilds",
+      "description": "The trees up here are really old and big. Like way bigger than normal trees. Some of them have faces carved into them but they dont look like anyone did it on purpose. The ground is soft with moss and mushrooms grow everywhere.",
+      "exits": {"south": "wilds_forest_entrance", "west": "wilds_clearing", "east": "wilds_stream"},
+      "items": [],
+      "weapons": ["steel_sword"],
+      "enemies": ["forest_spider"],
+      "searchable": true,
+      "search_items": ["small_potion"],
+      "dev_note": "// the trees with faces are based on this cool book I read"
+    },
+    {
+      "id": "wilds_central_forest",
+      "name": "Central Forest",
+      "region": "wilds",
+      "description": "Your right in the middle of the forest now. The canopy is so thick you can barely see the sky. Vines hang down from the branches and the air is warm and humid. Animal tracks crisscross the ground going in every direction.",
+      "exits": {"east": "wilds_forest_entrance", "north": "wilds_clearing", "south": "wastes_path"},
+      "items": ["potion"],
+      "enemies": ["forest_wolf"],
+      "searchable": false,
+      "dev_note": "// the clearing is based on the field behind school"
+    },
+    {
+      "id": "wilds_clearing",
+      "name": "Clearing",
+      "region": "wilds",
+      "description": "You come out into a big open clearing. The grass is tall and golden and theres wildflowers everywhere. In the middle theres a stone circle like the ones in england. The sky is really blue here. It feels safe and nice.",
+      "exits": {"south": "wilds_central_forest", "east": "wilds_northern_forest", "north": "wilds_mountains", "secret_south": "hidden_shroomy_forest"},
+      "items": [],
+      "weapons": ["spear"],
+      "enemies": [],
+      "searchable": true,
+      "search_items": ["potion"],
+      "npcs": ["wilds_guide"],
+      "dev_note": "// this is my favorite part of the wilds. its so peaceful"
+    },
+    {
+      "id": "wilds_southern_forest",
+      "name": "Southern Forest",
+      "region": "wilds",
+      "description": "The south part of the forest is darker and the trees are twisted and bent. Spider webs stretch between the trunks and you can see glowing eyes watching you from the bushes. Its not as friendly down here.",
+      "exits": {"north": "wilds_forest_entrance", "east": "wilds_stream"},
+      "items": [],
+      "weapons": ["hrunting"],
+      "enemies": ["forest_spider"],
+      "searchable": true,
+      "search_items": ["strength_tonic"]
+    },
+    {
+      "id": "wilds_stream",
+      "name": "Stream",
+      "region": "wilds",
+      "description": "A clear stream runs through the forest here. The water is cold and clean and you can see fish swimming in it. Theres a little waterfall and smooth rocks you can sit on. Someone left a fishing pole here but its broken.",
+      "exits": {"west": "wilds_northern_forest", "south": "wilds_southern_forest"},
+      "items": ["potion"],
+      "weapons": [],
+      "enemies": [],
+      "searchable": true,
+      "search_items": ["gungnir"],
+      "dev_note": "// I want to add fishing as a minigame someday"
+    },
+    {
+      "id": "wilds_mountains",
+      "name": "Mountains",
+      "region": "wilds",
+      "description": "The forest ends and the ground starts going up. Rocky cliffs and narrow paths wind up into the mountains. The air gets colder and thinner. You can see the whole forest below you and the manor way in the distance. To the east dark clouds gather over a wasteland.",
+      "exits": {"south": "wilds_clearing", "north": "wilds_mountain_peak", "east": "darkness_abyss"},
+      "items": [],
+      "weapons": [],
+      "enemies": ["forest_wolf"],
+      "searchable": true,
+      "search_items": ["tyrfing"],
+      "dev_note": "// this connects to the darkness region which is really scary"
+    },
+    {
+      "id": "wilds_mountain_peak",
+      "name": "Mountain Peak",
+      "region": "wilds",
+      "description": "Your at the very top of the mountain! You can see everything from up here. The manor, the forest, the dark lands to the east, everything. The wind is crazy strong and theres snow on the rocks. A massive cave entrance leads into the mountain.",
+      "exits": {"south": "wilds_mountains"},
+      "items": ["large_potion"],
+      "enemies": ["mountain_troll"],
+      "searchable": false,
+      "dev_note": "// the troll boss is here!! hes really tough"
+    }
+  ]
+}

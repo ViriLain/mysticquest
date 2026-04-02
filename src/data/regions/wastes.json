@@ -1,0 +1,67 @@
+{
+  "rooms": [
+    {
+      "id": "wastes_path",
+      "name": "Path",
+      "region": "wastes",
+      "description": "A long dusty path stretches before you like something out of a movie. The ground is cracked and dry and nothing grows here. You can see heat waves rising off the ground even though its not that hot. Its like the land itself is tired.",
+      "exits": {"north": "manor_yard", "west": "wilds_central_forest", "south": "wastes_village"},
+      "items": ["small_potion"],
+      "enemies": [],
+      "searchable": false,
+      "dev_note": "// I want this part to feel like lord of the rings"
+    },
+    {
+      "id": "wastes_village",
+      "name": "Empty Village",
+      "region": "wastes",
+      "description": "There used to be people here you can tell. Houses with doors hanging open and market stalls with nothing on them. The well in the center is dry. Wind blows through the empty streets and makes the signs creak. Its sad but also kind of beautiful.",
+      "exits": {"north": "wastes_path", "south": "wastes_desert"},
+      "items": ["potion"],
+      "weapons": [],
+      "enemies": ["wasteland_wraith"],
+      "searchable": true,
+      "search_items": ["large_potion"],
+      "npcs": ["wastes_hermit"],
+      "dev_note": "// I based this on a ghost town I saw in a documentary"
+    },
+    {
+      "id": "wastes_desert",
+      "name": "Desert",
+      "region": "wastes",
+      "description": "Sand as far as you can see in every direction. The sky is this weird orange color that doesnt look right. Every once in a while you see something moving under the sand like a whale in the ocean but made of rock. The wind erases your footprints behind you.",
+      "exits": {"north": "wastes_village", "east": "wastes_wastelands"},
+      "items": [],
+      "weapons": [],
+      "enemies": ["sand_golem"],
+      "searchable": true,
+      "search_items": ["excalibur"],
+      "dev_note": "// the sand golems are really tough be careful"
+    },
+    {
+      "id": "wastes_wastelands",
+      "name": "Wastelands",
+      "region": "wastes",
+      "description": "Beyond the desert the land gets even worse somehow. The ground is black and cracked like burnt toast and nothing moves. The sky is grey and low like a ceiling. In the distance you can see ruins of something that was once magnificent and huge.",
+      "exits": {"west": "wastes_desert", "east": "wastes_ruins"},
+      "items": [],
+      "weapons": [],
+      "enemies": ["wasteland_wraith"],
+      "searchable": true,
+      "search_items": ["vorpal_sword"],
+      "dev_note": "// nobody is going to find this area lol"
+    },
+    {
+      "id": "wastes_ruins",
+      "name": "Ruins",
+      "region": "wastes",
+      "description": "The ruins of an ancient civilization tower above you. Broken columns and crumbling walls carved with stories of people who lived here a thousand years ago. In the center theres a pedestal with something glowing on it. This place feels important like its the end of a journey.",
+      "exits": {"west": "wastes_wastelands"},
+      "items": [],
+      "enemies": ["ruins_guardian"],
+      "searchable": true,
+      "search_items": ["ancient_map"],
+      "dev_note": "// this is the most epic area I think. the ruins guardian is the boss"
+    }
+  ]
+}

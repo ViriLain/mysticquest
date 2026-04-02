@@ -1,0 +1,99 @@
+{
+  "rooms": [
+    {
+      "id": "darkness_abyss",
+      "name": "Dark Abyss",
+      "region": "darkness",
+      "description": "The ground falls away into nothing. You stand at the edge of an absence that extends beyond sight. The air here does not move. It waits. Below, shapes coil in geometries that should not exist. There is no sound except the one you bring with you.",
+      "exits": {"west": "wilds_mountains", "north": "darkness_shadowlands"},
+      "items": [],
+      "enemies": ["grave_wraith"],
+      "searchable": false,
+      "dev_note": "// I didn't write this room"
+    },
+    {
+      "id": "darkness_shadowlands",
+      "name": "Shadowlands",
+      "region": "darkness",
+      "description": "A flat, featureless expanse stretches in every direction. The ground is dark glass that reflects a sky with no stars. Your footsteps produce no echo. Occasionally, you see your reflection move independently of you. It knows you are watching.",
+      "exits": {"south": "darkness_abyss", "east": "darkness_graveyard", "north": "darkness_evil_fort"},
+      "items": ["potion"],
+      "enemies": ["grave_wraith"],
+      "searchable": false,
+      "dev_note": "// who changed the description?"
+    },
+    {
+      "id": "darkness_graveyard",
+      "name": "Graveyard",
+      "region": "darkness",
+      "description": "Headstones arranged in perfect concentric circles. Each bears a name you almost recognize. The dates are wrong. Some have not happened yet. The earth between them is freshly turned, as though the occupants have only recently arrived. Or recently left.",
+      "exits": {"west": "darkness_shadowlands", "south": "darkness_oblivion_gate"},
+      "items": [],
+      "weapons": ["dainsleif"],
+      "enemies": ["grave_wraith"],
+      "searchable": true,
+      "search_items": ["large_potion"],
+      "dev_note": "// something keeps adding rooms when I'm not editing"
+    },
+    {
+      "id": "darkness_evil_fort",
+      "name": "Evil Fort",
+      "region": "darkness",
+      "description": "A structure that was not built but grown. Walls of dark iron twist upward at angles that hurt to follow with your eyes. There are windows, but they look inward, not out. The gate stands open. It has always been open. It was made for entering, not leaving.",
+      "exits": {"south": "darkness_shadowlands", "east": "darkness_shadow_gate", "north": "darkness_evil_dimension"},
+      "items": ["steel_shield"],
+      "enemies": ["shadow_knight"],
+      "searchable": false,
+      "dev_note": "// I don't remember making this fort"
+    },
+    {
+      "id": "darkness_shadow_gate",
+      "name": "Shadow Gate",
+      "region": "darkness",
+      "description": "A gate made of condensed shadow. It pulses with a rhythm that matches your heartbeat exactly. When you approach, it adjusts. When you retreat, it follows. The symbols carved into its frame are letters from an alphabet that predates language.",
+      "exits": {"west": "darkness_evil_fort"},
+      "items": [],
+      "weapons": [],
+      "enemies": ["shadow_knight"],
+      "searchable": true,
+      "search_items": ["anduril"]
+    },
+    {
+      "id": "darkness_oblivion_gate",
+      "name": "Oblivion Gate",
+      "region": "darkness",
+      "description": "The gate is a tear in the fabric of the program. Through it, you can see raw data scrolling past. Character codes, memory addresses, the scaffolding of the world laid bare. The guardian stands before it, assembled from pieces of deleted content.",
+      "exits": {"north": "darkness_graveyard", "south": "darkness_evil_dimension"},
+      "items": [],
+      "enemies": ["oblivion_guardian"],
+      "searchable": true,
+      "search_items": ["dark_crown"],
+      "dev_note": "// this wasn't in my storyboard. how is it here?"
+    },
+    {
+      "id": "darkness_evil_dimension",
+      "name": "Evil Dimension",
+      "region": "darkness",
+      "description": "Reality is thin here. The walls breathe. The floor remembers where you stepped and the impressions remain, filling slowly with something dark. The corruption is dense enough to taste. It tastes like static. Ahead, the stronghold of the King awaits.",
+      "exits": {"south": "darkness_evil_fort", "north": "darkness_oblivion_gate", "east": "darkness_stronghold"},
+      "items": ["large_potion"],
+      "weapons": [],
+      "enemies": [],
+      "searchable": true,
+      "search_items": ["peacemaker"],
+      "dev_note": "// the evil dimension is getting bigger every time I open the file"
+    },
+    {
+      "id": "darkness_stronghold",
+      "name": "Evil Stronghold",
+      "region": "darkness",
+      "description": "The throne room of the Evil King. It is vast and precise, every surface reflecting absolute darkness. The throne is carved from a single piece of obsidian, and on it sits a figure that has been waiting. Not for you specifically. For anyone. For the next host.",
+      "exits": {"west": "darkness_evil_dimension"},
+      "items": [],
+      "weapons": [],
+      "enemies": ["evil_king"],
+      "searchable": false,
+      "dev_note": "// the final boss. i didnt make him this strong. something changed the stats."
+    }
+  ]
+}

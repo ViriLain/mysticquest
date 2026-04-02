@@ -1,0 +1,51 @@
+.crt-container {
+  position: relative;
+  width: 1280px;
+  height: 720px;
+  background: #0a0a0a;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.3), 0 0 40px rgba(0, 255, 0, 0.05);
+  animation: crt-flicker 0.15s infinite alternate;
+  /* Chromatic aberration on all text */
+  text-shadow: 0.5px 0 rgba(255, 0, 0, 0.15), -0.5px 0 rgba(0, 0, 255, 0.15);
+}
+
+/* Scanlines */
+.crt-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* Vignette */
+.crt-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.4) 100%);
+  pointer-events: none;
+  z-index: 101;
+}
+
+@keyframes crt-flicker {
+  0% { opacity: 1.0; }
+  50% { opacity: 0.98; }
+  100% { opacity: 1.0; }
+}
+
+.crt-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99;
+}

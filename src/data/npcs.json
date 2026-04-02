@@ -1,0 +1,389 @@
+{
+  "manor_merchant": {
+    "name": "Dusty Merchant",
+    "description": "A hunched figure in a tattered cloak stands behind a makeshift counter of stacked crates. His eyes glint in the dim light as he beckons you closer.",
+    "match_words": ["merchant", "dusty", "trader", "shop"],
+    "dialogue": {
+      "start": {
+        "text": [
+          "Ah, a visitor! Don't get many of those around here anymore.",
+          "I've got wares if you've got time. Name's Percival, but everyone calls me Dusty."
+        ],
+        "choices": [
+          { "label": "What do you have for sale?", "next": "shop" },
+          { "label": "What happened to this manor?", "next": "manor_lore" },
+          { "label": "Know anything about the cellar?", "next": "cellar_hint" },
+          { "label": "Goodbye.", "next": null }
+        ]
+      },
+      "shop": {
+        "text": [
+          "Best potions this side of the wastes. Brewed 'em myself!",
+          "Here, take this one on the house. First customer in ages deserves a freebie."
+        ],
+        "choices": [
+          { "label": "Thanks!", "next": "shop_thanks", "effect": { "give_item": "potion" } },
+          { "label": "Tell me about the cellar.", "next": "cellar_hint" },
+          { "label": "Goodbye.", "next": null }
+        ]
+      },
+      "shop_thanks": {
+        "text": [
+          "Don't mention it. You look like you'll need it where you're headed."
+        ],
+        "choices": [
+          { "label": "Where am I headed?", "next": "cellar_hint" },
+          { "label": "Goodbye.", "next": null }
+        ]
+      },
+      "manor_lore": {
+        "text": [
+          "This place used to be grand, you know. The Lord of the Manor was a good man.",
+          "Then something crept up from below. From the cellar. The shadows started moving on their own.",
+          "Everyone left. Except me. Someone's gotta keep shop."
+        ],
+        "choices": [
+          { "label": "What's in the cellar?", "next": "cellar_hint" },
+          { "label": "You're brave to stay.", "next": "brave" },
+          { "label": "Goodbye.", "next": null }
+        ]
+      },
+      "brave": {
+        "text": [
+          "Brave? Nah. Just stubborn. And maybe a little bit crazy."
+        ],
+        "choices": [
+          { "label": "Goodbye.", "next": null }
+        ]
+      },
+      "cellar_hint": {
+        "text": [
+          "The cellar... I wouldn't go down there unprepared.",
+          "There's a SHADE down there. Not like a normal shadow -- this thing is alive.",
+          "You'll want a decent weapon and some potions before you even think about it."
+        ],
+        "choices": [
+          { "label": "I have the rusty key. Will that help?", "next": "cellar_key", "condition": { "type": "has_key_item", "value": "rusty_key" } },
+          { "label": "I'll be careful. Thanks.", "next": null },
+          { "label": "Goodbye.", "next": null }
+        ]
+      },
+      "cellar_key": {
+        "text": [
+          "You found the old key! That'll get you past the locked wine racks.",
+          "Be ready for a fight though. The Shade doesn't take kindly to visitors."
+        ],
+        "choices": [
+          { "label": "I'll be ready.", "next": null }
+        ]
+      }
+    }
+  },
+  "wilds_guide": {
+    "name": "Forest Guide",
+    "description": "A weathered woman in green leather sits on a mossy stump, whittling a stick. A hawk perches on her shoulder, watching you with sharp eyes.",
+    "match_words": ["guide", "woman", "ranger", "forest guide"],
+    "dialogue": {
+      "start": {
+        "text": [
+          "Hm. Another adventurer stumbling through my forest.",
+          "I'm Wren. I know every path in these wilds. Ask your questions."
+        ],
+        "choices": [
+          { "label": "How do I get to the mountain?", "next": "mountain_path" },
+          { "label": "Is there anything hidden in this forest?", "next": "secrets" },
+          { "label": "Can you help me?", "next": "help_check" },
+          { "label": "Goodbye.", "next": null }
+        ]
+      },
+      "mountain_path": {
+        "text": [
+          "The mountain lies to the north, past the clearing.",
+          "But the troll up there... he's no joke. Crushed the last three adventurers like tin cans.",
+          "You'll want steel at minimum. And don't try to run -- he's faster than he looks."
+        ],
+        "choices": [
+          { "label": "Any weaknesses?", "next": "troll_weakness" },
+          { "label": "Thanks for the warning.", "next": null }
+        ]
+      },
+      "troll_weakness": {
+        "text": [
+          "Trolls are slow to turn. Get behind him and strike fast.",
+          "Also... I've heard fire makes them flinch. If you find a fire weapon, use it."
+        ],
+        "choices": [
+          { "label": "Got it. Thanks.", "next": null },
+          { "label": "Know any secrets of the forest?", "next": "secrets" }
+        ]
+      },
+      "secrets": {
+        "text": [
+          "Secrets? This forest is FULL of them.",
+          "There's a clearing to the north with old stones. If you look carefully at the south edge...",
+          "Well. Let's just say not every path is obvious."
+        ],
+        "choices": [
+          { "label": "Can you be more specific?", "next": "secret_detail" },
+          { "label": "I'll keep my eyes open.", "next": null }
+        ]
+      },
+      "secret_detail": {
+        "text": [
+          "The mushrooms. Follow the mushrooms. That's all I'll say.",
+          "Some things you have to discover for yourself."
+        ],
+        "choices": [
+          { "label": "Thanks for the hint.", "next": null }
+        ]
+      },
+      "help_check": {
+        "text": [
+          "Help you? Hm. Let me see what you're made of first."
+        ],
+        "choices": [
+          { "label": "[Level 3+] I've proven myself.", "next": "give_map", "condition": { "type": "level_gte", "value": 3 } },
+          { "label": "I'm still getting started.", "next": "not_ready" }
+        ]
+      },
+      "give_map": {
+        "text": [
+          "You've got some experience under your belt. I can see it in your eyes.",
+          "Here. Take this map. I found it in the old ruins years ago.",
+          "It shows paths that aren't on any normal chart. Use it wisely."
+        ],
+        "choices": [
+          { "label": "Thank you, Wren.", "next": null, "effect": { "give_item": "ancient_map", "set_flag": "wren_gave_map" } }
+        ]
+      },
+      "not_ready": {
+        "text": [
+          "Come back when you've got a few battles under your belt.",
+          "The wilds don't respect the inexperienced."
+        ],
+        "choices": [
+          { "label": "I'll be back.", "next": null }
+        ]
+      }
+    }
+  },
+  "wastes_hermit": {
+    "name": "Hermit of the Wastes",
+    "description": "An old man wrapped in sun-bleached rags sits cross-legged in the dust. His eyes are milky white but somehow he seems to see everything.",
+    "match_words": ["hermit", "old man", "sage", "wastes hermit"],
+    "dialogue": {
+      "start": {
+        "text": [
+          "...",
+          "The dust speaks your name. I have been waiting.",
+          "I am what remains when all else is forgotten."
+        ],
+        "choices": [
+          { "label": "Who are you?", "next": "identity" },
+          { "label": "What do you know about the ruins?", "next": "ruins_lore" },
+          { "label": "I need healing.", "next": "heal" },
+          { "label": "Leave him alone.", "next": null }
+        ]
+      },
+      "identity": {
+        "text": [
+          "Names are for those who still belong somewhere.",
+          "I lived in the village once. Before the emptying.",
+          "Now I sit and I listen. The land tells stories if you're patient enough."
+        ],
+        "choices": [
+          { "label": "What happened to the village?", "next": "village_lore" },
+          { "label": "Tell me about the ruins.", "next": "ruins_lore" },
+          { "label": "Goodbye.", "next": null }
+        ]
+      },
+      "village_lore": {
+        "text": [
+          "The people left when the water dried up. But the water didn't dry up on its own.",
+          "Something in the ruins... it DRINKS. It drinks the life from the land.",
+          "The guardian. It was supposed to protect us. Instead it consumed everything."
+        ],
+        "choices": [
+          { "label": "The ruins guardian?", "next": "ruins_lore" },
+          { "label": "Can anything stop it?", "next": "ruins_weakness" },
+          { "label": "Goodbye.", "next": null }
+        ]
+      },
+      "ruins_lore": {
+        "text": [
+          "The ruins are what's left of the First City. Built before memory.",
+          "At its heart sits the Guardian. It was made to protect the city forever.",
+          "But forever is a long time. The Guardian forgot what it was protecting and started destroying instead.",
+          "Ironic, isn't it? The protector became the destroyer."
+        ],
+        "choices": [
+          { "label": "How do I defeat the Guardian?", "next": "ruins_weakness" },
+          { "label": "I need healing before I go.", "next": "heal" },
+          { "label": "I understand. Goodbye.", "next": null }
+        ]
+      },
+      "ruins_weakness": {
+        "text": [
+          "Defeat it? Bold. Very bold.",
+          "The Guardian is stone and magic. Blunt force alone won't work.",
+          "But... it was made by mortal hands. And mortal hands make mistakes.",
+          "Look for the cracks. Literally. Strike where the stone is weakest."
+        ],
+        "choices": [
+          { "label": "I need healing first.", "next": "heal" },
+          { "label": "Thank you, hermit.", "next": null, "effect": { "set_flag": "hermit_wisdom" } }
+        ]
+      },
+      "heal": {
+        "text": [
+          "You carry wounds. Not just of the body.",
+          "But the body I can mend.",
+          "Hold still."
+        ],
+        "choices": [
+          { "label": "[Accept healing]", "next": "healed", "effect": { "heal": 9999, "set_flag": "hermit_healed" } }
+        ]
+      },
+      "healed": {
+        "text": [
+          "There. Whole again. At least on the outside.",
+          "Go carefully. The wastes do not forgive carelessness."
+        ],
+        "choices": [
+          { "label": "Thank you.", "next": null },
+          { "label": "Tell me about the ruins.", "next": "ruins_lore" }
+        ]
+      }
+    }
+  },
+  "hidden_cat_friend": {
+    "name": "Sir Whiskers III",
+    "description": "A rotund tabby cat wearing a tiny top hat and monocle lounges on a velvet cushion. It speaks in a refined accent despite being, you know, a cat.",
+    "match_words": ["cat", "whiskers", "sir whiskers", "tabby"],
+    "dialogue": {
+      "start": {
+        "text": [
+          "Ah, a human! How delightfully pedestrian.",
+          "I am Sir Whiskers the Third, Knight of the Mushroom Realm and personal friend of the great Milo.",
+          "Yes, THAT Milo. Don't act so surprised."
+        ],
+        "choices": [
+          { "label": "You know Milo?", "next": "milo_talk" },
+          { "label": "A talking cat?", "next": "talking_cat" },
+          { "label": "Nice hat.", "next": "hat" },
+          { "label": "I should go.", "next": null }
+        ]
+      },
+      "milo_talk": {
+        "text": [
+          "Know him? We're BESTIES. We went to cat school together.",
+          "He lives in the hobbit hole to the east. Fancies himself a duelist.",
+          "Between you and me, he cheats. Uses the old 'distract with a laser pointer' trick.",
+          "But don't tell him I said that. He gets... bitey."
+        ],
+        "choices": [
+          { "label": "Any tips for fighting him?", "next": "milo_tips" },
+          { "label": "What is this place?", "next": "place_lore" },
+          { "label": "Goodbye, Sir Whiskers.", "next": null }
+        ]
+      },
+      "milo_tips": {
+        "text": [
+          "Tips? Oh my dear human, Milo is unbeatable. He IS the final boss.",
+          "But if you insist on trying... he has a weakness for belly rubs.",
+          "Not that it'll help in combat. But it's adorable."
+        ],
+        "choices": [
+          { "label": "That's... not helpful.", "next": "not_helpful" },
+          { "label": "Thanks anyway.", "next": null }
+        ]
+      },
+      "not_helpful": {
+        "text": [
+          "You want HELPFUL? I'm a cat. We don't DO helpful.",
+          "Fine, fine. Here. Take this fish. It's lucky. Probably.",
+          "I found it under a mushroom and it hasn't stopped glowing since."
+        ],
+        "choices": [
+          { "label": "Take the glowing fish.", "next": "gave_fish", "effect": { "give_item": "potion", "set_flag": "whiskers_gift" } },
+          { "label": "No thanks.", "next": null }
+        ]
+      },
+      "gave_fish": {
+        "text": [
+          "There you go. One glowing fish, free of charge.",
+          "Now if you'll excuse me, I have a nap to get back to. Being this charming is exhausting."
+        ],
+        "choices": [
+          { "label": "Goodbye, Sir Whiskers.", "next": null }
+        ]
+      },
+      "talking_cat": {
+        "text": [
+          "A talking HUMAN? Now THAT'S weird.",
+          "Where I come from, ALL cats talk. It's the dogs that are quiet. As it should be."
+        ],
+        "choices": [
+          { "label": "Fair point.", "next": "start" },
+          { "label": "Goodbye.", "next": null }
+        ]
+      },
+      "hat": {
+        "text": [
+          "You like it? It's vintage. Pre-owned by a very tiny gentleman.",
+          "The monocle is prescription. I'm nearsighted.",
+          "Being a fashionable cat in a mushroom dimension isn't easy, but someone has to do it."
+        ],
+        "choices": [
+          { "label": "You're doing great.", "next": "compliment" },
+          { "label": "Tell me about Milo.", "next": "milo_talk" },
+          { "label": "Goodbye.", "next": null }
+        ]
+      },
+      "compliment": {
+        "text": [
+          "Finally! A human with TASTE!",
+          "You know what, I like you. You may pet me exactly once.",
+          "*purrs aggressively*"
+        ],
+        "choices": [
+          { "label": "[Pet Sir Whiskers]", "next": "petted", "effect": { "set_flag": "petted_whiskers" } },
+          { "label": "I'm good, thanks.", "next": null }
+        ]
+      },
+      "petted": {
+        "text": [
+          "*PURRRRRRR*",
+          "Okay that's enough. I have a reputation to maintain.",
+          "Tell no one of this."
+        ],
+        "choices": [
+          { "label": "Your secret is safe.", "next": null },
+          { "label": "Tell me about Milo.", "next": "milo_talk" }
+        ]
+      },
+      "place_lore": {
+        "text": [
+          "This? This is the Shroom Dimension. Or as I call it, home.",
+          "It exists between the cracks of reality. The mushrooms hold it together.",
+          "Nobody really knows who built it. Some say a kid with a big imagination.",
+          "Personally, I think it's always been here. Waiting for someone fun to show up."
+        ],
+        "choices": [
+          { "label": "A kid built this?", "next": "meta_hint" },
+          { "label": "Interesting.", "next": null }
+        ]
+      },
+      "meta_hint": {
+        "text": [
+          "That's the rumor. A kid who made a whole world in a computer.",
+          "But worlds have a way of becoming... more than what they were made to be.",
+          "Don't think about it too hard. You'll get a headache."
+        ],
+        "choices": [
+          { "label": "...", "next": null }
+        ]
+      }
+    }
+  }
+}

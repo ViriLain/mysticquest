@@ -1,0 +1,71 @@
+{
+  "the_hero": {
+    "trigger_type": "boss_defeated",
+    "trigger_value": "evil_king",
+    "title": "The Hero",
+    "terminal_effect": "gold_glow",
+    "text": [
+      "You have defeated the Evil King.",
+      "The corruption fades from the code.",
+      "The terminal stabilizes.",
+      "",
+      "FILE INTEGRITY: RESTORED",
+      "",
+      "The kid's game is safe again."
+    ]
+  },
+  "the_usurper": {
+    "trigger_type": "choice",
+    "trigger_room": "darkness_stronghold",
+    "trigger_item": "dark_crown",
+    "choice_prompt": "The crown pulses with dark energy.",
+    "choice_options": ["attack", "use dark crown"],
+    "choice_trigger": 1,
+    "title": "The Usurper",
+    "terminal_effect": "red_corruption",
+    "text": [
+      "You place the crown upon your head.",
+      "The darkness flows through you.",
+      "You are the new king now.",
+      "",
+      "LAST MODIFIED: TODAY",
+      "",
+      "You are the new infection."
+    ]
+  },
+  "the_wanderer": {
+    "trigger_type": "exploration",
+    "trigger_room": "wastes_ruins",
+    "trigger_item": "ancient_map",
+    "rooms_percent": 80,
+    "trigger_exit_target": "wanderer_exit",
+    "trigger_exit_dir": "down",
+    "title": "The Wanderer",
+    "terminal_effect": "warm_amber",
+    "text": [
+      "You follow the passage marked on the ancient map.",
+      "It leads somewhere the corruption never reached.",
+      "",
+      "RUNNING EXIT_GAME.BAT...",
+      "",
+      "The kid knew how to leave."
+    ]
+  },
+  "the_enlightened": {
+    "trigger_type": "multi_item_use",
+    "trigger_room": "hidden_diner",
+    "trigger_items": ["red_mushroom", "grey_mushroom", "green_mushroom", "orange_mushroom"],
+    "title": "The Enlightened",
+    "terminal_effect": "psychedelic",
+    "text": [
+      "The colors explode.",
+      "Everything is beautiful.",
+      "The corruption was never real.",
+      "This was always just a kid's game.",
+      "",
+      "// best game ever made - jake",
+      "",
+      "And that's all it needs to be."
+    ]
+  }
+}
