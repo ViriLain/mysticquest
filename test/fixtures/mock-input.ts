@@ -10,11 +10,7 @@ export function freshStore(): GameStore {
   // Tick the boot loop to completion (boot uses timer-based progression)
   for (let i = 0; i < 200 && s.state === 'boot'; i++) {
     s = gameReducer(s, { type: 'TICK', dt: 0.1 });
-    // Drain the typewriter queue between ticks so isTyping() returns false
-    // and the boot state machine can advance past the title-display step.
-    while (s.typewriterQueue.length > 0) {
-      s.lines.push(s.typewriterQueue.shift()!);
-    }
+    flushTypewriter(s);
   }
   return s;
 }
@@ -53,11 +49,10 @@ export function tick(store: GameStore, dt: number = 0.016): GameStore {
  * Drain the typewriter queue so all queued lines are committed to store.lines.
  * Useful before asserting on output.
  */
-export function flushTypewriter(store: GameStore): GameStore {
+export function flushTypewriter(store: GameStore): void {
   // The reducer doesn't drain the queue itself (Game.tsx does that in its
   // animation loop). Tests bypass that by moving queued lines into lines[].
   while (store.typewriterQueue.length > 0) {
     store.lines.push(store.typewriterQueue.shift()!);
   }
-  return store;
 }

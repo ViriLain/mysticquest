@@ -32,6 +32,6 @@ export function expectLine(store: GameStore, substr: string): void {
  */
 export function expectNoLine(store: GameStore, substr: string): void {
   const lines = allLines(store);
-  const found = lines.some(l => l.includes(substr));
-  expect(found, `expected no line containing "${substr}", but found one`).toBe(false);
+  const matched = lines.find(l => l.includes(substr));
+  expect(matched, `expected no line containing "${substr}", but found: "${matched}"`).toBeUndefined();
 }
