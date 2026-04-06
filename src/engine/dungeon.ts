@@ -6,7 +6,7 @@
  */
 
 import type { RoomDef, EnemyDef } from './types';
-import { createRng, rngInt, rngPick } from './rng';
+import { createRng, rngPick } from './rng';
 
 // ---------------------------------------------------------------------------
 // Name pools

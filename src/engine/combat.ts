@@ -1,4 +1,4 @@
-import type { PlayerState, EnemyInstance, CombatState, CombatMessage, CombatResults, WeaponDef, ItemDef, RGBA } from './types';
+import type { PlayerState, CombatState, CombatMessage, CombatResults, WeaponDef, ItemDef } from './types';
 import { totalAttack, totalDefense, addXp, hasItem, removeItem, heal, takeDamage, isDead, hasSkill } from './player';
 
 function randInt(min: number, max: number): number {
@@ -77,7 +77,7 @@ function enemyTurn(
   }
 }
 
-export function createCombat(player: PlayerState, enemyId: string, enemyData: Record<string, any>): CombatState {
+export function createCombat(_player: PlayerState, enemyId: string, enemyData: Record<string, any>): CombatState {
   const edata = enemyData[enemyId];
   return {
     enemy: {

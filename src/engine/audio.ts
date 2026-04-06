@@ -167,7 +167,7 @@ let currentAmbientRegion: string | null = null;
 let ambientNodes: OscillatorNode[] = [];
 let ambientGains: GainNode[] = [];
 let ambientNoiseSource: AudioBufferSourceNode | null = null;
-let ambientNoiseGain: GainNode | null = null;
+
 
 interface RegionSound {
   freqs: number[];
@@ -199,7 +199,6 @@ function stopCurrentAmbient(): void {
   ambientNodes = [];
   ambientGains = [];
   ambientNoiseSource = null;
-  ambientNoiseGain = null;
   setTimeout(() => {
     for (const osc of oldNodes) {
       try { osc.stop(); } catch { /* ignore */ }
@@ -271,7 +270,6 @@ export function setRegionAmbient(region: string | null): void {
       nGain.connect(c.destination);
       source.start();
       ambientNoiseSource = source;
-      ambientNoiseGain = nGain;
     }
 
     ambientNodes = newNodes;

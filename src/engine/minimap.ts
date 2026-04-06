@@ -102,7 +102,7 @@ export function computeMinimapLayout(
   queue.push({ roomId: startRoom, x: 0, y: 0 });
 
   while (queue.length > 0) {
-    const { roomId, x, y } = queue.shift()!;
+    const { roomId, x: _x, y: _y } = queue.shift()!;
     const room = world.rooms[roomId];
     if (!room) continue;
 

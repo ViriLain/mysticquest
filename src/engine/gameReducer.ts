@@ -1,22 +1,22 @@
 import type {
   GameStore, RGBA, PlayerState, WorldState, RoomDef, RegionData,
   WeaponDef, ItemDef, EnemyDef, EndingDef, CombatMessage,
-  NpcDef, JournalEntry, DungeonState, SaveManifest,
+  NpcDef, JournalEntry, GameStateKind,
 } from './types';
 import * as C from './constants';
 import { parseCommand } from './commands';
 import { createPlayer, totalAttack, totalDefense, xpToNextLevel, addXp, addItem, removeItem, hasItem, hasKeyItem, addWeapon, equipWeapon, visitRoom, visitedCount, heal as playerHeal, hasSkill } from './player';
-import { SKILL_TREE, getSkillsByBranch, getSkill, canLearnSkill, findSkillByName } from './skills';
+import { SKILL_TREE, getSkillsByBranch, canLearnSkill, findSkillByName } from './skills';
 import { tryUnlock, getAll as getAllAchievements, isUnlocked } from './achievements';
 import { createCombat, playerAttack, playerDefend, playerFlee, playerUseItem, enemyDefeated } from './combat';
 import { createWorld, loadRegion, getRoom, getExits, getAdjacentRoom, getLivingEnemies, markEnemyDead } from './world';
 import { createEffects, pushEffect, setRegionTint, clearRegionTint, updateRainbowTint } from './effects';
 import { fireEvent } from './events';
 import { checkEndings, getChoicePrompt, getEffectColor } from './endings';
-import { loadManifest, saveToSlot, loadFromSlot, anySlotHasData, renameSlot, getRoomDisplayName, saveManifest } from './save';
+import { loadManifest, saveToSlot, loadFromSlot, anySlotHasData, renameSlot } from './save';
 import { getAsciiLines } from './asciiArt';
-import { generateFloor, generateDungeonWeapon } from './dungeon';
-import { loadSettings, saveSettings, FONT_SIZE_OPTIONS, COLOR_MODE_OPTIONS, TEXT_SPEED_OPTIONS, fontSizeLabel, colorModeLabel, textSpeedLabel, type GameSettings } from './settings';
+import { generateFloor } from './dungeon';
+import { loadSettings, saveSettings, FONT_SIZE_OPTIONS, COLOR_MODE_OPTIONS, TEXT_SPEED_OPTIONS } from './settings';
 import npcsJson from '../data/npcs.json';
 const npcData = npcsJson as Record<string, NpcDef>;
 
@@ -369,11 +369,11 @@ function displayRoom(store: GameStore, roomId: string): void {
 
 function initWorld(): WorldState {
   const world = createWorld();
-  loadRegion(world, manorJson as RegionData);
-  loadRegion(world, wildsJson as RegionData);
-  loadRegion(world, darknessJson as RegionData);
-  loadRegion(world, wastesJson as RegionData);
-  loadRegion(world, hiddenJson as RegionData);
+  loadRegion(world, manorJson as unknown as RegionData);
+  loadRegion(world, wildsJson as unknown as RegionData);
+  loadRegion(world, darknessJson as unknown as RegionData);
+  loadRegion(world, wastesJson as unknown as RegionData);
+  loadRegion(world, hiddenJson as unknown as RegionData);
   return world;
 }
 
