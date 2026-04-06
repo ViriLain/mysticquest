@@ -1,7 +1,8 @@
 import { beforeEach } from 'vitest';
 
 // In-memory localStorage polyfill so save.ts works in node environment.
-class MemoryStorage {
+class MemoryStorage implements Storage {
+  [name: string]: any;
   private store = new Map<string, string>();
   get length() { return this.store.size; }
   clear(): void { this.store.clear(); }
