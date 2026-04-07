@@ -1,3 +1,8 @@
+import * as C from './constants';
+import { addLine, emitSound } from './output';
+import { hasItem, hasKeyItem } from './player';
+import type { GameStore } from './types';
+
 const STORAGE_KEY = 'mysticquest_achievements';
 
 export interface AchievementDef {
@@ -68,4 +73,30 @@ export function getAll(): Array<AchievementDef & { unlocked: boolean }> {
 export function unlockedCount(): number {
   const store = loadStore();
   return Object.values(store).filter(v => v.unlocked).length;
+}
+
+// Store-aware wrapper: unlock an achievement and announce it in the terminal.
+export function checkAchievement(store: GameStore, id: string): void {
+  const name = tryUnlock(id);
+  if (name) {
+    addLine(store, '');
+    addLine(store, `[Achievement Unlocked: ${name}]`, C.CHOICE_COLOR);
+    emitSound(store, 'achievement');
+  }
+}
+
+const COLLECTOR_MUSHROOMS = ['red_mushroom', 'blue_mushroom', 'green_mushroom', 'gold_mushroom'];
+
+// Re-check item-count-driven achievements (fully_loaded, collector).
+export function checkItemAchievements(store: GameStore): void {
+  if (!store.player) return;
+  const invCount = Object.values(store.player.inventory).reduce((a, b) => a + b, 0);
+  const keyCount = Object.keys(store.player.keyItems).length;
+  const weaponCount = store.player.weapons.length;
+  if (invCount + keyCount + weaponCount >= 10) {
+    checkAchievement(store, 'fully_loaded');
+  }
+  if (COLLECTOR_MUSHROOMS.every(m => hasItem(store.player!, m) || hasKeyItem(store.player!, m))) {
+    checkAchievement(store, 'collector');
+  }
 }

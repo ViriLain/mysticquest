@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import type { WorldState, PlayerState } from '../engine/types';
-import { getMinimapLayout } from '../engine/minimap';
+import { getMinimapLayout, pickMinimapLabels } from '../engine/minimap';
 
 interface MinimapProps {
   world: WorldState;
@@ -138,10 +138,32 @@ export default function Minimap({ world, player, pan, onPanChange }: MinimapProp
         ctx.lineWidth = 2;
         ctx.strokeRect(pos.x - half - 2, pos.y - half - 2, NODE_SIZE + 4, NODE_SIZE + 4);
       }
+    }
 
-      // Room name label
-      ctx.fillStyle = 'rgba(200, 200, 200, 0.7)';
-      ctx.fillText(rp.name, pos.x, pos.y + half + 12);
+    const canvasLayout = {
+      ...layout,
+      positions: Object.fromEntries(
+        Object.entries(layout.positions).map(([roomId, room]) => [
+          roomId,
+          {
+            ...room,
+            x: room.x * CELL_SIZE + offsetX,
+            y: room.y * CELL_SIZE + offsetY,
+          },
+        ]),
+      ),
+    };
+
+    for (const label of pickMinimapLabels(canvasLayout, player.currentRoom, text => ctx.measureText(text).width, half)) {
+      ctx.fillStyle = label.roomId === player.currentRoom
+        ? 'rgba(10, 10, 10, 0.85)'
+        : 'rgba(10, 10, 10, 0.72)';
+      ctx.fillRect(label.x, label.y, label.w, label.h);
+
+      ctx.fillStyle = label.roomId === player.currentRoom
+        ? 'rgba(255, 255, 255, 0.95)'
+        : 'rgba(200, 200, 200, 0.78)';
+      ctx.fillText(label.text, label.centerX, label.baselineY);
     }
 
     // Draw legend in top-right

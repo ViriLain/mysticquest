@@ -35,6 +35,9 @@ MysticQuest is played entirely through text commands typed into a terminal. The 
 | `search` | Search the room for hidden items |
 | `attack <enemy>` | Start combat with an enemy |
 | `talk <npc>` | Talk to an NPC in the room |
+| `buy <item>` | Buy an item from the current shop |
+| `sell <item>` | Sell an item to the current shop |
+| `leave` | Exit the shop |
 | `inventory` / `i` | Show your inventory |
 | `stats` | Show your character stats |
 | `skills` | View the skill tree |
@@ -74,6 +77,22 @@ Earn 1 skill point per level-up (14 total). Three branches:
 - Herbalism, Arcane Shield, Buff Mastery, Meditation, Enlightened
 
 Skills must be unlocked in order within each branch. Type `skills` to view the tree and `learn <name>` to unlock.
+
+### Economy
+
+Earn gold by defeating enemies, then spend it at one of three regional shops:
+
+- **Dusty's Wares** (Manor) - potions, shields, rusty dagger
+- **Wren's Camp Supplies** (Wilds) - potions, strength tonics, spear
+- **The Hermit's Trinkets** (Wastes) - large potions, tonics, steel shield
+
+Each merchant offers a "Browse wares" option in their dialogue. Inside the shop:
+- `buy <item>` - purchase from in-stock entries
+- `sell <item>` - sell at half price (no key items, no equipped gear without unequipping)
+- `examine <item>` - get details and price
+- `leave` - return to the room
+
+Stock is finite and does not restock. Spend wisely.
 
 ### Regions
 
@@ -128,6 +147,7 @@ Type `score` in dungeon mode to see your run stats.
 - **13 Achievements** - Tracked globally across all saves
 - **Settings** - Font size, color mode (normal/high contrast/colorblind), text speed, volume controls
 - **Colorblind Mode** - Deuteranopia-friendly color remapping
+- **Dynamic Descriptions** - Rooms display alternate flavor text after their challenges are resolved
 
 ## Tech Stack
 
@@ -137,6 +157,19 @@ Type `score` in dungeon mode to see your run stats.
 - localStorage for saves, settings, and achievements
 - All game data in static JSON files
 - No backend required
+
+## Testing
+
+```bash
+npm test              # run unit + scenario tests once
+npm run test:watch    # watch mode
+npm run test:coverage # generate coverage report
+```
+
+Tests live in `test/`:
+- `test/unit/` - pure module tests (player, combat, world, save, economy, descriptions, icons, matching)
+- `test/scenario/` - end-to-end tests that drive the reducer with text commands
+- `test/fixtures/` - shared helpers (`mock-input`, `assert-output`)
 
 ## Project Structure
 

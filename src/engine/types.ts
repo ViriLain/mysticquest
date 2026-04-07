@@ -12,6 +12,7 @@ export interface WeaponDef {
   region: string;
   description: string;
   match_words?: string[];
+  price?: number;
 }
 
 export interface ItemDef {
@@ -21,6 +22,7 @@ export interface ItemDef {
   value?: number;
   description: string;
   match_words?: string[];
+  price?: number;
 }
 
 export interface EnemyDef {
@@ -29,6 +31,7 @@ export interface EnemyDef {
   attack: number;
   defense: number;
   xp: number;
+  gold?: number;
   loot: string[];
   loot_weapon?: string;
   region: string;
@@ -41,6 +44,8 @@ export interface RoomDef {
   name: string;
   region: string;
   description: string;
+  description_cleared?: string;
+  clear_flag?: string;
   exits: Record<string, string>;
   items?: string[];
   weapons?: string[];
@@ -92,6 +97,7 @@ export interface DialogueEffect {
   heal?: number;
   set_flag?: string;
   remove_item?: string;
+  open_shop?: string;
 }
 
 export interface DialogueChoice {
@@ -142,7 +148,7 @@ export interface SkillDef {
   tier: number;
 }
 
-export type GameStateKind = 'boot' | 'menu' | 'exploring' | 'combat' | 'dialogue' | 'ending' | 'gameover' | 'slot_picker' | 'minimap' | 'settings';
+export type GameStateKind = 'boot' | 'menu' | 'exploring' | 'combat' | 'dialogue' | 'ending' | 'gameover' | 'slot_picker' | 'minimap' | 'settings' | 'shop';
 
 export type RGBA = [number, number, number, number];
 
@@ -158,6 +164,7 @@ export interface PlayerState {
   defense: number;
   level: number;
   xp: number;
+  gold: number;
   currentRoom: string;
   inventory: Record<string, number>;
   weapons: string[];
@@ -183,6 +190,7 @@ export interface EnemyInstance {
   attack: number;
   defense: number;
   xp: number;
+  gold: number;
   loot: string[];
   lootWeapon?: string;
   isBoss: boolean;
@@ -224,7 +232,18 @@ export interface HeaderState {
   hp: number;
   maxHp: number;
   level: number;
+  gold: number;
   weapon: string;
+}
+
+export interface ShopRuntimeState {
+  shopId: string;
+  remainingStock: Record<string, number>;
+}
+
+export interface ShopStateContainer {
+  activeShopId: string | null;
+  runtime: Record<string, ShopRuntimeState>;
 }
 
 export interface GameStore {
@@ -235,6 +254,7 @@ export interface GameStore {
   input: string;
   baseColor: RGBA;
   header: HeaderState;
+  shopState: ShopStateContainer;
   player: PlayerState | null;
   world: WorldState | null;
   combat: CombatState | null;

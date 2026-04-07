@@ -1,4 +1,4 @@
-import type { PlayerState, CombatState, CombatMessage, CombatResults, WeaponDef, ItemDef } from './types';
+import type { CombatMessage, CombatResults, CombatState, EnemyDef, ItemDef, PlayerState, WeaponDef } from './types';
 import { totalAttack, totalDefense, addXp, hasItem, removeItem, heal, takeDamage, isDead, hasSkill } from './player';
 
 type Rng = () => number;
@@ -83,7 +83,7 @@ function enemyTurn(
   }
 }
 
-export function createCombat(_player: PlayerState, enemyId: string, enemyData: Record<string, any>): CombatState {
+export function createCombat(_player: PlayerState, enemyId: string, enemyData: Record<string, EnemyDef>): CombatState {
   const edata = enemyData[enemyId];
   return {
     enemy: {
@@ -92,6 +92,7 @@ export function createCombat(_player: PlayerState, enemyId: string, enemyData: R
       attack: edata.attack,
       defense: edata.defense,
       xp: edata.xp,
+      gold: edata.gold ?? 0,
       loot: edata.loot || [],
       lootWeapon: edata.loot_weapon,
       isBoss: edata.is_boss,

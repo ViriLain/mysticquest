@@ -1,0 +1,182 @@
+import { describe, expect, it } from 'vitest';
+import manorJson from '../../src/data/regions/manor.json';
+import { createPlayer } from '../../src/engine/player';
+import { anySlotHasData, loadFromSlot, loadManifest, saveToSlot } from '../../src/engine/save';
+import type { RegionData } from '../../src/engine/types';
+import { createWorld, loadRegion } from '../../src/engine/world';
+
+describe('save round-trip', () => {
+  it('migrates v1 save to v2 with gold defaulted to 0', () => {
+    const v1Data = {
+      version: 1,
+      player: {
+        hp: 20, max_hp: 30,
+        attack: 5, defense: 2,
+        level: 2, xp: 5,
+        current_room: 'manor_entry',
+        inventory: { potion: 1 },
+        weapons: [],
+        equipped_weapon: null,
+        equipped_shield: null,
+        key_items: {},
+        visited_rooms: { manor_entry: true },
+        searched_rooms: {},
+        fired_events: {},
+        used_items_in_room: {},
+        buff_attack: 0,
+        buff_rounds: 0,
+        route_history: [],
+        journal_entries: [],
+        skill_points: 0,
+        skills: {},
+      },
+      world_state: { rooms: {} },
+    };
+    localStorage.setItem('mysticquest_save_1', JSON.stringify(v1Data));
+
+    const player = createPlayer();
+    const world = createWorld();
+    loadRegion(world, manorJson as RegionData);
+    const result = loadFromSlot(1, player, world);
+
+    expect(result.success).toBe(true);
+    expect(player.gold).toBe(0);
+    expect(player.level).toBe(2);
+    expect(player.inventory.potion).toBe(1);
+  });
+
+  it('persists player state, room runtime state, and manifest metadata through a slot save/load cycle', () => {
+    const world = createWorld();
+    loadRegion(world, manorJson as RegionData);
+
+    const player = createPlayer();
+    player.hp = 22;
+    player.maxHp = 38;
+    player.attack = 7;
+    player.defense = 3;
+    player.level = 2;
+    player.xp = 11;
+    player.currentRoom = 'manor_main_hall';
+    player.inventory = { potion: 2 };
+    player.weapons = ['rusty_dagger'];
+    player.equippedWeapon = 'rusty_dagger';
+    player.equippedShield = 'iron_shield';
+    player.keyItems = { rusty_key: true };
+    player.visitedRooms = { manor_entry: true, manor_main_hall: true };
+    player.searchedRooms = { manor_entry: true };
+    player.firedEvents = { cellar_opened: true };
+    player.usedItemsInRoom = { manor_entry: { potion: true } };
+    player.buffAttack = 3;
+    player.buffRounds = 2;
+    player.routeHistory = ['manor_entry', 'manor_main_hall'];
+    player.journalEntries = [{ type: 'room', text: 'Entered the manor.', timestamp: 123 }];
+    player.skillPoints = 1;
+    player.skills = { iron_will: true };
+
+    world.rooms.manor_entry._dead_enemies = { shadow_rat: true };
+    world.rooms.manor_entry._dynamic_exits = { east: 'secret_room' };
+    world.rooms.manor_entry._ground_loot = ['potion'];
+    world.rooms.manor_entry._ground_weapons = ['iron_sword'];
+
+    expect(anySlotHasData()).toBe(false);
+    expect(saveToSlot(1, player, world)).toBe(true);
+    expect(anySlotHasData()).toBe(true);
+
+    const manifest = loadManifest();
+    expect(manifest.slots[0]?.isEmpty).toBe(false);
+    expect(manifest.slots[0]?.level).toBe(2);
+    expect(manifest.slots[0]?.currentRoom).toBe('manor_main_hall');
+    expect(manifest.slots[0]?.roomName).toBe('Main Hall');
+
+    const loadedWorld = createWorld();
+    loadRegion(loadedWorld, manorJson as RegionData);
+    const loadedPlayer = createPlayer();
+
+    const result = loadFromSlot(1, loadedPlayer, loadedWorld);
+
+    expect(result.success).toBe(true);
+    expect(loadedPlayer.hp).toBe(22);
+    expect(loadedPlayer.maxHp).toBe(38);
+    expect(loadedPlayer.attack).toBe(7);
+    expect(loadedPlayer.defense).toBe(3);
+    expect(loadedPlayer.level).toBe(2);
+    expect(loadedPlayer.xp).toBe(11);
+    expect(loadedPlayer.currentRoom).toBe('manor_main_hall');
+    expect(loadedPlayer.inventory).toEqual({ potion: 2 });
+    expect(loadedPlayer.weapons).toEqual(['rusty_dagger']);
+    expect(loadedPlayer.equippedWeapon).toBe('rusty_dagger');
+    expect(loadedPlayer.equippedShield).toBe('iron_shield');
+    expect(loadedPlayer.keyItems).toEqual({ rusty_key: true });
+    expect(loadedPlayer.visitedRooms).toEqual({ manor_entry: true, manor_main_hall: true });
+    expect(loadedPlayer.searchedRooms).toEqual({ manor_entry: true });
+    expect(loadedPlayer.firedEvents).toEqual({ cellar_opened: true });
+    expect(loadedPlayer.usedItemsInRoom).toEqual({ manor_entry: { potion: true } });
+    expect(loadedPlayer.buffAttack).toBe(3);
+    expect(loadedPlayer.buffRounds).toBe(2);
+    expect(loadedPlayer.routeHistory).toEqual(['manor_entry', 'manor_main_hall']);
+    expect(loadedPlayer.journalEntries).toEqual([{ type: 'room', text: 'Entered the manor.', timestamp: 123 }]);
+    expect(loadedPlayer.skillPoints).toBe(1);
+    expect(loadedPlayer.skills).toEqual({ iron_will: true });
+
+    expect(loadedWorld.rooms.manor_entry._dead_enemies).toEqual({ shadow_rat: true });
+    expect(loadedWorld.rooms.manor_entry._dynamic_exits).toEqual({ east: 'secret_room' });
+    expect(loadedWorld.rooms.manor_entry._ground_loot).toEqual(['potion']);
+    expect(loadedWorld.rooms.manor_entry._ground_weapons).toEqual(['iron_sword']);
+  });
+
+  it('persists removed room loot through a slot save/load cycle', () => {
+    const world = createWorld();
+    loadRegion(world, manorJson as RegionData);
+    const player = createPlayer();
+
+    world.rooms.manor_entry.weapons = [];
+
+    expect(saveToSlot(1, player, world)).toBe(true);
+
+    const loadedWorld = createWorld();
+    loadRegion(loadedWorld, manorJson as RegionData);
+    const loadedPlayer = createPlayer();
+
+    const result = loadFromSlot(1, loadedPlayer, loadedWorld);
+
+    expect(result.success).toBe(true);
+    expect(loadedWorld.rooms.manor_entry.weapons).toEqual([]);
+  });
+
+  it('saves and reloads gold value', () => {
+    const player = createPlayer();
+    player.gold = 42;
+    const world = createWorld();
+    loadRegion(world, manorJson as RegionData);
+    saveToSlot(1, player, world);
+
+    const newPlayer = createPlayer();
+    const newWorld = createWorld();
+    loadRegion(newWorld, manorJson as RegionData);
+    loadFromSlot(1, newPlayer, newWorld);
+
+    expect(newPlayer.gold).toBe(42);
+  });
+
+  it('persists and reloads shop runtime state', () => {
+    const player = createPlayer();
+    const world = createWorld();
+    loadRegion(world, manorJson as RegionData);
+    const shopRuntime = {
+      manor_dusty: {
+        shopId: 'manor_dusty',
+        remainingStock: { '0': 2, '1': 0 },
+      },
+    };
+    saveToSlot(1, player, world, null, shopRuntime);
+
+    const newPlayer = createPlayer();
+    const newWorld = createWorld();
+    loadRegion(newWorld, manorJson as RegionData);
+    const result = loadFromSlot(1, newPlayer, newWorld);
+
+    expect(result.shops).toBeDefined();
+    expect(result.shops?.manor_dusty.remainingStock['0']).toBe(2);
+    expect(result.shops?.manor_dusty.remainingStock['1']).toBe(0);
+  });
+});

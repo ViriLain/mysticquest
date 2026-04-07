@@ -11,6 +11,7 @@
         ],
         "choices": [
           { "label": "What do you have for sale?", "next": "shop" },
+          { "label": "Browse your wares", "next": null, "effect": { "open_shop": "manor_dusty" } },
           { "label": "What happened to this manor?", "next": "manor_lore" },
           { "label": "Know anything about the cellar?", "next": "cellar_hint" },
           { "label": "Goodbye.", "next": null }
@@ -90,6 +91,7 @@
           "I'm Wren. I know every path in these wilds. Ask your questions."
         ],
         "choices": [
+          { "label": "Show me your supplies", "next": null, "effect": { "open_shop": "wilds_wren" } },
           { "label": "How do I get to the mountain?", "next": "mountain_path" },
           { "label": "Is there anything hidden in this forest?", "next": "secrets" },
           { "label": "Can you help me?", "next": "help_check" },
@@ -179,6 +181,7 @@
           "I am what remains when all else is forgotten."
         ],
         "choices": [
+          { "label": "Do you have anything to trade?", "next": null, "effect": { "open_shop": "wastes_hermit" } },
           { "label": "Who are you?", "next": "identity" },
           { "label": "What do you know about the ruins?", "next": "ruins_lore" },
           { "label": "I need healing.", "next": "heal" },

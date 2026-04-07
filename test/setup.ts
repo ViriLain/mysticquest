@@ -1,7 +1,10 @@
 import { beforeEach } from 'vitest';
 
 // In-memory localStorage polyfill so save.ts works in node environment.
+// The Storage DOM interface carries a `[name: string]: any` index signature, so
+// MemoryStorage mirrors that shape to satisfy structural typing.
 class MemoryStorage implements Storage {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- matches lib.dom Storage
   [name: string]: any;
   private store = new Map<string, string>();
   get length() { return this.store.size; }
@@ -14,8 +17,9 @@ class MemoryStorage implements Storage {
   }
 }
 
-(globalThis as any).localStorage = new MemoryStorage();
+const globalWithStorage = globalThis as unknown as { localStorage: Storage };
+globalWithStorage.localStorage = new MemoryStorage();
 
 beforeEach(() => {
-  (globalThis as any).localStorage.clear();
+  globalWithStorage.localStorage.clear();
 });

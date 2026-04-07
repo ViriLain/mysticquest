@@ -46,9 +46,14 @@ The work is sequenced so each phase ends in a passing build with no half-finishe
 ```
 src/
   engine/
-    gameReducer.ts          # SHRINKS from 2,383 → ~250 lines
-                            # createInitialStore, action switch, tick loop,
-                            # top-level state-kind routing only
+    gameReducer.ts          # SHRINKS from 2,383 → ~750 lines (as built).
+                            # Originally spec'd at ~250, but enterRoom,
+                            # startCombat, startDialogue, startEnding, and the
+                            # build*Deps wiring for each state dispatcher can't
+                            # cleanly move without ballooning cross-file deps,
+                            # so they stay. Game lifecycle (startNewGame,
+                            # startContinue, startDungeonMode, startMenu,
+                            # loadDungeonFloor) lives in state/lifecycle.ts.
     handlers/               # NEW — one file per command
       take.ts
       drop.ts
@@ -61,7 +66,8 @@ src/
       talk.ts
       shop.ts               # NEW — buy/sell/examine/leave inside shop state
       help.ts
-      meta.ts               # save/load/journal/map/skills/learn/again/quit
+      info.ts               # journal + score + achievements + skills + stats + inventory
+      meta.ts               # learn (action handlers only; display lives in info.ts)
     state/                  # NEW — per-GameStateKind dispatchers
       exploring.ts          # the relocated handleExploringCommand
       combat.ts             # the relocated handleCombatCommand
@@ -71,8 +77,11 @@ src/
       settings.ts
       gameover.ts
       menu.ts
-      boot.ts
-      ending.ts
+      lifecycle.ts          # NEW — startNewGame/Continue/DungeonMode/Menu, loadDungeonFloor
+                            # (boot.ts and ending.ts were not extracted;
+                            #  updateBoot/updateEnding stayed in gameReducer.ts
+                            #  because they're 20 lines each and tightly
+                            #  coupled to handleTick)
     output.ts               # NEW — addLine, addLineInstant, displayAscii,
                             #       emitSound, clearTerminal, updateHeader,
                             #       hideHeader, applyRegionTint
