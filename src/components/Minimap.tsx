@@ -91,6 +91,42 @@ export default function Minimap({ world, player, pan, onPanChange }: MinimapProp
       ctx.stroke();
     }
 
+    // Draw unexplored-exit stubs as faded dashed lines with a "?" marker.
+    // These point in the in-game direction the player would type — they hint
+    // at where to explore next, not where the room will land on the map.
+    const stubLen = CELL_SIZE * 0.45;
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = 'rgba(180, 220, 140, 0.5)';
+    ctx.lineWidth = 1;
+    for (const stub of layout.unexploredExits) {
+      const a = toCanvas(stub.fromRoomId);
+      if (!a) continue;
+      // Start the stub just outside the node so it doesn't sit under the fill.
+      const startOffset = NODE_SIZE / 2 + 1;
+      const sx = a.x + stub.dx * startOffset;
+      const sy = a.y + stub.dy * startOffset;
+      const ex = a.x + stub.dx * stubLen;
+      const ey = a.y + stub.dy * stubLen;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(ex, ey);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = 'rgba(200, 230, 160, 0.75)';
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const stub of layout.unexploredExits) {
+      const a = toCanvas(stub.fromRoomId);
+      if (!a) continue;
+      const ex = a.x + stub.dx * stubLen;
+      const ey = a.y + stub.dy * stubLen;
+      ctx.fillText('?', ex, ey);
+    }
+    ctx.textBaseline = 'alphabetic';
+
     // Draw route history line
     const route = player.routeHistory;
     if (route.length > 1) {
@@ -182,6 +218,15 @@ export default function Minimap({ world, player, pan, onPanChange }: MinimapProp
       ctx.fillText(label, legendX + 16, legendY);
       legendY += 16;
     }
+
+    // Unexplored-exit legend entry
+    legendY += 4;
+    ctx.fillStyle = 'rgba(200, 230, 160, 0.75)';
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText('?', legendX + 4, legendY);
+    ctx.font = '11px monospace';
+    ctx.fillStyle = 'rgba(200, 200, 200, 0.6)';
+    ctx.fillText('unexplored', legendX + 16, legendY);
 
     // Bottom instructions
     ctx.font = '11px monospace';

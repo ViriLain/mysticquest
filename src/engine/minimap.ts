@@ -13,9 +13,17 @@ export interface RoomEdge {
   to: string;
 }
 
+export interface UnexploredExit {
+  fromRoomId: string;
+  direction: string;
+  dx: number;
+  dy: number;
+}
+
 export interface MinimapLayout {
   positions: Record<string, RoomPosition>;
   edges: RoomEdge[];
+  unexploredExits: UnexploredExit[];
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
 }
 
@@ -81,6 +89,8 @@ export function computeMinimapLayout(
   const occupied = new Set<string>();
   const edgeSet = new Set<string>();
   const edges: RoomEdge[] = [];
+  const unexploredExits: UnexploredExit[] = [];
+  const unexploredSeen = new Set<string>();
 
   // Pick BFS start: prefer manor_entry if visited, else current room
   const startRoom =
@@ -88,7 +98,12 @@ export function computeMinimapLayout(
 
   if (!visitedIds.has(startRoom)) {
     // Nothing to lay out
-    return { positions: {}, edges: [], bounds: { minX: 0, maxX: 0, minY: 0, maxY: 0 } };
+    return {
+      positions: {},
+      edges: [],
+      unexploredExits: [],
+      bounds: { minX: 0, maxX: 0, minY: 0, maxY: 0 },
+    };
   }
 
   // BFS. Positions live in `positions`; we queue room ids only so the visit
@@ -122,7 +137,18 @@ export function computeMinimapLayout(
     const allExits = { ...room.exits, ...room._dynamic_exits };
 
     for (const [dir, targetId] of Object.entries(allExits)) {
-      if (!visitedIds.has(targetId)) continue;
+      if (!visitedIds.has(targetId)) {
+        // Track as unexplored stub (skip secret_* — those are the puzzle).
+        if (!dir.startsWith('secret_')) {
+          const stubKey = `${roomId}|${dir}`;
+          if (!unexploredSeen.has(stubKey)) {
+            unexploredSeen.add(stubKey);
+            const [sdx, sdy] = directionOffset(dir);
+            unexploredExits.push({ fromRoomId: roomId, direction: dir, dx: sdx, dy: sdy });
+          }
+        }
+        continue;
+      }
 
       // Add edge (deduplicated, alphabetical ordering)
       const [a, b] = roomId < targetId ? [roomId, targetId] : [targetId, roomId];
@@ -163,7 +189,7 @@ export function computeMinimapLayout(
     maxY: Math.max(...allPos.map((p) => p.y)),
   };
 
-  return { positions, edges, bounds };
+  return { positions, edges, unexploredExits, bounds };
 }
 
 // --- Caching layer ---
