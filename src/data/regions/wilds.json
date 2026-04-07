@@ -92,6 +92,7 @@
       "name": "Mountain Peak",
       "region": "wilds",
       "description": "Your at the very top of the mountain! You can see everything from up here. The manor, the forest, the dark lands to the east, everything. The wind is crazy strong and theres snow on the rocks. A massive cave entrance leads into the mountain.",
+      "description_cleared": "The Mountain Troll is DEAD!!!! You actually beat him!! He's slumped over by the cave entrance. The wind is still really strong up here but now you feel like the king of the mountain. You can see the whole world from here and nothing scares you.",
       "exits": {"south": "wilds_mountains"},
       "items": ["large_potion"],
       "enemies": ["mountain_troll"],

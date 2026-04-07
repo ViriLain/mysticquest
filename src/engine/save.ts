@@ -1,4 +1,4 @@
-import type { PlayerState, WorldState, SaveSlotMeta, SaveManifest, JournalEntry, DungeonState } from './types';
+import type { DungeonState, JournalEntry, PlayerState, SaveManifest, SaveSlotMeta, ShopRuntimeState, WorldState } from './types';
 
 const MANIFEST_KEY = 'mysticquest_saves_manifest';
 const SLOT_KEY_PREFIX = 'mysticquest_save_';
@@ -8,6 +8,8 @@ const NUM_SLOTS = 3;
 interface RoomState {
   dead_enemies?: Record<string, boolean>;
   dynamic_exits?: Record<string, string>;
+  items?: string[];
+  weapons?: string[];
   ground_loot?: string[];
   ground_weapons?: string[];
 }
@@ -18,6 +20,7 @@ interface SaveData {
     hp: number; max_hp: number;
     attack: number; defense: number;
     level: number; xp: number;
+    gold?: number;
     current_room: string;
     inventory: Record<string, number>;
     weapons: string[];
@@ -35,7 +38,11 @@ interface SaveData {
     skill_points: number;
     skills: Record<string, boolean>;
   };
-  world_state: { rooms: Record<string, RoomState> };
+  world_state: {
+    rooms?: Record<string, RoomState>;
+    dead_enemies?: Record<string, Record<string, boolean>>;
+  };
+  shops?: Record<string, { remainingStock: Record<string, number> }>;
   dungeon?: {
     seed: number;
     floor: number;
@@ -43,6 +50,12 @@ interface SaveData {
     dungeon_perks: string[];
   };
 }
+
+type SaveLoadResult = {
+  success: boolean;
+  dungeon?: SaveData['dungeon'];
+  shops?: Record<string, ShopRuntimeState>;
+};
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -52,7 +65,12 @@ function slotKey(slot: number): string {
   return `${SLOT_KEY_PREFIX}${slot}`;
 }
 
-function serialize(player: PlayerState, world: WorldState, dungeon?: DungeonState | null): string {
+function serialize(
+  player: PlayerState,
+  world: WorldState,
+  shopRuntime: Record<string, ShopRuntimeState>,
+  dungeon?: DungeonState | null,
+): string {
   const rooms: Record<string, RoomState> = {};
   for (const [roomId, room] of Object.entries(world.rooms)) {
     const rs: RoomState = {};
@@ -63,6 +81,14 @@ function serialize(player: PlayerState, world: WorldState, dungeon?: DungeonStat
     }
     if (room._dynamic_exits && Object.keys(room._dynamic_exits).length > 0) {
       rs.dynamic_exits = room._dynamic_exits;
+      hasData = true;
+    }
+    if (room.items) {
+      rs.items = [...room.items];
+      hasData = true;
+    }
+    if (room.weapons) {
+      rs.weapons = [...room.weapons];
       hasData = true;
     }
     if (room._ground_loot && room._ground_loot.length > 0) {
@@ -77,11 +103,12 @@ function serialize(player: PlayerState, world: WorldState, dungeon?: DungeonStat
   }
 
   const data: SaveData = {
-    version: 1,
+    version: 2,
     player: {
       hp: player.hp, max_hp: player.maxHp,
       attack: player.attack, defense: player.defense,
       level: player.level, xp: player.xp,
+      gold: player.gold,
       current_room: player.currentRoom,
       inventory: player.inventory,
       weapons: player.weapons,
@@ -102,6 +129,13 @@ function serialize(player: PlayerState, world: WorldState, dungeon?: DungeonStat
     world_state: { rooms },
   };
 
+  if (shopRuntime && Object.keys(shopRuntime).length > 0) {
+    data.shops = {};
+    for (const [id, runtime] of Object.entries(shopRuntime)) {
+      data.shops[id] = { remainingStock: { ...runtime.remainingStock } };
+    }
+  }
+
   if (dungeon) {
     data.dungeon = {
       seed: dungeon.seed,
@@ -114,10 +148,14 @@ function serialize(player: PlayerState, world: WorldState, dungeon?: DungeonStat
   return JSON.stringify(data);
 }
 
-function deserialize(jsonString: string, player: PlayerState, world: WorldState): { success: boolean; dungeon?: any } {
+function deserialize(
+  jsonString: string,
+  player: PlayerState,
+  world: WorldState,
+): SaveLoadResult {
   try {
     const data: SaveData = JSON.parse(jsonString);
-    if (!data || data.version !== 1) return { success: false };
+    if (!data || (data.version !== 1 && data.version !== 2)) return { success: false };
     const p = data.player;
     player.hp = p.hp;
     player.maxHp = p.max_hp;
@@ -125,6 +163,7 @@ function deserialize(jsonString: string, player: PlayerState, world: WorldState)
     player.defense = p.defense;
     player.level = p.level;
     player.xp = p.xp;
+    player.gold = p.gold ?? 0;
     player.currentRoom = p.current_room;
     player.inventory = p.inventory || {};
     player.weapons = p.weapons || [];
@@ -149,21 +188,30 @@ function deserialize(jsonString: string, player: PlayerState, world: WorldState)
         if (!room) continue;
         if (rs.dead_enemies) room._dead_enemies = rs.dead_enemies;
         if (rs.dynamic_exits) room._dynamic_exits = rs.dynamic_exits;
+        if (rs.items) room.items = rs.items;
+        if (rs.weapons) room.weapons = rs.weapons;
         if (rs.ground_loot) room._ground_loot = rs.ground_loot;
         if (rs.ground_weapons) room._ground_weapons = rs.ground_weapons;
       }
     }
     // Backwards compat: old saves with world_state.dead_enemies
-    const ws = data.world_state as any;
-    if (ws?.dead_enemies && !ws.rooms) {
-      for (const [roomId, enemies] of Object.entries(ws.dead_enemies as Record<string, Record<string, boolean>>)) {
+    if (data.world_state.dead_enemies && !data.world_state.rooms) {
+      for (const [roomId, enemies] of Object.entries(data.world_state.dead_enemies)) {
         if (world.rooms[roomId]) {
           world.rooms[roomId]._dead_enemies = enemies;
         }
       }
     }
 
-    return { success: true, dungeon: data.dungeon };
+    let shops: Record<string, ShopRuntimeState> | undefined;
+    if (data.shops) {
+      shops = {};
+      for (const [id, shop] of Object.entries(data.shops)) {
+        shops[id] = { shopId: id, remainingStock: { ...shop.remainingStock } };
+      }
+    }
+
+    return { success: true, dungeon: data.dungeon, shops };
   } catch {
     return { success: false };
   }
@@ -236,9 +284,15 @@ export function saveManifest(manifest: SaveManifest): void {
 // Slot operations
 // ---------------------------------------------------------------------------
 
-export function saveToSlot(slot: number, player: PlayerState, world: WorldState, dungeon?: DungeonState | null): boolean {
+export function saveToSlot(
+  slot: number,
+  player: PlayerState,
+  world: WorldState,
+  dungeon?: DungeonState | null,
+  shopRuntime: Record<string, ShopRuntimeState> = {},
+): boolean {
   try {
-    const json = serialize(player, world, dungeon);
+    const json = serialize(player, world, shopRuntime, dungeon);
     localStorage.setItem(slotKey(slot), json);
 
     // Update manifest metadata
@@ -259,7 +313,11 @@ export function saveToSlot(slot: number, player: PlayerState, world: WorldState,
   }
 }
 
-export function loadFromSlot(slot: number, player: PlayerState, world: WorldState): { success: boolean; dungeon?: any } {
+export function loadFromSlot(
+  slot: number,
+  player: PlayerState,
+  world: WorldState,
+): SaveLoadResult {
   const content = localStorage.getItem(slotKey(slot));
   if (!content) return { success: false };
   return deserialize(content, player, world);

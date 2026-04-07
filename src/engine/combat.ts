@@ -1,15 +1,21 @@
-import type { PlayerState, EnemyInstance, CombatState, CombatMessage, CombatResults, WeaponDef, ItemDef, RGBA } from './types';
+import type { CombatMessage, CombatResults, CombatState, EnemyDef, ItemDef, PlayerState, WeaponDef } from './types';
 import { totalAttack, totalDefense, addXp, hasItem, removeItem, heal, takeDamage, isDead, hasSkill } from './player';
 
-function randInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+type Rng = () => number;
+
+function defaultRng(): number {
+  return Math.random();
 }
 
-function calcDamage(atk: number, def: number, critChance = 10, critMult = 2): [number, boolean] {
-  const variance = randInt(-2, 2);
+function randInt(min: number, max: number, rng: Rng): number {
+  return Math.floor(rng() * (max - min + 1)) + min;
+}
+
+function calcDamage(atk: number, def: number, rng: Rng, critChance = 10, critMult = 2): [number, boolean] {
+  const variance = randInt(-2, 2, rng);
   let damage = Math.max(1, atk - def + variance);
   let crit = false;
-  if (randInt(1, 100) <= critChance) {
+  if (randInt(1, 100, rng) <= critChance) {
     damage = Math.floor(damage * critMult);
     crit = true;
   }
@@ -43,7 +49,8 @@ function enemyTurn(
   combat: CombatState,
   player: PlayerState,
   itemData: Record<string, ItemDef>,
-  messages: CombatMessage[]
+  messages: CombatMessage[],
+  rng: Rng,
 ): void {
   if (combat.finished) return;
 
@@ -53,13 +60,12 @@ function enemyTurn(
     messages.push({ text: `${combat.enemy.name} unleashes a special attack!`, color: [1, 0.3, 0.3, 1] });
   }
 
-  // Lucky dodge check
-  if (hasSkill(player, 'lucky') && Math.random() < 0.15) {
+  if (hasSkill(player, 'lucky') && rng() < 0.15) {
     messages.push({ text: 'You dodge the attack!', color: [0.4, 1, 0.4, 1] });
     return;
   }
 
-  const [rawDamage, crit] = calcDamage(atk, getPlayerDefense(player, itemData));
+  const [rawDamage, crit] = calcDamage(atk, getPlayerDefense(player, itemData), rng);
   if (crit) {
     messages.push({ text: 'The enemy lands a CRITICAL HIT!', color: [1, 0.2, 0.2, 1] });
   }
@@ -77,7 +83,7 @@ function enemyTurn(
   }
 }
 
-export function createCombat(player: PlayerState, enemyId: string, enemyData: Record<string, any>): CombatState {
+export function createCombat(_player: PlayerState, enemyId: string, enemyData: Record<string, EnemyDef>): CombatState {
   const edata = enemyData[enemyId];
   return {
     enemy: {
@@ -86,6 +92,7 @@ export function createCombat(player: PlayerState, enemyId: string, enemyData: Re
       attack: edata.attack,
       defense: edata.defense,
       xp: edata.xp,
+      gold: edata.gold ?? 0,
       loot: edata.loot || [],
       lootWeapon: edata.loot_weapon,
       isBoss: edata.is_boss,
@@ -102,7 +109,8 @@ export function playerAttack(
   combat: CombatState,
   player: PlayerState,
   weaponData: Record<string, WeaponDef>,
-  itemData: Record<string, ItemDef>
+  itemData: Record<string, ItemDef>,
+  rng: Rng = defaultRng,
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
@@ -114,7 +122,7 @@ export function playerAttack(
   if (hasSkill(player, 'assassin')) critMult = 3;
   let effectiveDef = combat.enemy.defense;
   if (hasSkill(player, 'precision')) { atk += 3; effectiveDef = Math.max(0, effectiveDef - 2); }
-  const [damage, crit] = calcDamage(atk, effectiveDef, critChance, critMult);
+  const [damage, crit] = calcDamage(atk, effectiveDef, rng, critChance, critMult);
   let finalDamage = damage;
   if (hasSkill(player, 'berserker') && player.hp < player.maxHp * 0.3) {
     finalDamage = Math.floor(damage * 1.15);
@@ -135,7 +143,7 @@ export function playerAttack(
   }
 
   messages.push({ text: `${combat.enemy.name} has ${combat.enemy.hp} HP remaining.`, color: [0.6, 0.6, 0.6, 1] });
-  enemyTurn(combat, player, itemData, messages);
+  enemyTurn(combat, player, itemData, messages, rng);
   tickBuffs(player, messages);
   applyMeditation(player, messages);
   return messages;
@@ -144,13 +152,14 @@ export function playerAttack(
 export function playerDefend(
   combat: CombatState,
   player: PlayerState,
-  itemData: Record<string, ItemDef>
+  itemData: Record<string, ItemDef>,
+  rng: Rng = defaultRng,
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
   player.defending = true;
   messages.push({ text: 'You brace yourself for the next attack.', color: [0.6, 0.8, 1, 1] });
-  enemyTurn(combat, player, itemData, messages);
+  enemyTurn(combat, player, itemData, messages, rng);
   tickBuffs(player, messages);
   applyMeditation(player, messages);
   return messages;
@@ -159,19 +168,20 @@ export function playerDefend(
 export function playerFlee(
   combat: CombatState,
   player: PlayerState,
-  itemData: Record<string, ItemDef>
+  itemData: Record<string, ItemDef>,
+  rng: Rng = defaultRng,
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
   const fleeThreshold = hasSkill(player, 'quick_feet') ? 90 : 70;
-  const roll = randInt(1, 100);
+  const roll = randInt(1, 100, rng);
   if (roll <= fleeThreshold) {
     combat.finished = true;
     combat.fled = true;
     messages.push({ text: 'You flee from combat!', color: [0.8, 0.8, 0.2, 1] });
   } else {
     messages.push({ text: 'You fail to escape!', color: [1, 0.4, 0.4, 1] });
-    enemyTurn(combat, player, itemData, messages);
+    enemyTurn(combat, player, itemData, messages, rng);
   }
   tickBuffs(player, messages);
   applyMeditation(player, messages);
@@ -182,7 +192,8 @@ export function playerUseItem(
   combat: CombatState,
   player: PlayerState,
   itemId: string,
-  itemData: Record<string, ItemDef>
+  itemData: Record<string, ItemDef>,
+  rng: Rng = defaultRng,
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
@@ -216,7 +227,7 @@ export function playerUseItem(
     messages.push({ text: `You drink ${item.name}! +${item.value} Attack for ${rounds} rounds.`, color: [1, 0.6, 0.2, 1] });
   }
 
-  enemyTurn(combat, player, itemData, messages);
+  enemyTurn(combat, player, itemData, messages, rng);
   tickBuffs(player, messages);
   applyMeditation(player, messages);
   return messages;

@@ -1,0 +1,34 @@
+{
+  "manor_dusty": {
+    "owner_npc": "manor_merchant",
+    "name": "Dusty's Wares",
+    "buys": "all",
+    "stock": [
+      { "id": "small_potion", "qty": 5 },
+      { "id": "potion", "qty": 3 },
+      { "id": "iron_shield", "qty": 1 },
+      { "id": "rusty_dagger", "qty": 1, "type": "weapon" }
+    ]
+  },
+  "wilds_wren": {
+    "owner_npc": "wilds_guide",
+    "name": "Wren's Camp Supplies",
+    "buys": "all",
+    "stock": [
+      { "id": "potion", "qty": 4 },
+      { "id": "large_potion", "qty": 1 },
+      { "id": "strength_tonic", "qty": 2 },
+      { "id": "spear", "qty": 1, "type": "weapon" }
+    ]
+  },
+  "wastes_hermit": {
+    "owner_npc": "wastes_hermit",
+    "name": "The Hermit's Trinkets",
+    "buys": "all",
+    "stock": [
+      { "id": "large_potion", "qty": 2 },
+      { "id": "strength_tonic", "qty": 3 },
+      { "id": "steel_shield", "qty": 1 }
+    ]
+  }
+}

@@ -88,6 +88,7 @@
       "name": "Evil Stronghold",
       "region": "darkness",
       "description": "The throne room of the Evil King. It is vast and precise, every surface reflecting absolute darkness. The throne is carved from a single piece of obsidian, and on it sits a figure that has been waiting. Not for you specifically. For anyone. For the next host.",
+      "description_cleared": "The throne is empty. The obsidian is just stone now, dull and ordinary. Whatever was waiting here is gone. The darkness in the corners feels like just shadow. You stand in front of the empty throne and the room is so quiet you can hear your own breathing. It is over.",
       "exits": {"west": "darkness_evil_dimension"},
       "items": [],
       "weapons": [],

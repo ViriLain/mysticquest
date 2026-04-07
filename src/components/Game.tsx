@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { createInitialStore, gameReducer } from '../engine/gameReducer';
 import { updateEffects } from '../engine/effects';
+import { captureVisualSnapshot, didVisualSnapshotChange, shouldRunReducerTick } from '../engine/frame-loop';
 import { rgbaToCSS, MENU_COLOR, MENU_SELECTED_COLOR, MENU_DISABLED_COLOR, MENU_OPTIONS } from '../engine/constants';
 import { anySlotHasData } from '../engine/save';
 import {
@@ -62,15 +63,19 @@ export default function Game() {
       lastTimeRef.current = time;
 
       const store = storeRef.current;
+      const frameSettings = loadSettings();
+      const beforeVisual = captureVisualSnapshot(store);
+      let shouldRender = false;
 
-      // Update effects in-place
-      updateEffects(store.effects, dt);
+      if (store.effects.active.length > 0) {
+        updateEffects(store.effects, dt);
+      }
 
       // Typewriter advancement
       if (store.typewriterQueue.length > 0) {
         twTimerRef.current += dt;
         let advanced = false;
-        const twDelay = typewriterDelay(loadSettings().textSpeed);
+        const twDelay = typewriterDelay(frameSettings.textSpeed);
         const effectiveDelay = twDelay || 0.001; // instant mode: flush all at once
         while (twTimerRef.current >= effectiveDelay && store.typewriterQueue.length > 0) {
           twTimerRef.current -= effectiveDelay;
@@ -84,7 +89,10 @@ export default function Game() {
           }
         }
         // Typewriter click (throttled — only on some chars to avoid spam)
-        if (advanced && Math.random() < 0.3 && loadSettings().typewriterSound && loadSettings().sfxEnabled) sfxTypewriter();
+        if (advanced) {
+          shouldRender = true;
+          if (Math.random() < 0.3 && frameSettings.typewriterSound && frameSettings.sfxEnabled) sfxTypewriter();
+        }
       }
 
       // Cursor blink
@@ -93,15 +101,19 @@ export default function Game() {
         curVisible = !curVisible;
         cursorVisibleRef.current = curVisible;
         curTimer = 0;
+        shouldRender = true;
       }
 
-      // Run the reducer for boot/ending/game logic
-      const updated = gameReducer(store, { type: 'TICK', dt });
-      storeRef.current = updated;
+      let updated = store;
+      if (shouldRunReducerTick(store)) {
+        updated = gameReducer(store, { type: 'TICK', dt });
+        storeRef.current = updated;
+      }
 
       // Pre-compute per-line glitch/jitter offsets (avoids Math.random in render)
       const fx = updated.effects;
       if (fx.glitch > 0 || fx.jitter > 0) {
+        shouldRender = true;
         lineEffectsRef.current = updated.lines.map(() => {
           let offsetX = 0;
           let skip = false;
@@ -122,7 +134,7 @@ export default function Game() {
 
       // Drain sound queue (respecting SFX setting)
       if (updated.soundQueue.length > 0) {
-        const sfxOn = loadSettings().sfxEnabled;
+        const sfxOn = frameSettings.sfxEnabled;
         for (const name of updated.soundQueue) {
           if (sfxOn) {
             const fn = SFX_MAP[name];
@@ -136,10 +148,16 @@ export default function Game() {
       const targetRegion = updated.currentRegion || (updated.state === 'menu' || updated.state === 'boot' ? 'menu' : null);
       if (targetRegion !== prevRegionRef.current) {
         prevRegionRef.current = targetRegion;
-        setRegionAmbient(loadSettings().ambientEnabled ? targetRegion : null);
+        setRegionAmbient(frameSettings.ambientEnabled ? targetRegion : null);
       }
 
-      forceRender();
+      if (didVisualSnapshotChange(beforeVisual, captureVisualSnapshot(updated))) {
+        shouldRender = true;
+      }
+
+      if (shouldRender) {
+        forceRender();
+      }
       animRef.current = requestAnimationFrame(loop);
     };
 
@@ -232,7 +250,7 @@ export default function Game() {
     lineHeight: '1.25',
   };
 
-  const hasSave = anySlotHasData();
+  const hasSave = store.state === 'menu' ? anySlotHasData() : true;
 
   return (
     <div className="crt-container" onClick={focusInput}>
@@ -280,7 +298,7 @@ export default function Game() {
         {store.header.title && store.header.maxHp > 0 && (
           <>
             <div className="terminal-header" style={{ color: headerColor }}>
-              {`${store.header.title}    HP:${store.header.hp}/${store.header.maxHp}  LVL:${store.header.level}  ${store.header.weapon}`}
+              {`${store.header.title}    HP:${store.header.hp}/${store.header.maxHp}  LVL:${store.header.level}  G:${store.header.gold}  ${store.header.weapon}`}
             </div>
             <div className="terminal-separator" style={{ backgroundColor: dimColor }} />
           </>
@@ -362,12 +380,13 @@ export default function Game() {
 
         {/* Slot Picker overlay */}
         {store.state === 'slot_picker' && store.slotManifest && (
-          <div className="menu-overlay">
-            <div className="menu-title">
+          <div className="menu-overlay slot-picker-overlay">
+            <div className="menu-title slot-picker-title">
               <span style={{ color: colorCSS(MENU_COLOR) }}>
                 {store.slotPickerMode === 'save' ? 'SAVE GAME' : 'LOAD GAME'}
               </span>
             </div>
+            <div className="slot-picker-panel">
             {store.slotManifest.slots.map((slot, i) => {
               const isSelected = i === store.slotPickerSelected;
               const color = isSelected ? MENU_SELECTED_COLOR : [0.5, 0.8, 0.5, 0.8] as RGBA;
@@ -387,15 +406,15 @@ export default function Game() {
                 : slot.name;
 
               return (
-                <div key={i} className="menu-option" style={{ color: colorCSS(color) }}>
-                  {prefix}{displayName}
-                  <br />
-                  {'   '}{info}
+                <div key={i} className={`menu-option slot-picker-option${isSelected ? ' is-selected' : ''}`} style={{ color: colorCSS(color) }}>
+                  <div>{prefix}{displayName}</div>
+                  <div className="slot-picker-meta">{'   '}{info}</div>
                 </div>
               );
             })}
-            <div style={{ marginTop: '2em', color: colorCSS([0.5, 0.5, 0.5, 0.8] as RGBA) }}>
+            <div className="slot-picker-help" style={{ color: colorCSS([0.5, 0.5, 0.5, 0.8] as RGBA) }}>
               {'  '}Enter: Select{'  '}R: Rename{'  '}Esc: Back
+            </div>
             </div>
           </div>
         )}

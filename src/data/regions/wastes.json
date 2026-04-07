@@ -56,6 +56,7 @@
       "name": "Ruins",
       "region": "wastes",
       "description": "The ruins of an ancient civilization tower above you. Broken columns and crumbling walls carved with stories of people who lived here a thousand years ago. In the center theres a pedestal with something glowing on it. This place feels important like its the end of a journey.",
+      "description_cleared": "The Ruins Guardian is gone. The columns and walls still tower over you but theyre quiet now. The pedestal in the center is just a pedestal again. You stand in the middle of the ruins and for a second you can almost hear the people who used to live here. Then the wind takes it away.",
       "exits": {"west": "wastes_wastelands"},
       "items": [],
       "enemies": ["ruins_guardian"],

@@ -72,6 +72,8 @@
   padding-left: 60px;
   font-family: 'IBM Plex Mono', 'Courier New', monospace;
   font-size: 16px;
+  background: rgba(10, 10, 10, 0.97);
+  z-index: 40;
 }
 
 .menu-title {
@@ -82,6 +84,47 @@
   padding: 4px 0;
   cursor: pointer;
   white-space: pre;
+}
+
+.slot-picker-overlay {
+  align-items: center;
+  padding-left: 20px;
+}
+
+.slot-picker-title {
+  margin-bottom: 1.5em;
+}
+
+.slot-picker-panel {
+  min-width: min(760px, 92%);
+  max-width: 92%;
+  padding: 24px 28px;
+  border: 1px solid rgba(90, 160, 90, 0.4);
+  background: linear-gradient(180deg, rgba(6, 12, 6, 0.96), rgba(10, 10, 10, 0.98));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+.slot-picker-option {
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-left: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.slot-picker-option.is-selected {
+  border-left-color: rgba(210, 255, 140, 0.9);
+  background: rgba(120, 170, 80, 0.12);
+}
+
+.slot-picker-meta {
+  margin-top: 4px;
+  opacity: 0.78;
+}
+
+.slot-picker-help {
+  margin-top: 1.5em;
+  padding-top: 12px;
+  border-top: 1px solid rgba(90, 160, 90, 0.25);
 }
 
 /* Minimap overlay */

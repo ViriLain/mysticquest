@@ -1,0 +1,40 @@
+import type { GameStore } from '../types';
+import * as C from '../constants';
+import { addLine } from '../output';
+
+export function handleHelp(store: GameStore): void {
+  addLine(store, '');
+  addLine(store, C.SEPARATOR, C.SEPARATOR_COLOR);
+  addLine(store, '=== COMMANDS ===', C.STAT_COLOR);
+  addLine(store, '');
+  addLine(store, ' MOVEMENT', C.EXITS_COLOR);
+  addLine(store, '  go <direction>  - Move (north/south/east/west/up/down)', C.HELP_COLOR);
+  addLine(store, '  look (l)        - Look around the current room', C.HELP_COLOR);
+  addLine(store, '  search          - Search for hidden items', C.HELP_COLOR);
+  addLine(store, '');
+  addLine(store, ' ITEMS', C.ITEM_COLOR);
+  addLine(store, '  take <item>     - Pick up an item or weapon', C.HELP_COLOR);
+  addLine(store, '  use <item>      - Use consumable or equip gear', C.HELP_COLOR);
+  addLine(store, '  use <item> x3   - Use an item multiple times', C.HELP_COLOR);
+  addLine(store, '  drop <item>     - Drop an item', C.HELP_COLOR);
+  addLine(store, '  examine <thing> - Inspect an item, weapon, or enemy', C.HELP_COLOR);
+  addLine(store, '');
+  addLine(store, ' COMBAT', C.COMBAT_COLOR);
+  addLine(store, '  attack <enemy>  - Attack an enemy in the room', C.HELP_COLOR);
+  addLine(store, '');
+  addLine(store, ' INFO', C.STAT_COLOR);
+  addLine(store, '  inventory (i)   - Show your inventory', C.HELP_COLOR);
+  addLine(store, '  stats           - Show your stats', C.HELP_COLOR);
+  addLine(store, '  journal         - View your adventure journal', C.HELP_COLOR);
+  addLine(store, '  map             - Open the area map', C.HELP_COLOR);
+  addLine(store, '  talk <npc>      - Talk to someone in the room', C.HELP_COLOR);
+  addLine(store, '  skills          - View the skill tree', C.HELP_COLOR);
+  addLine(store, '  learn <skill>   - Learn a new skill', C.HELP_COLOR);
+  addLine(store, '  achievements    - View achievements', C.HELP_COLOR);
+  addLine(store, '  save / load     - Save or load your game', C.HELP_COLOR);
+  addLine(store, '  again (g)       - Repeat your last command', C.HELP_COLOR);
+  addLine(store, '  help (?)        - Show this help', C.HELP_COLOR);
+  addLine(store, '');
+  addLine(store, 'Shortcuts: n/s/e/w/u/d for directions, Tab to autocomplete', [0.5, 0.5, 0.5, 0.8]);
+  addLine(store, C.SEPARATOR, C.SEPARATOR_COLOR);
+}

@@ -19,6 +19,17 @@ export interface MinimapLayout {
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
 }
 
+export interface MinimapLabelPlacement {
+  roomId: string;
+  text: string;
+  centerX: number;
+  baselineY: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 /** Map exit direction names to (dx, dy) offsets. */
 function directionOffset(dir: string): [number, number] {
   switch (dir) {
@@ -80,8 +91,9 @@ export function computeMinimapLayout(
     return { positions: {}, edges: [], bounds: { minX: 0, maxX: 0, minY: 0, maxY: 0 } };
   }
 
-  // BFS
-  const queue: Array<{ roomId: string; x: number; y: number }> = [];
+  // BFS. Positions live in `positions`; we queue room ids only so the visit
+  // order matches the map in one place.
+  const queue: string[] = [];
   const enqueued = new Set<string>();
 
   const placeRoom = (roomId: string, x: number, y: number) => {
@@ -99,18 +111,14 @@ export function computeMinimapLayout(
 
   placeRoom(startRoom, 0, 0);
   enqueued.add(startRoom);
-  queue.push({ roomId: startRoom, x: 0, y: 0 });
+  queue.push(startRoom);
 
   while (queue.length > 0) {
-    const { roomId, x, y } = queue.shift()!;
+    const roomId = queue.shift()!;
     const room = world.rooms[roomId];
     if (!room) continue;
 
-    // Use the placed position (may differ from requested due to collision resolution)
-    const pos = positions[roomId];
-    const px = pos.x;
-    const py = pos.y;
-
+    const { x: px, y: py } = positions[roomId];
     const allExits = { ...room.exits, ...room._dynamic_exits };
 
     for (const [dir, targetId] of Object.entries(allExits)) {
@@ -128,10 +136,8 @@ export function computeMinimapLayout(
       if (!enqueued.has(targetId)) {
         enqueued.add(targetId);
         const [dx, dy] = directionOffset(dir);
-        const nx = px + dx;
-        const ny = py + dy;
-        placeRoom(targetId, nx, ny);
-        queue.push({ roomId: targetId, x: nx, y: ny });
+        placeRoom(targetId, px + dx, py + dy);
+        queue.push(targetId);
       }
     }
   }
@@ -174,4 +180,65 @@ export function getMinimapLayout(
   cachedLayout = computeMinimapLayout(world, player);
   cachedVisitedCount = count;
   return cachedLayout;
+}
+
+export function pickMinimapLabels(
+  layout: MinimapLayout,
+  currentRoom: string,
+  measureText: (text: string) => number,
+  nodeHalf: number,
+): MinimapLabelPlacement[] {
+  const labels: MinimapLabelPlacement[] = [];
+  const labelHeight = 10;
+  const labelGap = 3;
+  const placements = Object.values(layout.positions).sort((a, b) => {
+    if (a.roomId === currentRoom) return -1;
+    if (b.roomId === currentRoom) return 1;
+    return a.roomId.localeCompare(b.roomId);
+  });
+
+  const makePlacement = (room: RoomPosition, pass: number): MinimapLabelPlacement => {
+    const width = measureText(room.name);
+    const centeredX = room.x;
+    const above = room.roomId === currentRoom || (room.x + room.y + pass) % 2 === 0;
+    const baselineY = above
+      ? room.y - nodeHalf - 8 - pass * 12
+      : room.y + nodeHalf + 12 + pass * 12;
+    const boxY = above ? baselineY - labelHeight + 2 : baselineY - labelHeight + 2;
+    return {
+      roomId: room.roomId,
+      text: room.name,
+      centerX: centeredX,
+      baselineY,
+      x: centeredX - width / 2 - labelGap,
+      y: boxY - labelGap,
+      w: width + labelGap * 2,
+      h: labelHeight + labelGap * 2,
+    };
+  };
+
+  const overlaps = (candidate: MinimapLabelPlacement): boolean =>
+    labels.some(label =>
+      candidate.x < label.x + label.w &&
+      candidate.x + candidate.w > label.x &&
+      candidate.y < label.y + label.h &&
+      candidate.y + candidate.h > label.y
+    );
+
+  for (const room of placements) {
+    let chosen: MinimapLabelPlacement | null = null;
+    for (let pass = 0; pass < 4; pass++) {
+      const candidate = makePlacement(room, pass);
+      if (!overlaps(candidate)) {
+        chosen = candidate;
+        break;
+      }
+    }
+    if (!chosen) {
+      chosen = makePlacement(room, 4);
+    }
+    labels.push(chosen);
+  }
+
+  return labels;
 }

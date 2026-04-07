@@ -8,6 +8,7 @@ export function createPlayer(startRoom = 'manor_entry'): PlayerState {
     defense: 2,
     level: 1,
     xp: 0,
+    gold: 0,
     currentRoom: startRoom,
     inventory: {},
     weapons: [],
