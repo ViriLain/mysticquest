@@ -1,12 +1,12 @@
 import * as C from '../constants';
-import { addItem } from '../player';
 import { addLine } from '../output';
-import type { GameStore, ItemDef } from '../types';
-import { getRoom } from '../world';
+import { addDynamicExit, getRoom } from '../world';
+import type { GameStore, ItemDef, WeaponDef } from '../types';
 
 export function handleSearch(
   store: GameStore,
   itemData: Record<string, ItemDef>,
+  weaponData: Record<string, WeaponDef>,
 ): void {
   if (!store.player || !store.world) return;
   const room = getRoom(store.world, store.player.currentRoom);
@@ -26,16 +26,30 @@ export function handleSearch(
 
   let foundSomething = false;
   if (room.search_items) {
-    for (const itemId of room.search_items) {
-      const item = itemData[itemId];
-      if (item) {
-        addItem(store.player, itemId, itemData);
-        if (itemId === 'ancient_map') {
-          store.player.firedEvents.took_ancient_map = true;
-        }
-        addLine(store, `You find a ${item.name}!`, C.LOOT_COLOR);
+    for (const id of room.search_items) {
+      // Reveal as ground loot/weapons so the player still has to `take` them.
+      // Weapons live in a separate list because the take handler dispatches
+      // weapons and items through different pickup paths.
+      if (weaponData[id]) {
+        if (!room._ground_weapons) room._ground_weapons = [];
+        if (!room._ground_weapons.includes(id)) room._ground_weapons.push(id);
+        addLine(store, `You find a ${weaponData[id].name}.`, C.LOOT_COLOR);
+        foundSomething = true;
+      } else if (itemData[id]) {
+        if (!room._ground_loot) room._ground_loot = [];
+        if (!room._ground_loot.includes(id)) room._ground_loot.push(id);
+        addLine(store, `You find a ${itemData[id].name}.`, C.LOOT_COLOR);
         foundSomething = true;
       }
+    }
+  }
+
+  // Reveal any hidden exits as real (dynamic) exits.
+  if (room.secret_exits) {
+    for (const [dir, target] of Object.entries(room.secret_exits)) {
+      addDynamicExit(store.world, room.id, dir, target);
+      addLine(store, `You find a hidden passage leading ${dir}.`, C.LOOT_COLOR);
+      foundSomething = true;
     }
   }
 

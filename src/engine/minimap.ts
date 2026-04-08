@@ -13,9 +13,17 @@ export interface RoomEdge {
   to: string;
 }
 
+export interface UnexploredExit {
+  fromRoomId: string;
+  direction: string;
+  dx: number;
+  dy: number;
+}
+
 export interface MinimapLayout {
   positions: Record<string, RoomPosition>;
   edges: RoomEdge[];
+  unexploredExits: UnexploredExit[];
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
 }
 
@@ -39,7 +47,7 @@ function directionOffset(dir: string): [number, number] {
     case 'west':  return [-1, 0];
     case 'up':    return [0, -1];
     case 'down':  return [0, 1];
-    default:      return [0, 1]; // secret_south, descend, etc.
+    default:      return [0, 1]; // descend and other unmapped directions
   }
 }
 
@@ -81,6 +89,8 @@ export function computeMinimapLayout(
   const occupied = new Set<string>();
   const edgeSet = new Set<string>();
   const edges: RoomEdge[] = [];
+  const unexploredExits: UnexploredExit[] = [];
+  const unexploredSeen = new Set<string>();
 
   // Pick BFS start: prefer manor_entry if visited, else current room
   const startRoom =
@@ -88,7 +98,12 @@ export function computeMinimapLayout(
 
   if (!visitedIds.has(startRoom)) {
     // Nothing to lay out
-    return { positions: {}, edges: [], bounds: { minX: 0, maxX: 0, minY: 0, maxY: 0 } };
+    return {
+      positions: {},
+      edges: [],
+      unexploredExits: [],
+      bounds: { minX: 0, maxX: 0, minY: 0, maxY: 0 },
+    };
   }
 
   // BFS. Positions live in `positions`; we queue room ids only so the visit
@@ -122,7 +137,18 @@ export function computeMinimapLayout(
     const allExits = { ...room.exits, ...room._dynamic_exits };
 
     for (const [dir, targetId] of Object.entries(allExits)) {
-      if (!visitedIds.has(targetId)) continue;
+      if (!visitedIds.has(targetId)) {
+        // Track as unexplored stub. Hidden exits are stored on
+        // `room.secret_exits` until search reveals them, so they never reach
+        // this iteration before discovery.
+        const stubKey = `${roomId}|${dir}`;
+        if (!unexploredSeen.has(stubKey)) {
+          unexploredSeen.add(stubKey);
+          const [sdx, sdy] = directionOffset(dir);
+          unexploredExits.push({ fromRoomId: roomId, direction: dir, dx: sdx, dy: sdy });
+        }
+        continue;
+      }
 
       // Add edge (deduplicated, alphabetical ordering)
       const [a, b] = roomId < targetId ? [roomId, targetId] : [targetId, roomId];
@@ -163,22 +189,45 @@ export function computeMinimapLayout(
     maxY: Math.max(...allPos.map((p) => p.y)),
   };
 
-  return { positions, edges, bounds };
+  return { positions, edges, unexploredExits, bounds };
 }
 
 // --- Caching layer ---
 
 let cachedLayout: MinimapLayout | null = null;
 let cachedVisitedCount = 0;
+let cachedDynamicExitCount = 0;
+
+/**
+ * Sum the number of dynamic (revealed) exits across visited rooms. Used as a
+ * cheap fingerprint so the layout cache invalidates after `search` exposes a
+ * hidden passage even though the visited-room count is unchanged.
+ */
+function countDynamicExits(world: WorldState, player: PlayerState): number {
+  let count = 0;
+  for (const id of Object.keys(player.visitedRooms)) {
+    const ex = world.rooms[id]?._dynamic_exits;
+    if (ex) count += Object.keys(ex).length;
+  }
+  return count;
+}
 
 export function getMinimapLayout(
   world: WorldState,
   player: PlayerState,
 ): MinimapLayout {
-  const count = Object.keys(player.visitedRooms).length;
-  if (cachedLayout && cachedVisitedCount === count) return cachedLayout;
+  const visitedCount = Object.keys(player.visitedRooms).length;
+  const dynamicCount = countDynamicExits(world, player);
+  if (
+    cachedLayout &&
+    cachedVisitedCount === visitedCount &&
+    cachedDynamicExitCount === dynamicCount
+  ) {
+    return cachedLayout;
+  }
   cachedLayout = computeMinimapLayout(world, player);
-  cachedVisitedCount = count;
+  cachedVisitedCount = visitedCount;
+  cachedDynamicExitCount = dynamicCount;
   return cachedLayout;
 }
 

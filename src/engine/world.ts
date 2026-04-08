@@ -26,6 +26,7 @@ export function loadRegion(world: WorldState, data: RegionData): void {
     world.rooms[room.id] = {
       ...room,
       exits: { ...room.exits },
+      secret_exits: room.secret_exits ? { ...room.secret_exits } : undefined,
       items: room.items ? [...room.items] : undefined,
       weapons: room.weapons ? [...room.weapons] : undefined,
       enemies: room.enemies ? [...room.enemies] : undefined,

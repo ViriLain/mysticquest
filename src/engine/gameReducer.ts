@@ -593,6 +593,11 @@ function handleKeyPressed(s: GameStore, key: string): void {
     return;
   }
 
+  if (s.state === 'quit') {
+    // Game is over — ignore all input.
+    return;
+  }
+
   if (s.state === 'menu') {
     handleMenuKey(s, key);
     return;
@@ -730,13 +735,10 @@ function handleMenuKey(s: GameStore, key: string): void {
     startDungeonMode: () => startDungeonMode(s),
     openSettings: () => openSettings(s, 'menu'),
   });
-  if (key === 'Enter' && C.MENU_OPTIONS[s.menuSelected] === 'QUIT') {
-    startMenu(s);
-  }
 }
 
 function handleTextInput(s: GameStore, text: string): void {
-  if (s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'minimap' || s.state === 'settings') return;
+  if (s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'minimap' || s.state === 'settings' || s.state === 'quit') return;
   if (s.state === 'slot_picker' && s.renamingSlot) {
     s.renameBuffer += text;
     return;

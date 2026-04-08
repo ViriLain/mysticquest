@@ -33,6 +33,18 @@ export function findAllMatches(name: string, ids: string[], dataTable: Record<st
   return partial;
 }
 
+/**
+ * If the target looks plural, return its singular form for retry matching.
+ * Callers use this as a fallback when the original target matches nothing and
+ * as a "take/use all matching" signal when multiple matches come back.
+ */
+export function singularize(target: string): string | null {
+  if (target.length > 2 && target.endsWith('s') && !target.endsWith('ss')) {
+    return target.slice(0, -1);
+  }
+  return null;
+}
+
 export function resolveOrDisambiguate(
   store: GameStore,
   matches: string[],

@@ -1,6 +1,6 @@
 import type { GameStore } from '../types';
 import * as C from '../constants';
-import { emitSound } from '../output';
+import { addLine, clearTerminal, emitSound, hideHeader } from '../output';
 import { anySlotHasData } from '../save';
 
 export interface MenuDeps {
@@ -34,7 +34,14 @@ export function handleMenuKey(s: GameStore, key: string, deps: MenuDeps): void {
       emitSound(s, 'menuSelect');
       deps.openSettings();
     } else if (option === 'QUIT') {
-      // No-op in web — handled by wrapper.
+      emitSound(s, 'menuSelect');
+      clearTerminal(s);
+      hideHeader(s);
+      addLine(s, '');
+      addLine(s, 'Thanks for playing MysticQuest.', C.MENU_COLOR);
+      addLine(s, '');
+      addLine(s, 'You can close this browser tab.', C.HELP_COLOR);
+      s.state = 'quit';
     }
   }
 }

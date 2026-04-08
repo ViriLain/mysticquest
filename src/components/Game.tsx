@@ -206,6 +206,23 @@ export default function Game() {
     return () => window.removeEventListener('focus', focusInput);
   }, [focusInput]);
 
+  // Quit side effects: dev-only server shutdown, then best-effort window close.
+  //
+  // Order matters. `window.close()` is synchronous — if the browser honors it
+  // (often the case in Chrome when the tab has a script context), the
+  // document tears down immediately and any pending `fetch()` gets cancelled.
+  // `navigator.sendBeacon()` is designed for exactly this "fire during
+  // unload" case: the browser queues the POST before the document dies, so
+  // it reaches the dev server even if the tab closes on the next tick.
+  // The dev shutdown is a no-op in production (the endpoint doesn't exist).
+  useEffect(() => {
+    if (store.state !== 'quit') return;
+    if (import.meta.env.DEV) {
+      try { navigator.sendBeacon('/__shutdown'); } catch { /* ignore */ }
+    }
+    try { window.close(); } catch { /* ignore */ }
+  }, [store.state]);
+
   // Key handler
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Tab') {
@@ -218,7 +235,7 @@ export default function Game() {
 
     const s = storeRef.current;
     const isSpecialKey = ['ArrowUp', 'ArrowDown', 'Enter', 'Backspace', 'Escape'].includes(e.key);
-    const isNonTextState = s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'slot_picker' || s.state === 'minimap' || s.state === 'settings';
+    const isNonTextState = s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'slot_picker' || s.state === 'minimap' || s.state === 'settings' || s.state === 'quit';
 
     if (isSpecialKey || isNonTextState) {
       e.preventDefault();
@@ -336,8 +353,8 @@ export default function Game() {
           )}
         </div>
 
-        {/* Input area (hidden during boot/menu/ending/slot_picker/minimap) */}
-        {store.state !== 'boot' && store.state !== 'menu' && store.state !== 'ending' && store.state !== 'slot_picker' && store.state !== 'minimap' && store.state !== 'settings' && (
+        {/* Input area (hidden during boot/menu/ending/slot_picker/minimap/settings/quit) */}
+        {store.state !== 'boot' && store.state !== 'menu' && store.state !== 'ending' && store.state !== 'slot_picker' && store.state !== 'minimap' && store.state !== 'settings' && store.state !== 'quit' && (
           <>
             <div className="terminal-input-separator" style={{ backgroundColor: dimColor }} />
             <div className="terminal-input-area" style={{ color: headerColor }}>

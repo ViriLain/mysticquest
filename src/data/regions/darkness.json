@@ -5,7 +5,7 @@
       "name": "Dark Abyss",
       "region": "darkness",
       "description": "The ground falls away into nothing. You stand at the edge of an absence that extends beyond sight. The air here does not move. It waits. Below, shapes coil in geometries that should not exist. There is no sound except the one you bring with you.",
-      "exits": {"west": "wilds_mountains", "north": "darkness_shadowlands"},
+      "exits": {"east": "wilds_mountains", "north": "darkness_shadowlands"},
       "items": [],
       "enemies": ["grave_wraith"],
       "searchable": false,

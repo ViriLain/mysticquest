@@ -24,6 +24,23 @@ describe('ui state helpers', () => {
     expect(started).toBe(1);
   });
 
+  it('menu QUIT transitions to the quit state with a goodbye line', () => {
+    const store = createInitialStore();
+    // MENU_OPTIONS = ['NEW GAME', 'CONTINUE', 'DUNGEON MODE', 'SETTINGS', 'QUIT']
+    store.menuSelected = 4;
+
+    handleMenuKey(store, 'Enter', {
+      startNewGame: () => {},
+      openSlotPicker: () => {},
+      startDungeonMode: () => {},
+      openSettings: () => {},
+    });
+
+    expect(store.state).toBe('quit');
+    const lines = [...store.lines, ...store.typewriterQueue].map(line => line.text);
+    expect(lines).toContain('Thanks for playing MysticQuest.');
+  });
+
   it('openSettings and openSlotPicker update state fields', () => {
     const store = createInitialStore();
 

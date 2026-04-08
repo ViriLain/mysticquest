@@ -27,6 +27,30 @@ describe('world helpers', () => {
     });
   });
 
+  it('omits secret_exits from getExits until they are revealed', () => {
+    const world = createWorld();
+    loadRegion(world, {
+      rooms: [
+        {
+          id: 'r1',
+          name: 'r1',
+          region: 'test',
+          description: '',
+          exits: { north: 'r2' },
+          secret_exits: { down: 'r3' },
+        },
+      ],
+    } as RegionData);
+
+    expect(getExits(world, 'r1')).toEqual({ north: 'r2' });
+
+    // Once revealed via addDynamicExit (what handleSearch does), the exit
+    // becomes a real one and shows up.
+    addDynamicExit(world, 'r1', 'down', 'r3');
+
+    expect(getExits(world, 'r1')).toEqual({ north: 'r2', down: 'r3' });
+  });
+
   it('marks enemies dead and filters them from living-enemy lookups', () => {
     const world = createWorld();
     loadRegion(world, manorJson as RegionData);
