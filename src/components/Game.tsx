@@ -353,8 +353,8 @@ export default function Game() {
           )}
         </div>
 
-        {/* Input area (hidden during boot/menu/ending/slot_picker/minimap) */}
-        {store.state !== 'boot' && store.state !== 'menu' && store.state !== 'ending' && store.state !== 'slot_picker' && store.state !== 'minimap' && store.state !== 'settings' && (
+        {/* Input area (hidden during boot/menu/ending/slot_picker/minimap/settings/quit) */}
+        {store.state !== 'boot' && store.state !== 'menu' && store.state !== 'ending' && store.state !== 'slot_picker' && store.state !== 'minimap' && store.state !== 'settings' && store.state !== 'quit' && (
           <>
             <div className="terminal-input-separator" style={{ backgroundColor: dimColor }} />
             <div className="terminal-input-area" style={{ color: headerColor }}>

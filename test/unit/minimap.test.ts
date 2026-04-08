@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   computeMinimapLayout,
+  getMinimapLayout,
   pickMinimapLabels,
   type MinimapLayout,
 } from '../../src/engine/minimap';
+import { addDynamicExit } from '../../src/engine/world';
 import type { PlayerState, RoomDef, WorldState } from '../../src/engine/types';
 
 const layout: MinimapLayout = {
@@ -153,5 +155,26 @@ describe('computeMinimapLayout', () => {
     const result = computeMinimapLayout(world, player);
 
     expect(result.unexploredExits).toHaveLength(0);
+  });
+});
+
+describe('getMinimapLayout', () => {
+  it('invalidates cache when a dynamic exit is revealed mid-session', () => {
+    // Use a unique room id so this test does not collide with the
+    // module-level cache state from earlier tests in the file.
+    const world = makeWorld([
+      makeRoom('cache_test_clearing', 'wilds', { north: 'cache_test_visible' }),
+      makeRoom('cache_test_visible', 'wilds', { south: 'cache_test_clearing' }),
+    ]);
+    const player = makePlayer('cache_test_clearing', ['cache_test_clearing']);
+
+    const before = getMinimapLayout(world, player);
+    expect(before.unexploredExits.some(s => s.direction === 'down')).toBe(false);
+
+    // Search reveals a hidden passage. Visited room count is unchanged.
+    addDynamicExit(world, 'cache_test_clearing', 'down', 'cache_test_hidden');
+
+    const after = getMinimapLayout(world, player);
+    expect(after.unexploredExits.some(s => s.direction === 'down')).toBe(true);
   });
 });

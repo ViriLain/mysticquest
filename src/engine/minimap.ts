@@ -196,15 +196,38 @@ export function computeMinimapLayout(
 
 let cachedLayout: MinimapLayout | null = null;
 let cachedVisitedCount = 0;
+let cachedDynamicExitCount = 0;
+
+/**
+ * Sum the number of dynamic (revealed) exits across visited rooms. Used as a
+ * cheap fingerprint so the layout cache invalidates after `search` exposes a
+ * hidden passage even though the visited-room count is unchanged.
+ */
+function countDynamicExits(world: WorldState, player: PlayerState): number {
+  let count = 0;
+  for (const id of Object.keys(player.visitedRooms)) {
+    const ex = world.rooms[id]?._dynamic_exits;
+    if (ex) count += Object.keys(ex).length;
+  }
+  return count;
+}
 
 export function getMinimapLayout(
   world: WorldState,
   player: PlayerState,
 ): MinimapLayout {
-  const count = Object.keys(player.visitedRooms).length;
-  if (cachedLayout && cachedVisitedCount === count) return cachedLayout;
+  const visitedCount = Object.keys(player.visitedRooms).length;
+  const dynamicCount = countDynamicExits(world, player);
+  if (
+    cachedLayout &&
+    cachedVisitedCount === visitedCount &&
+    cachedDynamicExitCount === dynamicCount
+  ) {
+    return cachedLayout;
+  }
   cachedLayout = computeMinimapLayout(world, player);
-  cachedVisitedCount = count;
+  cachedVisitedCount = visitedCount;
+  cachedDynamicExitCount = dynamicCount;
   return cachedLayout;
 }
 
