@@ -121,20 +121,25 @@ describe('computeMinimapLayout', () => {
     expect(east.dy).toBe(0);
   });
 
-  it('omits secret exits from unexplored stubs to preserve hidden paths', () => {
+  it('does not record stubs for hidden secret_exits (those live off room.exits)', () => {
+    const clearing: RoomDef = {
+      id: 'clearing',
+      name: 'clearing',
+      region: 'wilds',
+      description: '',
+      exits: { north: 'visible_room' },
+      secret_exits: { down: 'hidden_room' },
+    };
     const world = makeWorld([
-      makeRoom('clearing', 'wilds', {
-        north: 'visible_room',
-        secret_south: 'hidden_room',
-      }),
+      clearing,
       makeRoom('visible_room', 'wilds', { south: 'clearing' }),
-      makeRoom('hidden_room', 'hidden', { north: 'clearing' }),
+      makeRoom('hidden_room', 'hidden', { up: 'clearing' }),
     ]);
     const player = makePlayer('clearing', ['clearing']);
 
     const result = computeMinimapLayout(world, player);
 
-    expect(result.unexploredExits.some(s => s.direction === 'secret_south')).toBe(false);
+    expect(result.unexploredExits.some(s => s.direction === 'down')).toBe(false);
     expect(result.unexploredExits.some(s => s.direction === 'north')).toBe(true);
   });
 

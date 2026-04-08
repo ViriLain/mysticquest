@@ -47,7 +47,7 @@ function directionOffset(dir: string): [number, number] {
     case 'west':  return [-1, 0];
     case 'up':    return [0, -1];
     case 'down':  return [0, 1];
-    default:      return [0, 1]; // secret_south, descend, etc.
+    default:      return [0, 1]; // descend and other unmapped directions
   }
 }
 
@@ -138,14 +138,14 @@ export function computeMinimapLayout(
 
     for (const [dir, targetId] of Object.entries(allExits)) {
       if (!visitedIds.has(targetId)) {
-        // Track as unexplored stub (skip secret_* — those are the puzzle).
-        if (!dir.startsWith('secret_')) {
-          const stubKey = `${roomId}|${dir}`;
-          if (!unexploredSeen.has(stubKey)) {
-            unexploredSeen.add(stubKey);
-            const [sdx, sdy] = directionOffset(dir);
-            unexploredExits.push({ fromRoomId: roomId, direction: dir, dx: sdx, dy: sdy });
-          }
+        // Track as unexplored stub. Hidden exits are stored on
+        // `room.secret_exits` until search reveals them, so they never reach
+        // this iteration before discovery.
+        const stubKey = `${roomId}|${dir}`;
+        if (!unexploredSeen.has(stubKey)) {
+          unexploredSeen.add(stubKey);
+          const [sdx, sdy] = directionOffset(dir);
+          unexploredExits.push({ fromRoomId: roomId, direction: dir, dx: sdx, dy: sdy });
         }
         continue;
       }

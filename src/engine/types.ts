@@ -47,6 +47,13 @@ export interface RoomDef {
   description_cleared?: string;
   clear_flag?: string;
   exits: Record<string, string>;
+  /**
+   * Hidden exits that only become real after the player searches the room.
+   * Until search reveals them, they are invisible to display, autocomplete,
+   * and the minimap. After reveal they are copied into `_dynamic_exits` and
+   * behave like any other exit.
+   */
+  secret_exits?: Record<string, string>;
   items?: string[];
   weapons?: string[];
   enemies?: string[];
@@ -148,7 +155,7 @@ export interface SkillDef {
   tier: number;
 }
 
-export type GameStateKind = 'boot' | 'menu' | 'exploring' | 'combat' | 'dialogue' | 'ending' | 'gameover' | 'slot_picker' | 'minimap' | 'settings' | 'shop';
+export type GameStateKind = 'boot' | 'menu' | 'exploring' | 'combat' | 'dialogue' | 'ending' | 'gameover' | 'slot_picker' | 'minimap' | 'settings' | 'shop' | 'quit';
 
 export type RGBA = [number, number, number, number];
 

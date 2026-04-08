@@ -86,7 +86,7 @@ export function handleExploringCommand(
   } else if (verb === 'drop') {
     handleDrop(store, target, deps.itemData, deps.weaponData, deps.refreshHeader);
   } else if (verb === 'search') {
-    handleSearch(store, deps.itemData);
+    handleSearch(store, deps.itemData, deps.weaponData);
   } else if (verb === 'attack') {
     handleAttack(store, target, deps.enemyData, deps.startCombat);
   } else if (verb === 'talk') {

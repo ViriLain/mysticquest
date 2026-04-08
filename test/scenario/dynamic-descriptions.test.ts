@@ -40,6 +40,7 @@ describe('dynamic room descriptions', () => {
     expectLine(store, 'glass dome');
 
     store = input(store, 'search');
+    store = input(store, 'take map');
     expect(store.player!.keyItems.ancient_map).toBe(true);
     expect(store.player!.firedEvents.took_ancient_map).toBe(true);
 

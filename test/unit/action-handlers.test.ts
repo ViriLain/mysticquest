@@ -50,6 +50,58 @@ describe('action handlers', () => {
     expect(journal).toContain('Found Rusty Dagger');
   });
 
+  it('take with a plural target picks up every matching item', () => {
+    const store = createInitialStore();
+    const world = createWorld();
+    loadRegion(world, {
+      rooms: [
+        {
+          id: 'grove',
+          name: 'Grove',
+          region: 'test',
+          description: '',
+          exits: {},
+          items: ['red_mushroom', 'grey_mushroom'],
+        },
+      ],
+    } as RegionData);
+    store.world = world;
+    store.player = createPlayer('grove');
+
+    handleTake(store, 'mushrooms', itemData, weaponData, () => {}, () => {}, () => {});
+
+    expect(store.player?.keyItems.red_mushroom).toBe(true);
+    expect(store.player?.keyItems.grey_mushroom).toBe(true);
+    expect(world.rooms.grove.items).toEqual([]);
+  });
+
+  it('take with a singular target still disambiguates when there are multiple matches', () => {
+    const store = createInitialStore();
+    const world = createWorld();
+    loadRegion(world, {
+      rooms: [
+        {
+          id: 'grove',
+          name: 'Grove',
+          region: 'test',
+          description: '',
+          exits: {},
+          items: ['red_mushroom', 'grey_mushroom'],
+        },
+      ],
+    } as RegionData);
+    store.world = world;
+    store.player = createPlayer('grove');
+
+    handleTake(store, 'mushroom', itemData, weaponData, () => {}, () => {}, () => {});
+
+    // Neither mushroom picked up — the player was asked to choose.
+    expect(store.player?.keyItems.red_mushroom).toBeUndefined();
+    expect(store.player?.keyItems.grey_mushroom).toBeUndefined();
+    expect(world.rooms.grove.items).toEqual(['red_mushroom', 'grey_mushroom']);
+    expect(store.typewriterQueue.map(line => line.text)).toContain('Which item do you want to take?');
+  });
+
   it('drop removes an equipped weapon and clears the header through refreshHeader', () => {
     const store = makeStoryStore();
     store.player!.weapons = ['rusty_dagger'];
@@ -93,14 +145,146 @@ describe('action handlers', () => {
     expect(store.player?.inventory.potion).toBeUndefined();
   });
 
-  it('search marks the room searched and grants hidden items', () => {
+  it('use with a plural target uses every matching key item in the room', () => {
+    const store = makeStoryStore();
+    store.state = 'exploring';
+    store.player!.keyItems = {
+      red_mushroom: true,
+      grey_mushroom: true,
+      green_mushroom: true,
+      orange_mushroom: true,
+    };
+    const checked: string[] = [];
+
+    handleUse(store, 'mushrooms', itemData, weaponData, () => {}, itemId => {
+      checked.push(itemId);
+    });
+
+    const used = store.player!.usedItemsInRoom.manor_entry ?? {};
+    expect(used.red_mushroom).toBe(true);
+    expect(used.grey_mushroom).toBe(true);
+    expect(used.green_mushroom).toBe(true);
+    expect(used.orange_mushroom).toBe(true);
+    expect(checked).toEqual(['red_mushroom', 'grey_mushroom', 'green_mushroom', 'orange_mushroom']);
+  });
+
+  it('use bails out of the plural loop once an ending starts', () => {
+    const store = makeStoryStore();
+    store.state = 'exploring';
+    store.player!.keyItems = { red_mushroom: true, grey_mushroom: true };
+    const checked: string[] = [];
+
+    handleUse(store, 'mushrooms', itemData, weaponData, () => {}, itemId => {
+      checked.push(itemId);
+      // Pretend the first item triggered an ending — state flips away.
+      store.state = 'ending';
+    });
+
+    // Only the first match should have been processed before the bail.
+    expect(checked).toEqual(['red_mushroom']);
+    expect(store.player!.usedItemsInRoom.manor_entry?.grey_mushroom).toBeUndefined();
+  });
+
+  it('use with a singular target still disambiguates when there are multiple matches', () => {
+    const store = makeStoryStore();
+    store.player!.keyItems = { red_mushroom: true, grey_mushroom: true };
+
+    handleUse(store, 'mushroom', itemData, weaponData, () => {}, () => {});
+
+    expect(store.player!.usedItemsInRoom.manor_entry).toBeUndefined();
+    expect(store.typewriterQueue.map(line => line.text)).toContain('Which item do you want to use?');
+  });
+
+  it('search marks the room searched and drops hidden items as ground loot', () => {
     const store = makeStoryStore();
 
-    handleSearch(store, itemData);
+    handleSearch(store, itemData, weaponData);
 
     expect(store.player?.searchedRooms.manor_entry).toBe(true);
-    expect(store.player?.keyItems.rusty_key).toBe(true);
-    expect(store.typewriterQueue.map(line => line.text)).toContain('You find a Rusty Key!');
+    // The key is revealed, not auto-taken — the player must still `take` it.
+    expect(store.player?.keyItems.rusty_key).toBeUndefined();
+    expect(store.world?.rooms.manor_entry._ground_loot).toContain('rusty_key');
+    expect(store.typewriterQueue.map(line => line.text)).toContain('You find a Rusty Key.');
+  });
+
+  it('search drops weapons as ground weapons, not inventory items', () => {
+    const store = createInitialStore();
+    const world = createWorld();
+    loadRegion(world, {
+      rooms: [
+        {
+          id: 'peak',
+          name: 'Peak',
+          region: 'test',
+          description: '',
+          exits: {},
+          searchable: true,
+          search_items: ['tyrfing'],
+        },
+      ],
+    } as RegionData);
+    store.world = world;
+    store.player = createPlayer('peak');
+
+    handleSearch(store, itemData, weaponData);
+
+    expect(world.rooms.peak._ground_weapons).toContain('tyrfing');
+    expect(store.player?.inventory.tyrfing).toBeUndefined();
+    expect(store.player?.weapons).not.toContain('tyrfing');
+    expect(store.typewriterQueue.map(line => line.text)).toContain('You find a Tyrfing.');
+  });
+
+  it('a searched weapon can be picked up afterwards with take', () => {
+    const store = createInitialStore();
+    const world = createWorld();
+    loadRegion(world, {
+      rooms: [
+        {
+          id: 'peak',
+          name: 'Peak',
+          region: 'test',
+          description: '',
+          exits: {},
+          searchable: true,
+          search_items: ['tyrfing'],
+        },
+      ],
+    } as RegionData);
+    store.world = world;
+    store.player = createPlayer('peak');
+
+    handleSearch(store, itemData, weaponData);
+    handleTake(store, 'tyrfing', itemData, weaponData, () => {}, () => {}, () => {});
+
+    expect(store.player?.weapons).toContain('tyrfing');
+    expect(world.rooms.peak._ground_weapons).not.toContain('tyrfing');
+  });
+
+  it('search reveals secret_exits as dynamic exits and announces them', () => {
+    const store = createInitialStore();
+    const world = createWorld();
+    loadRegion(world, {
+      rooms: [
+        {
+          id: 'test_room',
+          name: 'Test Room',
+          region: 'test',
+          description: '',
+          exits: { north: 'other' },
+          secret_exits: { down: 'hidden_target' },
+          searchable: true,
+        },
+      ],
+    } as RegionData);
+    store.world = world;
+    store.player = createPlayer('test_room');
+
+    handleSearch(store, itemData, weaponData);
+
+    expect(world.rooms.test_room._dynamic_exits).toEqual({ down: 'hidden_target' });
+    expect(store.typewriterQueue.map(line => line.text)).toContain(
+      'You find a hidden passage leading down.',
+    );
   });
 
   it('attack resolves an enemy and forwards it to startCombat', () => {
