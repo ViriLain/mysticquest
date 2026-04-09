@@ -1,7 +1,7 @@
 import * as C from '../constants';
 import { buyItem, getEffectiveStock, sellItem, type ShopDef } from '../economy';
 import { ICON, iconLine } from '../icons';
-import { findAllMatches, resolveOrDisambiguate, type Matchable } from '../matching';
+import { findAllMatches, resolveOrDisambiguate, singularize, type Matchable } from '../matching';
 import { addLine, emitSound } from '../output';
 import { parseBatchCount } from '../state/exploring';
 import type { GameStore, ItemDef, WeaponDef } from '../types';
@@ -114,7 +114,11 @@ export function handleShopCommand(
       candidateIds.push(key);
     }
 
-    const matches = findAllMatches(itemName, candidateIds, candidates);
+    let matches = findAllMatches(itemName, candidateIds, candidates);
+    if (matches.length === 0) {
+      const singular = singularize(itemName);
+      if (singular) matches = findAllMatches(singular, candidateIds, candidates);
+    }
     const matchedId = resolveOrDisambiguate(store, matches, candidates, 'item do you want to buy');
     if (!matchedId) {
       if (matches.length === 0) {
