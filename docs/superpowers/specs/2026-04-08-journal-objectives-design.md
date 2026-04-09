@@ -46,7 +46,7 @@ The existing `journal` command is a chronological event log ("[3:45 PM] Defeated
   },
   "completion": {
     "type": "key_items_collected",
-    "items": ["mushroom_red", "mushroom_grey", "mushroom_green", "mushroom_orange"]
+    "items": ["red_mushroom", "grey_mushroom", "green_mushroom", "orange_mushroom"]
   },
   "completion_text": "You gathered all four strange mushrooms."
 }
@@ -71,7 +71,7 @@ export interface ObjectiveTrigger {
     | 'talked_to_npc'     // { npc: string }
     | 'entered_room'      // { room: string }
     | 'searched_room'     // { room: string }
-    | 'took_item'         // { item: string }
+    | 'took_item'         // { item: string }   — item OR weapon id
     | 'defeated_enemy'    // { enemy: string }
     | 'objective_completed'; // { objective: string }
   npc?: string;
@@ -83,9 +83,9 @@ export interface ObjectiveTrigger {
 
 export interface ObjectiveCompletion {
   type:
-    | 'key_items_collected'   // { items: string[] } — has ALL
-    | 'enemy_defeated'        // { enemy: string }
-    | 'visited_rooms_percent' // { percent: number } — non-hidden rooms
+    | 'key_items_collected'   // { items: string[] } — has ALL listed items in keyItems OR inventory
+    | 'enemy_defeated'        // { enemy: string }   — any room has this enemy in _dead_enemies
+    | 'visited_rooms_percent' // { percent: number } — % of non-hidden, non-dungeon rooms
     | 'used_items_in_room'    // { room: string, items: string[] }
     | 'objective_completed';  // { objective: string }
   items?: string[];
@@ -277,12 +277,12 @@ Ship v1 with these four ending-linked objectives plus 2-3 flavor quests. Exact t
 
 ### The Crown's Temptation (Usurper ending)
 - **id:** `the_crowns_temptation`
-- **trigger:** `took_item` `dark_crown`
-- **completion:** `enemy_defeated` `evil_king` (intentional collision — placeholder; see open question below)
-- **hint:** "The dark crown whispers. It wants to be worn."
-- **completion_text:** "You wore the crown."
+- **trigger:** `entered_room` `darkness_stronghold` (first sight of the crown room)
+- **completion:** `key_items_collected` `[dark_crown]`
+- **hint:** "Something dark gleams at the heart of the stronghold."
+- **completion_text:** "You hold the dark crown. The choice is yours."
 
-> **Open question for Usurper:** The Usurper ending triggers on a dialogue choice at the stronghold, not on killing the Evil King. The current `used_items_in_room` or `choice_made` shape doesn't cleanly cover dialogue-choice triggers. Options for the implementation plan: (a) add a `choice_made` completion type scoped to a specific ending-choice id, or (b) wire the existing ending trigger system to emit an internal objective event when an ending fires. Flagged here for resolution during planning; does not block the overall design.
+**Note on the Usurper completion:** The Usurper ending itself fires on a dialogue choice (picking "use dark crown" at the stronghold prompt), which then ends the game and wipes terminal state. Tying objective completion to the dialogue choice would mean the player never sees the "objective complete" notification because the ending cutscene clears the terminal immediately. Completing the objective thematically on *possessing* the crown ("the choice is yours") avoids hooking into the ending dispatcher at all, and no new completion type is needed to cover it. This resolves the earlier open question about a `choice_made` or `flag_set` completion type — neither is required for v1.
 
 ## Save Migration
 
@@ -318,11 +318,12 @@ Update existing tests:
 - `test/unit/save.test.ts` — add v2→v3 migration case.
 - Any test referencing `player.journalEntries` or `addJournal` gets rewritten or deleted.
 
-## Open Questions (for implementation plan)
+## Resolved Decisions (from brainstorming follow-up)
 
-1. **Usurper ending completion type.** See note under "The Crown's Temptation" above.
-2. **Notification debouncing.** If the player does something that triggers 3 objectives in one command (unlikely but possible — e.g., taking a weapon that satisfies multiple `took_item` triggers), do we print 3 lines or aggregate? Default: print 3 lines. Revisit if it feels spammy.
-3. **Do we need `deps` injection for `notifyObjectiveEvent`, or can it import from `objectives.ts` directly?** The existing `Deps` pattern was built to keep handlers pure and testable. `notifyObjectiveEvent` is itself pure, so handlers can import it directly — but that couples handlers to the objective system. Lean toward direct import for simplicity, revisit if it complicates testing.
+1. **Usurper ending completion** — resolved thematically. See note under "The Crown's Temptation" above. No new completion type needed.
+2. **Notification debouncing** — none. If one command triggers multiple objectives, each one gets its own line. Revisit if it feels spammy in play.
+3. **Deps injection for `notifyObjectiveEvent`** — not used. Handlers import `notifyObjectiveEvent` directly from `objectives.ts`. The function is pure (takes `GameStore` and an event, returns a diff), so the `Deps` pattern adds indirection without improving testability.
+4. **Completion type vocabulary for v1** — `key_items_collected`, `enemy_defeated`, `visited_rooms_percent`, `used_items_in_room`, `objective_completed`. The `flag_set` type discussed during brainstorming is dropped as YAGNI; it can be added later when the first objective actually needs it.
 
 ## Documentation Deliverables
 
@@ -345,4 +346,4 @@ Update existing tests:
 | Objective counts / progress bars      | Skipped  | Leaks "there are more to find".                                               |
 | Search / filter UI                    | Skipped  | Overkill for the scale.                                                       |
 | Backfilling objectives from save-state replay | Skipped  | Far more code than value; old saves lose their journal.                       |
-| Dialogue-choice completion type       | Open     | Needed for Usurper; pending resolution in implementation plan.                |
+| Dialogue-choice / `flag_set` completion type | Skipped  | Usurper resolved thematically. Add later if a future objective needs it.       |
