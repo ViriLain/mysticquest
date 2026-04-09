@@ -24,6 +24,7 @@ export function createPlayer(startRoom = 'manor_entry'): PlayerState {
     buffRounds: 0,
     routeHistory: [],
     journalEntries: [],
+    objectives: {},
     skillPoints: 0,
     skills: {},
   };
