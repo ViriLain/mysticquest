@@ -133,3 +133,76 @@ describe('completion: key_items_collected', () => {
     expect(result.completed).toEqual([mushroomFixture[0]]);
   });
 });
+
+const simpleFixture = (id: string, trigger: ObjectiveDef['trigger']): ObjectiveDef[] => [
+  {
+    id,
+    title: `Test ${id}`,
+    hint: '...',
+    trigger,
+    completion: { type: 'key_items_collected', items: ['never'] },
+    completion_text: '...',
+  },
+];
+
+describe('trigger types', () => {
+  it('activates on entered_room', () => {
+    const store = objectivesTestStore();
+    notifyObjectiveEvent(
+      store,
+      { type: 'entered_room', room: 'manor_library' },
+      simpleFixture('room_objective', { type: 'entered_room', room: 'manor_library' }),
+    );
+    expect(store.player!.objectives.room_objective).toBe('active');
+  });
+
+  it('activates on searched_room', () => {
+    const store = objectivesTestStore();
+    notifyObjectiveEvent(
+      store,
+      { type: 'searched_room', room: 'manor_dome' },
+      simpleFixture('search_objective', { type: 'searched_room', room: 'manor_dome' }),
+    );
+    expect(store.player!.objectives.search_objective).toBe('active');
+  });
+
+  it('activates on took_item', () => {
+    const store = objectivesTestStore();
+    notifyObjectiveEvent(
+      store,
+      { type: 'took_item', item: 'dark_crown' },
+      simpleFixture('crown_objective', { type: 'took_item', item: 'dark_crown' }),
+    );
+    expect(store.player!.objectives.crown_objective).toBe('active');
+  });
+
+  it('activates on defeated_enemy', () => {
+    const store = objectivesTestStore();
+    notifyObjectiveEvent(
+      store,
+      { type: 'defeated_enemy', enemy: 'cellar_shade' },
+      simpleFixture('boss_objective', { type: 'defeated_enemy', enemy: 'cellar_shade' }),
+    );
+    expect(store.player!.objectives.boss_objective).toBe('active');
+  });
+
+  it('is idempotent — firing the same trigger twice is a no-op on the second call', () => {
+    const store = objectivesTestStore();
+    const fx = simpleFixture('idempotent', { type: 'entered_room', room: 'a' });
+    notifyObjectiveEvent(store, { type: 'entered_room', room: 'a' }, fx);
+    const firstLines = store.typewriterQueue.length;
+    notifyObjectiveEvent(store, { type: 'entered_room', room: 'a' }, fx);
+    expect(store.player!.objectives.idempotent).toBe('active');
+    expect(store.typewriterQueue.length).toBe(firstLines); // no extra notifications
+  });
+
+  it('does not fire when the trigger field does not match', () => {
+    const store = objectivesTestStore();
+    notifyObjectiveEvent(
+      store,
+      { type: 'talked_to_npc', npc: 'dusty' },
+      simpleFixture('wrong_npc', { type: 'talked_to_npc', npc: 'whiskers' }),
+    );
+    expect(store.player!.objectives.wrong_npc).toBeUndefined();
+  });
+});
