@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { createInitialStore, gameReducer } from '../engine/gameReducer';
 import { updateEffects } from '../engine/effects';
 import { captureVisualSnapshot, didVisualSnapshotChange, shouldRunReducerTick } from '../engine/frame-loop';
-import { rgbaToCSS, MENU_COLOR, MENU_SELECTED_COLOR, MENU_DISABLED_COLOR, MENU_OPTIONS } from '../engine/constants';
+import { rgbaToCSS, MENU_COLOR, MENU_SELECTED_COLOR, MENU_DISABLED_COLOR, MENU_OPTIONS, CHOICE_COLOR, HELP_COLOR } from '../engine/constants';
 import { anySlotHasData } from '../engine/save';
 import {
   initAudio, startAmbient, setRegionAmbient, sfxTypewriter, sfxSubmit, sfxPickup, sfxEquip,
@@ -349,6 +349,43 @@ export default function Game() {
               style={{ color: colorCSS(store.typewriterQueue[0].color) }}
             >
               {store.typewriterQueue[0].text.slice(0, twCharIndex.current) || '\u00A0'}
+            </div>
+          )}
+
+          {/* Dialogue selectable options */}
+          {store.state === 'dialogue' && store.dialogueOptions.length > 0 && (
+            <div>
+              <div className="terminal-line">{'\u00A0'}</div>
+              {store.dialogueOptions.map((option, i) => (
+                <div
+                  key={i}
+                  className="terminal-line"
+                  style={{ color: colorCSS(i === store.dialogueSelected ? MENU_SELECTED_COLOR : CHOICE_COLOR) }}
+                >
+                  {i === store.dialogueSelected ? '> ' : '  '}{option}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Shop buy/sell selectable menu */}
+          {store.state === 'shop' && store.shopMenuMode && store.shopMenuItems.length > 0 && (
+            <div>
+              <div className="terminal-line" style={{ color: colorCSS(CHOICE_COLOR) }}>
+                {store.shopMenuMode === 'buy' ? '-- SELECT ITEM TO BUY --' : '-- SELECT ITEM TO SELL --'}
+              </div>
+              {store.shopMenuItems.map((item, i) => (
+                <div
+                  key={i}
+                  className="terminal-line"
+                  style={{ color: colorCSS(i === store.shopMenuSelected ? MENU_SELECTED_COLOR : HELP_COLOR) }}
+                >
+                  {i === store.shopMenuSelected ? '> ' : '  '}{item.label}
+                </div>
+              ))}
+              <div className="terminal-line" style={{ color: colorCSS(HELP_COLOR) }}>
+                {'  '}Enter: Select{'  '}Esc: Back
+              </div>
             </div>
           )}
         </div>

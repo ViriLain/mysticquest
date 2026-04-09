@@ -91,7 +91,24 @@ export function handleShopCommand(
 
   if (verb === 'buy') {
     if (!target) {
-      addLine(store, 'Buy what?', C.ERROR_COLOR);
+      // Open buy menu
+      const stock = getEffectiveStock(shop, runtime).filter(entry => entry.remaining > 0);
+      const items: typeof store.shopMenuItems = [];
+      for (const entry of stock) {
+        const isWeapon = entry.entry.type === 'weapon';
+        const def = isWeapon ? weaponData[entry.entry.id] : itemData[entry.entry.id];
+        if (!def) continue;
+        const price = isWeapon ? (weaponData[entry.entry.id]?.price ?? 0) : (itemData[entry.entry.id]?.price ?? 0);
+        items.push({ label: def.name, id: entry.entry.id, index: entry.index });
+        void price; // price shown in the menu render
+      }
+      if (items.length === 0) {
+        addLine(store, '-- SOLD OUT --', C.HELP_COLOR);
+      } else {
+        store.shopMenuMode = 'buy';
+        store.shopMenuItems = items;
+        store.shopMenuSelected = 0;
+      }
       return;
     }
 
@@ -155,7 +172,30 @@ export function handleShopCommand(
 
   if (verb === 'sell') {
     if (!target) {
-      addLine(store, 'Sell what?', C.ERROR_COLOR);
+      // Open sell menu
+      const items: typeof store.shopMenuItems = [];
+      for (const [itemId, count] of Object.entries(store.player.inventory)) {
+        const item = itemData[itemId];
+        if (!item || item.type === 'key') continue;
+        const sv = item.price ? Math.floor(item.price / 2) : 0;
+        if (sv <= 0) continue;
+        const label = count > 1 ? `${item.name} x${count} (${sv}g each)` : `${item.name} (${sv}g)`;
+        items.push({ label, id: itemId, index: 0 });
+      }
+      for (const weaponId of store.player.weapons) {
+        const weapon = weaponData[weaponId];
+        if (!weapon || !weapon.price) continue;
+        const sv = Math.floor(weapon.price / 2);
+        const eq = store.player.equippedWeapon === weaponId ? ' [equipped]' : '';
+        items.push({ label: `${weapon.name} (${sv}g)${eq}`, id: weaponId, index: 0 });
+      }
+      if (items.length === 0) {
+        addLine(store, "You don't have anything to sell.", C.HELP_COLOR);
+      } else {
+        store.shopMenuMode = 'sell';
+        store.shopMenuItems = items;
+        store.shopMenuSelected = 0;
+      }
       return;
     }
 
