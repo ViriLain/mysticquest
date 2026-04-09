@@ -37,11 +37,19 @@ export function displayShop(
       const price = isWeapon
         ? (weaponData[entry.entry.id]?.price ?? 0)
         : (itemData[entry.entry.id]?.price ?? 0);
-      const tag = isWeapon ? ' (weapon)' : '';
-      const namePadded = def.name.padEnd(20, '.');
+      let label = def.name;
+      if (isWeapon) {
+        label += ` (+${(def as WeaponDef).attack_bonus} ATK)`;
+      } else {
+        const item = def as ItemDef;
+        if (item.effect === 'heal' && item.value) label += ` (+${item.value} HP)`;
+        else if (item.effect === 'buff_attack' && item.value) label += ` (+${item.value} ATK, 3 rnd)`;
+        else if (item.type === 'shield' && item.value) label += ` (+${item.value} DEF)`;
+      }
+      const namePadded = label.padEnd(28, '.');
       addLine(
         store,
-        `  ${namePadded} ${String(price).padStart(4)}g  (${entry.remaining} left${tag})`,
+        `  ${namePadded} ${String(price).padStart(4)}g  (${entry.remaining} left)`,
         C.HELP_COLOR,
       );
     }

@@ -82,7 +82,11 @@ export function showInventory(store: GameStore): void {
     hasItems = true;
     const item = itemData[itemId];
     const name = item?.name || itemId;
-    const text = count > 1 ? `${name} x${count}` : name;
+    let stat = '';
+    if (item?.effect === 'heal' && item.value) stat = ` (+${item.value} HP)`;
+    else if (item?.effect === 'buff_attack' && item.value) stat = ` (+${item.value} ATK, 3 rnd)`;
+    else if (item?.type === 'shield' && item.value) stat = ` (+${item.value} DEF)`;
+    const text = (count > 1 ? `${name} x${count}` : name) + stat;
     const icon = item?.type === 'shield' ? ICON.shield : ICON.item;
     addLine(store, iconLine(icon, text), C.HELP_COLOR);
   }
