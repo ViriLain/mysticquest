@@ -105,5 +105,23 @@ describe('info handlers', () => {
       expect(completeIdx).toBeGreaterThan(-1);
       expect(activeIdx).toBeLessThan(completeIdx);
     });
+
+    it('renders objectives in player-discovery order, not OBJECTIVES list order', () => {
+      const store = createInitialStore();
+      store.player = createPlayer();
+      // Assign in reverse relative to the JSON file order: the Diner Mystery
+      // is index 1 in objectives.json, find_ancient_map is index 2. Assign
+      // find_ancient_map first so it should render before the_diner_mystery.
+      store.player.objectives = {};
+      store.player.objectives.find_ancient_map = 'active';
+      store.player.objectives.the_diner_mystery = 'active';
+      showJournal(store);
+      const lines = store.typewriterQueue.map(l => l.text);
+      const mapIdx = lines.findIndex(l => l.includes('The Ancient Map'));
+      const dinerIdx = lines.findIndex(l => l.includes('The Diner Mystery'));
+      expect(mapIdx).toBeGreaterThan(-1);
+      expect(dinerIdx).toBeGreaterThan(-1);
+      expect(mapIdx).toBeLessThan(dinerIdx);
+    });
   });
 });

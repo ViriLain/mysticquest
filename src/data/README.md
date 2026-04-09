@@ -59,6 +59,8 @@ Triggers fire at most once per objective. Re-triggering is a no-op.
 
 Completion is re-checked after every trigger fires. If a completion condition is already satisfied at trigger time, the objective transitions untriggered → active → complete in a single call and both notification lines fire in order.
 
+**Note on `used_items_in_room`:** The `use` command does not currently fire an objective event, so a completion of this type is only re-evaluated when the *next* objective-relevant command runs (talk, take, search, enter room, or defeat enemy). In practice this is fine because players always move between commands, but if you author an objective that must fire the instant a final `use` completes without any follow-up, wire a `notifyObjectiveEvent` call into `src/engine/handlers/use.ts`.
+
 ### Chaining
 
 An objective whose `trigger` is `objective_completed` will activate (and possibly immediately complete) when the named objective finishes. The engine processes chains in a fixed-point loop up to 100 iterations of recursive activation.

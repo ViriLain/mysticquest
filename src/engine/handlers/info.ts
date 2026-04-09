@@ -129,10 +129,19 @@ export function showJournal(store: GameStore): void {
   addLine(store, '');
   addLine(store, '=== Journal ===', C.STAT_COLOR);
 
+  // Build a fast lookup from the static OBJECTIVES list so we can resolve
+  // each id in the player's objectives map to its full definition.
+  const byId = new Map<string, ObjectiveDef>();
+  for (const obj of OBJECTIVES) byId.set(obj.id, obj);
+
   const active: ObjectiveDef[] = [];
   const complete: ObjectiveDef[] = [];
-  for (const obj of OBJECTIVES) {
-    const status = store.player.objectives[obj.id];
+  // Iterate player.objectives in insertion order — this is the order the
+  // player discovered them, which is what the spec requires.
+  for (const id of Object.keys(store.player.objectives)) {
+    const obj = byId.get(id);
+    if (!obj) continue; // stale id from an older content version, skip
+    const status = store.player.objectives[id];
     if (status === 'active') active.push(obj);
     else if (status === 'complete') complete.push(obj);
   }
