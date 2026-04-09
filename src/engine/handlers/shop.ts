@@ -148,6 +148,7 @@ export function handleShopCommand(
       addLine(store, iconLine(ICON.loot, `Bought ${name} for ${result.price}g.`), C.ITEM_COLOR);
       emitSound(store, 'pickup');
     }
+    addLine(store, `Gold remaining: ${store.player.gold}g`, C.LOOT_COLOR);
     refreshHeader();
     return;
   }
@@ -267,6 +268,7 @@ export function handleShopCommand(
 function handleSellResult(store: GameStore, result: ReturnType<typeof sellItem>, name: string): void {
   if (result.ok) {
     addLine(store, iconLine(ICON.loot, `Sold ${name} for ${result.price}g.`), C.ITEM_COLOR);
+    addLine(store, `Gold remaining: ${store.player!.gold}g`, C.LOOT_COLOR);
     emitSound(store, 'save');
   } else {
     if (result.reason === 'key_item') addLine(store, "You can't sell that.", C.ERROR_COLOR);
