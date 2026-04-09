@@ -686,8 +686,11 @@ function handleKeyPressed(s: GameStore, key: string): void {
 
     const input = s.input;
     if (input.length > 0) {
-      // Push to command history (skip duplicates of last entry)
-      if (s.commandHistory.length === 0 || s.commandHistory[s.commandHistory.length - 1] !== input) {
+      // Push to command history — but skip dialogue/shop inputs (numbered
+      // choices and buy/sell commands) so that "talk dusty" stays as the
+      // last real command the player typed.
+      const skipHistory = s.state === 'dialogue' || s.state === 'shop';
+      if (!skipHistory && (s.commandHistory.length === 0 || s.commandHistory[s.commandHistory.length - 1] !== input)) {
         s.commandHistory.push(input);
         if (s.commandHistory.length > 50) s.commandHistory.shift(); // cap at 50
       }
