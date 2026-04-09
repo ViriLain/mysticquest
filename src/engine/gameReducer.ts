@@ -15,6 +15,7 @@ import { fireEvent } from './events';
 import { checkEndings, getChoicePrompt, getEffectColor } from './endings';
 import { ICON, iconLine } from './icons';
 import { saveToSlot } from './save';
+import { notifyObjectiveEvent } from './objectives';
 import { addLine, addLineInstant, applyRegionTint, clearTerminal, displayAscii, emitSound, hideHeader, updateHeader } from './output';
 import type { ShopDef } from './economy';
 import { handleCombatCommand as handleCombatCommandRaw, type CombatDeps } from './state/combat';
@@ -77,6 +78,7 @@ function enterRoom(store: GameStore, roomId: string): boolean {
   visitRoom(store.player, roomId);
   store.player.routeHistory.push(roomId);
   addJournal(store, 'room', `Entered ${room.name}`);
+  notifyObjectiveEvent(store, { type: 'entered_room', room: roomId });
   displayRoom(store, roomId);
   applyRegionTint(store, room.region);
 

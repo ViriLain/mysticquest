@@ -1,5 +1,6 @@
 import * as C from '../constants';
 import { findAllMatches, resolveOrDisambiguate } from '../matching';
+import { notifyObjectiveEvent } from '../objectives';
 import { addItem, addWeapon, hasItem, hasKeyItem, heal as playerHeal, removeItem } from '../player';
 import { addLine } from '../output';
 import type { DialogueCondition, GameStore, ItemDef, NpcDef, PlayerState, WeaponDef } from '../types';
@@ -57,6 +58,7 @@ export function handleTalk(
 
   store.npcDialogue = { npcId, currentNode: 'start' };
   store.player.firedEvents[`talked_${npcId}`] = true;
+  notifyObjectiveEvent(store, { type: 'talked_to_npc', npc: npcId });
   displayDialogueNode(store, npcData);
   store.state = 'dialogue';
 
