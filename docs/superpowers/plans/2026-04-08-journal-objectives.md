@@ -48,6 +48,29 @@
 - **Notification lines use `* ` prefix and `STAT_COLOR`**, matching achievement notifications already used in the game.
 - **`notifyObjectiveEvent` accepts an optional `objectives` parameter defaulting to the module-level `OBJECTIVES` constant.** This keeps tests fully deterministic (each test passes its own fixture array) while production code uses the default.
 
+## Critical test-author notes
+
+Two project-specific gotchas that matter across every test file below:
+
+1. **`addLine` writes to `store.typewriterQueue`, not `store.lines`.** The game uses a typewriter effect — new lines land in `typewriterQueue` and the UI animation layer drains them into `lines` character-by-character. Tests that want to assert on freshly-written terminal text should read `store.typewriterQueue.map(l => l.text)`, matching the existing pattern in `test/unit/info.test.ts`. Only use `store.lines` for text that has already been drained (rare in tests).
+
+2. **Tests that need a live player should construct the store the way `test/unit/info.test.ts` and `test/unit/action-handlers.test.ts` do:**
+
+   ```typescript
+   import { createInitialStore } from '../../src/engine/gameReducer';
+   import { createPlayer } from '../../src/engine/player';
+   import { createStoryWorld } from '../../src/engine/world';
+
+   function objectivesTestStore() {
+     const store = createInitialStore();
+     store.player = createPlayer();
+     store.world = createStoryWorld();
+     return store;
+   }
+   ```
+
+   **Do not use `objectivesTestStore()` for these tests** — it returns a store in the `menu` state with `store.player === null`, and every test that touches `store.player!...` would throw. Define `objectivesTestStore()` at the top of `test/unit/objectives.test.ts` in Task 2 and reuse it throughout Tasks 2–6.
+
 ---
 
 ## Task 1: Add types, player state field, empty objectives file
@@ -215,8 +238,22 @@ Create `test/unit/objectives.test.ts`:
 ```typescript
 import { describe, expect, it } from 'vitest';
 import { notifyObjectiveEvent } from '../../src/engine/objectives';
+import { createInitialStore } from '../../src/engine/gameReducer';
+import { createPlayer } from '../../src/engine/player';
+import { createStoryWorld } from '../../src/engine/world';
 import type { GameStore, ObjectiveDef } from '../../src/engine/types';
-import { freshStore } from '../fixtures/freshStore';
+
+/**
+ * Shared test store. Mirrors the pattern in test/unit/info.test.ts —
+ * createInitialStore() gives us a boot-state store; we wire a player and
+ * world manually so the unit tests don't care about menu/boot transitions.
+ */
+function objectivesTestStore(): GameStore {
+  const store = createInitialStore();
+  store.player = createPlayer();
+  store.world = createStoryWorld();
+  return store;
+}
 
 const whiskersFixture: ObjectiveDef[] = [
   {
@@ -229,16 +266,9 @@ const whiskersFixture: ObjectiveDef[] = [
   },
 ];
 
-function storeWithPlayer(): GameStore {
-  const store = freshStore();
-  // freshStore() gives us a valid store with player + world initialized for 'exploring' state.
-  // Tests assume store.player and store.player.objectives exist.
-  return store;
-}
-
 describe('notifyObjectiveEvent', () => {
   it('activates an objective when its trigger fires', () => {
-    const store = storeWithPlayer();
+    const store = objectivesTestStore();
     expect(store.player!.objectives.the_diner_mystery).toBeUndefined();
 
     notifyObjectiveEvent(
@@ -304,8 +334,9 @@ function triggerMatches(trigger: ObjectiveTrigger, event: AnyObjectiveEvent): bo
 
 /**
  * Called from handlers whenever an objective-relevant event occurs. Mutates
- * `store.player.objectives` and appends notification lines to `store.lines`.
- * Callers don't need to do anything with the return value.
+ * `store.player.objectives` and queues notification lines via `addLine`
+ * (which lands in `store.typewriterQueue`). Callers don't need to do
+ * anything with the return value.
  */
 export function notifyObjectiveEvent(
   store: GameStore,
@@ -383,7 +414,7 @@ const mushroomFixture: ObjectiveDef[] = [
 
 describe('completion: key_items_collected', () => {
   it('does not complete if items are missing', () => {
-    const store = freshStore();
+    const store = objectivesTestStore();
     notifyObjectiveEvent(
       store,
       { type: 'talked_to_npc', npc: 'whiskers' },
@@ -393,7 +424,7 @@ describe('completion: key_items_collected', () => {
   });
 
   it('completes when all items are in inventory', () => {
-    const store = freshStore();
+    const store = objectivesTestStore();
     store.player!.inventory = {
       red_mushroom: 1,
       grey_mushroom: 1,
@@ -409,7 +440,7 @@ describe('completion: key_items_collected', () => {
   });
 
   it('completes when items are in keyItems instead of inventory', () => {
-    const store = freshStore();
+    const store = objectivesTestStore();
     store.player!.keyItems = {
       red_mushroom: true,
       grey_mushroom: true,
@@ -425,20 +456,20 @@ describe('completion: key_items_collected', () => {
   });
 
   it('writes activation and completion notification lines in order', () => {
-    const store = freshStore();
+    const store = objectivesTestStore();
     store.player!.inventory = {
       red_mushroom: 1,
       grey_mushroom: 1,
       green_mushroom: 1,
       orange_mushroom: 1,
     };
-    const linesBefore = store.lines.length;
+    const linesBefore = store.typewriterQueue.length;
     notifyObjectiveEvent(
       store,
       { type: 'talked_to_npc', npc: 'whiskers' },
       mushroomFixture,
     );
-    const newLines = store.lines.slice(linesBefore).map(l => l.text);
+    const newLines = store.typewriterQueue.slice(linesBefore).map(l => l.text);
     expect(newLines).toEqual([
       '* New journal entry: The Diner Mystery',
       '* Journal complete: The Diner Mystery',
@@ -569,7 +600,7 @@ const simpleFixture = (id: string, trigger: ObjectiveDef['trigger']): ObjectiveD
 
 describe('trigger types', () => {
   it('activates on entered_room', () => {
-    const store = freshStore();
+    const store = objectivesTestStore();
     notifyObjectiveEvent(
       store,
       { type: 'entered_room', room: 'manor_library' },
@@ -579,7 +610,7 @@ describe('trigger types', () => {
   });
 
   it('activates on searched_room', () => {
-    const store = freshStore();
+    const store = objectivesTestStore();
     notifyObjectiveEvent(
       store,
       { type: 'searched_room', room: 'manor_dome' },
@@ -589,7 +620,7 @@ describe('trigger types', () => {
   });
 
   it('activates on took_item', () => {
-    const store = freshStore();
+    const store = objectivesTestStore();
     notifyObjectiveEvent(
       store,
       { type: 'took_item', item: 'dark_crown' },
@@ -599,7 +630,7 @@ describe('trigger types', () => {
   });
 
   it('activates on defeated_enemy', () => {
-    const store = freshStore();
+    const store = objectivesTestStore();
     notifyObjectiveEvent(
       store,
       { type: 'defeated_enemy', enemy: 'cellar_shade' },
@@ -609,17 +640,17 @@ describe('trigger types', () => {
   });
 
   it('is idempotent — firing the same trigger twice is a no-op on the second call', () => {
-    const store = freshStore();
+    const store = objectivesTestStore();
     const fx = simpleFixture('idempotent', { type: 'entered_room', room: 'a' });
     notifyObjectiveEvent(store, { type: 'entered_room', room: 'a' }, fx);
-    const firstLines = store.lines.length;
+    const firstLines = store.typewriterQueue.length;
     notifyObjectiveEvent(store, { type: 'entered_room', room: 'a' }, fx);
     expect(store.player!.objectives.idempotent).toBe('active');
-    expect(store.lines.length).toBe(firstLines); // no extra notifications
+    expect(store.typewriterQueue.length).toBe(firstLines); // no extra notifications
   });
 
   it('does not fire when the trigger field does not match', () => {
-    const store = freshStore();
+    const store = objectivesTestStore();
     notifyObjectiveEvent(
       store,
       { type: 'talked_to_npc', npc: 'dusty' },
@@ -670,7 +701,7 @@ Append to `test/unit/objectives.test.ts`:
 ```typescript
 describe('completion: enemy_defeated', () => {
   it('completes when the enemy is marked dead in any room', () => {
-    const store = freshStore();
+    const store = objectivesTestStore();
     const room = store.world!.rooms.manor_entry;
     room._dead_enemies = { cellar_shade: true };
     const fx: ObjectiveDef[] = [{
@@ -688,8 +719,8 @@ describe('completion: enemy_defeated', () => {
 
 describe('completion: visited_rooms_percent', () => {
   it('completes when visited non-hidden non-dungeon rooms meet the threshold', () => {
-    const store = freshStore();
-    // freshStore() gives us the real story world. Visit 80% of non-hidden,
+    const store = objectivesTestStore();
+    // objectivesTestStore() gives us the real story world. Visit 80% of non-hidden,
     // non-dungeon rooms by setting the visitedRooms map directly.
     const nonHidden = Object.keys(store.world!.rooms).filter(
       id => store.world!.rooms[id].region !== 'hidden' && !id.startsWith('dng_'),
@@ -715,7 +746,7 @@ describe('completion: visited_rooms_percent', () => {
   });
 
   it('does not complete below the threshold', () => {
-    const store = freshStore();
+    const store = objectivesTestStore();
     store.player!.visitedRooms = { manor_entry: true }; // only 1 room
     const fx: ObjectiveDef[] = [{
       id: 'long_road',
@@ -732,7 +763,7 @@ describe('completion: visited_rooms_percent', () => {
 
 describe('completion: used_items_in_room', () => {
   it('completes when all listed items were used in the given room', () => {
-    const store = freshStore();
+    const store = objectivesTestStore();
     store.player!.usedItemsInRoom = {
       hidden_diner: {
         red_mushroom: true,
@@ -852,7 +883,7 @@ Append to `test/unit/objectives.test.ts`:
 ```typescript
 describe('chaining', () => {
   it('activates a chained objective when its prerequisite completes', () => {
-    const store = freshStore();
+    const store = objectivesTestStore();
     store.player!.inventory = { red_mushroom: 1 };
 
     const fx: ObjectiveDef[] = [
@@ -881,7 +912,7 @@ describe('chaining', () => {
   });
 
   it('chains across multiple hops in a single call', () => {
-    const store = freshStore();
+    const store = objectivesTestStore();
     store.player!.inventory = { red_mushroom: 1 };
 
     const fx: ObjectiveDef[] = [
@@ -1473,48 +1504,48 @@ git commit -m "Emit objective events from talk, take, search, combat, enterRoom"
 
 Read the existing `test/unit/info.test.ts` first to match its style. Then add:
 
-```typescript
-import { OBJECTIVES } from '../../src/engine/objectives';
+Reuse `objectivesTestStore` defined in `test/unit/objectives.test.ts`, OR redefine the same helper in `test/unit/info.test.ts` if you don't want a cross-file import. The existing info tests already import `createInitialStore` and `createPlayer`, so you can add a local helper there.
 
+```typescript
 describe('showJournal', () => {
   it('renders empty state when no objectives are active', () => {
-    const store = freshStore();
-    store.lines = [];
+    const store = createInitialStore();
+    store.player = createPlayer();
     showJournal(store);
-    const text = store.lines.map(l => l.text).join('\n');
+    const text = store.typewriterQueue.map(l => l.text).join('\n');
     expect(text).toContain('=== Journal ===');
     expect(text).toContain('(no entries yet — explore the world)');
   });
 
   it('renders active objectives with [ ] prefix and hint line', () => {
-    const store = freshStore();
-    store.lines = [];
-    store.player!.objectives = { the_diner_mystery: 'active' };
+    const store = createInitialStore();
+    store.player = createPlayer();
+    store.player.objectives = { the_diner_mystery: 'active' };
     showJournal(store);
-    const text = store.lines.map(l => l.text).join('\n');
+    const text = store.typewriterQueue.map(l => l.text).join('\n');
     expect(text).toMatch(/\[ \] The Diner Mystery/);
     expect(text).toContain('Sir Whiskers mentioned something about the diner');
   });
 
   it('renders completed objectives with [X] prefix and completion_text', () => {
-    const store = freshStore();
-    store.lines = [];
-    store.player!.objectives = { defeat_evil_king: 'complete' };
+    const store = createInitialStore();
+    store.player = createPlayer();
+    store.player.objectives = { defeat_evil_king: 'complete' };
     showJournal(store);
-    const text = store.lines.map(l => l.text).join('\n');
+    const text = store.typewriterQueue.map(l => l.text).join('\n');
     expect(text).toMatch(/\[X\] The Hero's Path/);
     expect(text).toContain('The Evil King has fallen.');
   });
 
   it('renders active objectives above completed ones', () => {
-    const store = freshStore();
-    store.lines = [];
-    store.player!.objectives = {
+    const store = createInitialStore();
+    store.player = createPlayer();
+    store.player.objectives = {
       defeat_evil_king: 'complete',
       the_diner_mystery: 'active',
     };
     showJournal(store);
-    const lines = store.lines.map(l => l.text);
+    const lines = store.typewriterQueue.map(l => l.text);
     const activeIdx = lines.findIndex(l => l.includes('[ ] The Diner Mystery'));
     const completeIdx = lines.findIndex(l => l.includes("[X] The Hero's Path"));
     expect(activeIdx).toBeGreaterThan(-1);
@@ -1614,7 +1645,7 @@ Create `test/scenario/journal-enlightened.test.ts`:
 
 ```typescript
 import { describe, expect, it } from 'vitest';
-import { createInitialStore, gameReducer } from '../../src/engine/gameReducer';
+import { newGame, input } from '../fixtures/mock-input';
 
 /**
  * Scenario: the player picks up all four mushrooms, talks to Sir Whiskers,
@@ -1625,17 +1656,16 @@ import { createInitialStore, gameReducer } from '../../src/engine/gameReducer';
  */
 describe('scenario: the_diner_mystery end-to-end', () => {
   it('activates and completes in one talk after mushrooms are collected', () => {
-    const store = createInitialStore();
-    // Menu → New Game
-    gameReducer(store, { type: 'KEY_PRESSED', key: 'Enter' });
-    expect(store.state).toBe('slot_picker');
-    // Select slot 1
-    gameReducer(store, { type: 'KEY_PRESSED', key: 'Enter' });
+    // newGame() ticks past boot, selects NEW GAME, and leaves us in
+    // 'exploring' at manor_entry with a player ready.
+    const store = newGame();
     expect(store.state).toBe('exploring');
+    expect(store.player?.currentRoom).toBe('manor_entry');
 
     // Fabricate post-exploration state: place player in hidden_diner with all
     // four mushrooms. Skipping the actual travel path keeps this test fast
-    // and hermetic — the per-command wiring is covered by Task 9's unit tests.
+    // and hermetic — the per-command wiring is covered by Task 9's integration
+    // via the handler edits (no direct unit test, see Task 9 for rationale).
     store.player!.currentRoom = 'hidden_diner';
     store.player!.inventory = {
       red_mushroom: 1,
@@ -1643,26 +1673,24 @@ describe('scenario: the_diner_mystery end-to-end', () => {
       green_mushroom: 1,
       orange_mushroom: 1,
     };
-    // Pretend the hidden diner room has Sir Whiskers in it (the real room
-    // does — we're just skipping the travel).
 
     // Confirm the objective is not yet active.
     expect(store.player!.objectives.the_diner_mystery).toBeUndefined();
 
-    // Dispatch `talk whiskers`. The store's text-input path will parse it
-    // and drive handleTalk, which will fire the objective event.
-    const commandChars = 'talk whiskers'.split('');
-    for (const char of commandChars) {
-      gameReducer(store, { type: 'TEXT_INPUT', text: char });
-    }
-    gameReducer(store, { type: 'KEY_PRESSED', key: 'Enter' });
+    // Dispatch `talk whiskers` via the existing mock-input helper, which
+    // types the chars and presses Enter — driving the real reducer stack
+    // including handleTalk.
+    const after = input(store, 'talk whiskers');
 
     // After talk fires the talked_to_npc event, reverse-order discovery should
     // flip the objective from untriggered → active → complete in one call.
-    expect(store.player!.objectives.the_diner_mystery).toBe('complete');
+    expect(after.player!.objectives.the_diner_mystery).toBe('complete');
 
     // Verify both notification lines were written in the correct order.
-    const texts = store.lines.map(l => l.text);
+    // addLine writes to store.typewriterQueue (drained by the UI layer into
+    // store.lines via the animation loop); in a headless test we read
+    // directly from the queue.
+    const texts = after.typewriterQueue.map(l => l.text);
     const newEntryIdx = texts.findIndex(t => t === '* New journal entry: The Diner Mystery');
     const completeIdx = texts.findIndex(t => t === '* Journal complete: The Diner Mystery');
     expect(newEntryIdx).toBeGreaterThan(-1);
@@ -1671,12 +1699,12 @@ describe('scenario: the_diner_mystery end-to-end', () => {
 });
 ```
 
+**Caveat:** this test fabricates state (placing the player in `hidden_diner` and filling their inventory) rather than driving the full travel path. If `input(store, 'talk whiskers')` fails because the fabricated room's npcs list doesn't include `whiskers` in the current story world, set `store.world!.rooms.hidden_diner.npcs = ['whiskers'];` before the `input()` call. Read `src/data/regions/hidden.json` to confirm the NPC id matches the real content before adjusting.
+
 ### - [ ] Step 3: Run the scenario test
 
 Run: `npx vitest run test/scenario/journal-enlightened.test.ts`
-Expected: PASS.
-
-**Troubleshooting:** If the test fails because `talk whiskers` doesn't fire `handleTalk` (e.g., hidden_diner isn't populated with npcs in your fabricated state), adjust the fabrication to set `store.world!.rooms.hidden_diner.npcs = ['whiskers'];` before dispatching the command. Read `src/data/regions/hidden.json` to confirm the current room shape.
+Expected: PASS. See the caveat in Step 2 for troubleshooting if the NPC id doesn't resolve.
 
 ### - [ ] Step 4: Run full suite + lint
 
