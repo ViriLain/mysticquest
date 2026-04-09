@@ -1,6 +1,6 @@
 import type {
   EndingCheckContext, GameStore, EndingDef,
-  WeaponDef, ItemDef, EnemyDef, NpcDef, JournalEntry,
+  WeaponDef, ItemDef, EnemyDef, NpcDef,
 } from './types';
 import * as C from './constants';
 import { parseCommand } from './commands';
@@ -15,6 +15,7 @@ import { fireEvent } from './events';
 import { checkEndings, getChoicePrompt, getEffectColor } from './endings';
 import { ICON, iconLine } from './icons';
 import { saveToSlot } from './save';
+import { notifyObjectiveEvent } from './objectives';
 import { addLine, addLineInstant, applyRegionTint, clearTerminal, displayAscii, emitSound, hideHeader, updateHeader } from './output';
 import type { ShopDef } from './economy';
 import { handleCombatCommand as handleCombatCommandRaw, type CombatDeps } from './state/combat';
@@ -44,11 +45,6 @@ const shopData = shopsJson as Record<string, ShopDef>;
 
 // ---- Helpers ----
 
-function addJournal(store: GameStore, type: JournalEntry['type'], text: string): void {
-  if (!store.player) return;
-  store.player.journalEntries.push({ type, text, timestamp: Date.now() });
-}
-
 function enterRoom(store: GameStore, roomId: string): boolean {
   if (!store.world || !store.player) return false;
   const room = getRoom(store.world, roomId);
@@ -76,7 +72,7 @@ function enterRoom(store: GameStore, roomId: string): boolean {
   store.player.currentRoom = roomId;
   visitRoom(store.player, roomId);
   store.player.routeHistory.push(roomId);
-  addJournal(store, 'room', `Entered ${room.name}`);
+  notifyObjectiveEvent(store, { type: 'entered_room', room: roomId });
   displayRoom(store, roomId);
   applyRegionTint(store, room.region);
 
@@ -148,8 +144,6 @@ function startDialogue(store: GameStore, ending: EndingDef): void {
 }
 
 function startEnding(store: GameStore, ending: EndingDef): void {
-  addJournal(store, 'story', `Ending: ${ending.title}`);
-
   // Track which endings have been seen for all_endings achievement
   const endingIds = Object.keys(endingsData);
   const endingKey = endingIds.find(id => endingsData[id].title === ending.title);
@@ -221,7 +215,6 @@ function buildCombatDeps(store: GameStore): CombatDeps {
     weaponData,
     enemyData,
     refreshHeader: () => updateHeader(store),
-    addJournal: (type, text) => addJournal(store, type, text),
     checkEndingsForBoss: enemyId => {
       checkEndingsContext(store, { bossJustDefeated: enemyId });
     },
@@ -258,7 +251,6 @@ function buildExploringDeps(store: GameStore): ExploringDeps {
     npcData,
     refreshHeader: () => updateHeader(store),
     emit: sound => emitSound(store, sound),
-    addJournal: (type, text) => addJournal(store, type, text),
     startCombat: enemyId => startCombat(store, enemyId),
     checkEndingsForItem: itemId => {
       checkEndingsContext(store, { itemJustUsed: itemId });

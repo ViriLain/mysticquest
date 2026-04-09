@@ -1,0 +1,72 @@
+[
+  {
+    "id": "defeat_evil_king",
+    "title": "The Hero's Path",
+    "hint": "Something dark stirs beyond the darkness. A great evil waits.",
+    "trigger": {
+      "type": "defeated_enemy",
+      "enemy": "cellar_shade"
+    },
+    "completion": {
+      "type": "enemy_defeated",
+      "enemy": "evil_king"
+    },
+    "completion_text": "The Evil King has fallen."
+  },
+  {
+    "id": "the_diner_mystery",
+    "title": "The Diner Mystery",
+    "hint": "Sir Whiskers mentioned something about the diner needing ingredients.",
+    "trigger": {
+      "type": "talked_to_npc",
+      "npc": "hidden_cat_friend"
+    },
+    "completion": {
+      "type": "key_items_collected",
+      "items": ["red_mushroom", "grey_mushroom", "green_mushroom", "orange_mushroom"]
+    },
+    "completion_text": "You gathered all four strange mushrooms."
+  },
+  {
+    "id": "find_ancient_map",
+    "title": "The Ancient Map",
+    "hint": "Wren hinted the map could be earned with enough experience.",
+    "trigger": {
+      "type": "talked_to_npc",
+      "npc": "wilds_guide"
+    },
+    "completion": {
+      "type": "key_items_collected",
+      "items": ["ancient_map"]
+    },
+    "completion_text": "Wren gave you the Ancient Map."
+  },
+  {
+    "id": "explore_the_world",
+    "title": "The Long Road",
+    "hint": "There is more to this world than the manor.",
+    "trigger": {
+      "type": "entered_room",
+      "room": "wilds_forest_entrance"
+    },
+    "completion": {
+      "type": "visited_rooms_percent",
+      "percent": 80
+    },
+    "completion_text": "You have walked nearly every road in this land."
+  },
+  {
+    "id": "the_crowns_temptation",
+    "title": "The Crown's Temptation",
+    "hint": "Something dark gleams at the heart of the stronghold.",
+    "trigger": {
+      "type": "entered_room",
+      "room": "darkness_stronghold"
+    },
+    "completion": {
+      "type": "key_items_collected",
+      "items": ["dark_crown"]
+    },
+    "completion_text": "You hold the dark crown. The choice is yours."
+  }
+]

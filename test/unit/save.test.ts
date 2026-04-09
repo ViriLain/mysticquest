@@ -3,7 +3,7 @@ import manorJson from '../../src/data/regions/manor.json';
 import { createPlayer } from '../../src/engine/player';
 import { anySlotHasData, loadFromSlot, loadManifest, saveToSlot } from '../../src/engine/save';
 import type { RegionData } from '../../src/engine/types';
-import { createWorld, loadRegion } from '../../src/engine/world';
+import { createStoryWorld, createWorld, loadRegion } from '../../src/engine/world';
 
 describe('save round-trip', () => {
   it('migrates v1 save to v2 with gold defaulted to 0', () => {
@@ -69,7 +69,6 @@ describe('save round-trip', () => {
     player.buffAttack = 3;
     player.buffRounds = 2;
     player.routeHistory = ['manor_entry', 'manor_main_hall'];
-    player.journalEntries = [{ type: 'room', text: 'Entered the manor.', timestamp: 123 }];
     player.skillPoints = 1;
     player.skills = { iron_will: true };
 
@@ -114,7 +113,6 @@ describe('save round-trip', () => {
     expect(loadedPlayer.buffAttack).toBe(3);
     expect(loadedPlayer.buffRounds).toBe(2);
     expect(loadedPlayer.routeHistory).toEqual(['manor_entry', 'manor_main_hall']);
-    expect(loadedPlayer.journalEntries).toEqual([{ type: 'room', text: 'Entered the manor.', timestamp: 123 }]);
     expect(loadedPlayer.skillPoints).toBe(1);
     expect(loadedPlayer.skills).toEqual({ iron_will: true });
 
@@ -178,5 +176,63 @@ describe('save round-trip', () => {
     expect(result.shops).toBeDefined();
     expect(result.shops?.manor_dusty.remainingStock['0']).toBe(2);
     expect(result.shops?.manor_dusty.remainingStock['1']).toBe(0);
+  });
+});
+
+describe('save migration v2 → v3', () => {
+  it('loads a v2 blob into an empty objectives map', () => {
+    const v2Blob = JSON.stringify({
+      version: 2,
+      player: {
+        hp: 30, max_hp: 30,
+        attack: 5, defense: 2,
+        level: 1, xp: 0,
+        gold: 0,
+        current_room: 'manor_entry',
+        inventory: {},
+        weapons: [],
+        equipped_weapon: null,
+        equipped_shield: null,
+        key_items: {},
+        visited_rooms: { manor_entry: true },
+        searched_rooms: {},
+        fired_events: {},
+        used_items_in_room: {},
+        buff_attack: 0,
+        buff_rounds: 0,
+        route_history: ['manor_entry'],
+        journal_entries: [{ type: 'room', text: 'Entered Manor Entry', timestamp: 123 }],
+        skill_points: 0,
+        skills: {},
+      },
+      world_state: { rooms: {} },
+    });
+
+    // Store the blob where save.ts expects it, then load via the slot API.
+    localStorage.setItem('mysticquest_save_1', v2Blob);
+
+    const player = createPlayer();
+    const world = createStoryWorld();
+    const result = loadFromSlot(1, player, world);
+
+    expect(result.success).toBe(true);
+    expect(player.objectives).toEqual({});
+    // The old journal_entries are discarded on migration — the field is
+    // deleted in Task 12, so don't assert on it here.
+  });
+
+  it('round-trips v3 player state with objectives', () => {
+    const player = createPlayer();
+    player.objectives = { the_diner_mystery: 'active', defeat_evil_king: 'complete' };
+    const world = createStoryWorld();
+    saveToSlot(1, player, world);
+
+    const loaded = createPlayer();
+    const result = loadFromSlot(1, loaded, world);
+    expect(result.success).toBe(true);
+    expect(loaded.objectives).toEqual({
+      the_diner_mystery: 'active',
+      defeat_evil_king: 'complete',
+    });
   });
 });

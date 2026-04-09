@@ -1,4 +1,4 @@
-import type { DungeonState, JournalEntry, PlayerState, SaveManifest, SaveSlotMeta, ShopRuntimeState, WorldState } from './types';
+import type { DungeonState, PlayerState, SaveManifest, SaveSlotMeta, ShopRuntimeState, WorldState } from './types';
 
 const MANIFEST_KEY = 'mysticquest_saves_manifest';
 const SLOT_KEY_PREFIX = 'mysticquest_save_';
@@ -34,7 +34,7 @@ interface SaveData {
     buff_attack: number;
     buff_rounds: number;
     route_history: string[];
-    journal_entries: JournalEntry[];
+    objectives?: Record<string, 'active' | 'complete'>;
     skill_points: number;
     skills: Record<string, boolean>;
   };
@@ -103,7 +103,7 @@ function serialize(
   }
 
   const data: SaveData = {
-    version: 2,
+    version: 3,
     player: {
       hp: player.hp, max_hp: player.maxHp,
       attack: player.attack, defense: player.defense,
@@ -122,7 +122,7 @@ function serialize(
       buff_attack: player.buffAttack,
       buff_rounds: player.buffRounds,
       route_history: player.routeHistory || [],
-      journal_entries: player.journalEntries || [],
+      objectives: player.objectives || {},
       skill_points: player.skillPoints,
       skills: player.skills,
     },
@@ -155,7 +155,9 @@ function deserialize(
 ): SaveLoadResult {
   try {
     const data: SaveData = JSON.parse(jsonString);
-    if (!data || (data.version !== 1 && data.version !== 2)) return { success: false };
+    if (!data || (data.version !== 1 && data.version !== 2 && data.version !== 3)) {
+      return { success: false };
+    }
     const p = data.player;
     player.hp = p.hp;
     player.maxHp = p.max_hp;
@@ -177,7 +179,9 @@ function deserialize(
     player.buffAttack = p.buff_attack || 0;
     player.buffRounds = p.buff_rounds || 0;
     player.routeHistory = p.route_history || [];
-    player.journalEntries = p.journal_entries || [];
+    // v1/v2 saves may have had journal_entries in the blob; ignored on load.
+    // v3 has p.objectives.
+    player.objectives = (p.objectives as Record<string, 'active' | 'complete'>) || {};
     player.skillPoints = p.skill_points || 0;
     player.skills = p.skills || {};
 

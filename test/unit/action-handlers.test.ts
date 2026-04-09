@@ -30,14 +30,12 @@ function makeStoryStore() {
 describe('action handlers', () => {
   it('take moves a room weapon into inventory and equips it', () => {
     const store = makeStoryStore();
-    const journal: string[] = [];
 
     handleTake(
       store,
       'dagger',
       itemData,
       weaponData,
-      (_type, text) => journal.push(text),
       () => {},
       () => {
         store.header.weapon = store.player?.equippedWeapon ? weaponData[store.player.equippedWeapon].name : 'Fists';
@@ -47,7 +45,6 @@ describe('action handlers', () => {
     expect(store.player?.weapons).toContain('rusty_dagger');
     expect(store.player?.equippedWeapon).toBe('rusty_dagger');
     expect(store.world?.rooms.manor_entry.weapons).toEqual([]);
-    expect(journal).toContain('Found Rusty Dagger');
   });
 
   it('take with a plural target picks up every matching item', () => {
@@ -68,7 +65,7 @@ describe('action handlers', () => {
     store.world = world;
     store.player = createPlayer('grove');
 
-    handleTake(store, 'mushrooms', itemData, weaponData, () => {}, () => {}, () => {});
+    handleTake(store, 'mushrooms', itemData, weaponData, () => {}, () => {});
 
     expect(store.player?.keyItems.red_mushroom).toBe(true);
     expect(store.player?.keyItems.grey_mushroom).toBe(true);
@@ -93,7 +90,7 @@ describe('action handlers', () => {
     store.world = world;
     store.player = createPlayer('grove');
 
-    handleTake(store, 'mushroom', itemData, weaponData, () => {}, () => {}, () => {});
+    handleTake(store, 'mushroom', itemData, weaponData, () => {}, () => {});
 
     // Neither mushroom picked up — the player was asked to choose.
     expect(store.player?.keyItems.red_mushroom).toBeUndefined();
@@ -254,7 +251,7 @@ describe('action handlers', () => {
     store.player = createPlayer('peak');
 
     handleSearch(store, itemData, weaponData);
-    handleTake(store, 'tyrfing', itemData, weaponData, () => {}, () => {}, () => {});
+    handleTake(store, 'tyrfing', itemData, weaponData, () => {}, () => {});
 
     expect(store.player?.weapons).toContain('tyrfing');
     expect(world.rooms.peak._ground_weapons).not.toContain('tyrfing');

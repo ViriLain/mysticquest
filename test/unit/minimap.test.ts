@@ -46,7 +46,7 @@ function makePlayer(currentRoom: string, visited: string[]): PlayerState {
     inventory: {}, weapons: [], equippedWeapon: null, equippedShield: null,
     keyItems: {}, visitedRooms, searchedRooms: {}, firedEvents: {},
     usedItemsInRoom: {}, defending: false, buffAttack: 0, buffRounds: 0,
-    routeHistory: [], journalEntries: [], skillPoints: 0, skills: {},
+    routeHistory: [], objectives: {}, skillPoints: 0, skills: {},
   };
 }
 

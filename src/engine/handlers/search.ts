@@ -1,5 +1,6 @@
 import * as C from '../constants';
 import { addLine } from '../output';
+import { notifyObjectiveEvent } from '../objectives';
 import { addDynamicExit, getRoom } from '../world';
 import type { GameStore, ItemDef, WeaponDef } from '../types';
 
@@ -22,6 +23,7 @@ export function handleSearch(
   }
 
   store.player.searchedRooms[store.player.currentRoom] = true;
+  notifyObjectiveEvent(store, { type: 'searched_room', room: store.player.currentRoom });
   addLine(store, 'You search the room carefully...', C.HELP_COLOR);
 
   let foundSomething = false;

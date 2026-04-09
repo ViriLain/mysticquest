@@ -40,7 +40,6 @@ describe('combat state', () => {
       refreshHeader: () => {
         refreshes++;
       },
-      addJournal: () => {},
       checkEndingsForBoss: () => {},
       checkAchievement: () => {},
       startGameover: () => {},
