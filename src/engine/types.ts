@@ -1,11 +1,5 @@
 // ---- Data types (matching JSON structure) ----
 
-export interface JournalEntry {
-  type: 'room' | 'combat' | 'item' | 'story';
-  text: string;
-  timestamp: number;
-}
-
 /**
  * An objective lives in one of three states:
  *   - untriggered (absent from `player.objectives`)
@@ -262,7 +256,6 @@ export interface PlayerState {
   buffAttack: number;
   buffRounds: number;
   routeHistory: string[];
-  journalEntries: JournalEntry[];
   objectives: Record<string, ObjectiveStatus>;
   skillPoints: number;
   skills: Record<string, boolean>;

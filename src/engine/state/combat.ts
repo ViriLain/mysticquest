@@ -15,7 +15,6 @@ export interface CombatDeps {
   weaponData: Record<string, WeaponDef>;
   enemyData: Record<string, EnemyDef>;
   refreshHeader: () => void;
-  addJournal: (type: 'combat', text: string) => void;
   checkEndingsForBoss: (enemyId: string) => void;
   checkAchievement: (id: string) => void;
   startGameover: () => void;
@@ -109,7 +108,6 @@ export function handleCombatCommand(
 
       const wasBoss = store.combat.enemy.isBoss;
       markEnemyDead(store.world, store.player.currentRoom, defeatedEnemyId);
-      deps.addJournal('combat', `Defeated ${store.combat.enemy.name}`);
       notifyObjectiveEvent(store, { type: 'defeated_enemy', enemy: defeatedEnemyId });
       if (store.gameMode === 'dungeon' && store.dungeon) {
         store.dungeon.score.enemiesKilled++;

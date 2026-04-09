@@ -34,7 +34,6 @@ interface SaveData {
     buff_attack: number;
     buff_rounds: number;
     route_history: string[];
-    journal_entries?: unknown;
     objectives?: Record<string, 'active' | 'complete'>;
     skill_points: number;
     skills: Record<string, boolean>;
@@ -180,9 +179,8 @@ function deserialize(
     player.buffAttack = p.buff_attack || 0;
     player.buffRounds = p.buff_rounds || 0;
     player.routeHistory = p.route_history || [];
-    // v2 and earlier have p.journal_entries which is discarded on load.
+    // v1/v2 saves may have had journal_entries in the blob; ignored on load.
     // v3 has p.objectives.
-    player.journalEntries = [];
     player.objectives = (p.objectives as Record<string, 'active' | 'complete'>) || {};
     player.skillPoints = p.skill_points || 0;
     player.skills = p.skills || {};

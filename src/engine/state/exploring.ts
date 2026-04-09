@@ -20,7 +20,6 @@ export interface ExploringDeps {
   npcData: Record<string, NpcDef>;
   refreshHeader: () => void;
   emit: (sound: string) => void;
-  addJournal: (type: 'item' | 'combat' | 'story' | 'room', text: string) => void;
   startCombat: (enemyId: string) => void;
   checkEndingsForItem: (itemId: string) => void;
   checkChatterbox: () => void;
@@ -67,7 +66,6 @@ export function handleExploringCommand(
       target,
       deps.itemData,
       deps.weaponData,
-      (type, text) => deps.addJournal(type, text),
       deps.checkItemAchievements,
       deps.refreshHeader,
     );

@@ -69,7 +69,6 @@ describe('save round-trip', () => {
     player.buffAttack = 3;
     player.buffRounds = 2;
     player.routeHistory = ['manor_entry', 'manor_main_hall'];
-    player.journalEntries = [{ type: 'room', text: 'Entered the manor.', timestamp: 123 }];
     player.skillPoints = 1;
     player.skills = { iron_will: true };
 
@@ -114,9 +113,6 @@ describe('save round-trip', () => {
     expect(loadedPlayer.buffAttack).toBe(3);
     expect(loadedPlayer.buffRounds).toBe(2);
     expect(loadedPlayer.routeHistory).toEqual(['manor_entry', 'manor_main_hall']);
-    // v3 saves no longer persist journalEntries; the field is zeroed on load
-    // (Task 12 removes it entirely).
-    expect(loadedPlayer.journalEntries).toEqual([]);
     expect(loadedPlayer.skillPoints).toBe(1);
     expect(loadedPlayer.skills).toEqual({ iron_will: true });
 

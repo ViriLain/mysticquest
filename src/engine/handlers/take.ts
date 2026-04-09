@@ -26,7 +26,6 @@ export function handleTake(
   target: string,
   itemData: Record<string, ItemDef>,
   weaponData: Record<string, WeaponDef>,
-  addJournal: (type: 'item', text: string) => void,
   checkItemAchievements: () => void,
   refreshHeader: () => void,
 ): void {
@@ -46,7 +45,6 @@ export function handleTake(
     removeFromRoom(room, weaponId);
     addWeapon(player, weaponId);
     addLine(store, `You pick up the ${weaponData[weaponId].name}.`, C.ITEM_COLOR);
-    addJournal('item', `Found ${weaponData[weaponId].name}`);
     notifyObjectiveEvent(store, { type: 'took_item', item: weaponId });
     emitSound(store, 'pickup');
     if (!player.equippedWeapon) {
@@ -61,7 +59,6 @@ export function handleTake(
     removeFromRoom(room, itemId);
     addItem(player, itemId, itemData);
     addLine(store, `You pick up the ${itemData[itemId].name}.`, C.ITEM_COLOR);
-    addJournal('item', `Found ${itemData[itemId].name}`);
     notifyObjectiveEvent(store, { type: 'took_item', item: itemId });
     emitSound(store, 'pickup');
     if (itemId === 'ancient_map') {
