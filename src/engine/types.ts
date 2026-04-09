@@ -20,16 +20,18 @@ export interface JournalEntry {
 export type ObjectiveStatus = 'active' | 'complete';
 
 /**
- * What reveals an objective to the player.
+ * What reveals an objective to the player. All triggers fire at most once
+ * per objective — re-triggering an already-active or already-complete
+ * objective is a no-op.
  *
- * | Type                 | Required field | Fires when                               |
- * | -------------------- | -------------- | ---------------------------------------- |
- * | talked_to_npc        | npc            | Player talks to the named NPC            |
- * | entered_room         | room           | Player enters the named room             |
- * | searched_room        | room           | Player successfully searches the room    |
- * | took_item            | item           | Player picks up the named item or weapon |
- * | defeated_enemy       | enemy          | Player wins combat against the enemy     |
- * | objective_completed  | objective      | Another objective (by id) becomes complete |
+ * | Type                 | Required field | Fires when                                      |
+ * | -------------------- | -------------- | ----------------------------------------------- |
+ * | talked_to_npc        | npc            | Player talks to the named NPC for the first time |
+ * | entered_room         | room           | Player enters the named room for the first time  |
+ * | searched_room        | room           | Player successfully searches the room            |
+ * | took_item            | item           | Player picks up the named item or weapon         |
+ * | defeated_enemy       | enemy          | Player wins combat against the enemy             |
+ * | objective_completed  | objective      | Another objective (by id) becomes complete       |
  */
 export interface ObjectiveTrigger {
   type:
