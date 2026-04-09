@@ -126,9 +126,15 @@ export function handleExploringCommand(
 }
 
 export function parseBatchCount(target: string): [string, number] {
-  const match = target.match(/^(.+?)\s*x(\d+)$/i);
-  if (match) {
-    return [match[1].trim(), Math.min(parseInt(match[2], 10), 10)];
+  // "potion x3" or "potion X3"
+  const suffixMatch = target.match(/^(.+?)\s*x(\d+)$/i);
+  if (suffixMatch) {
+    return [suffixMatch[1].trim(), Math.min(parseInt(suffixMatch[2], 10), 10)];
+  }
+  // "3 potions" or "3 potion"
+  const prefixMatch = target.match(/^(\d+)\s+(.+)$/);
+  if (prefixMatch) {
+    return [prefixMatch[2].trim(), Math.min(parseInt(prefixMatch[1], 10), 10)];
   }
   return [target, 1];
 }

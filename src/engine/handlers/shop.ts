@@ -3,6 +3,7 @@ import { buyItem, getEffectiveStock, sellItem, type ShopDef } from '../economy';
 import { ICON, iconLine } from '../icons';
 import { findAllMatches, resolveOrDisambiguate, type Matchable } from '../matching';
 import { addLine, emitSound } from '../output';
+import { parseBatchCount } from '../state/exploring';
 import type { GameStore, ItemDef, WeaponDef } from '../types';
 
 interface ShopBuyMatchable extends Matchable {
@@ -47,10 +48,12 @@ export function displayShop(
         else if (item.type === 'shield' && item.value) label += ` (+${item.value} DEF)`;
       }
       const namePadded = label.padEnd(28, '.');
+      const affordable = store.player!.gold >= price;
+      const suffix = affordable ? '' : ` [need ${price - store.player!.gold}g more]`;
       addLine(
         store,
-        `  ${namePadded} ${String(price).padStart(4)}g  (${entry.remaining} left)`,
-        C.HELP_COLOR,
+        `  ${namePadded} ${String(price).padStart(4)}g  (${entry.remaining} left)${suffix}`,
+        affordable ? C.HELP_COLOR : C.ERROR_COLOR,
       );
     }
   }
@@ -92,6 +95,8 @@ export function handleShopCommand(
       return;
     }
 
+    const [itemName, count] = parseBatchCount(target);
+
     const stock = getEffectiveStock(shop, runtime).filter(entry => entry.remaining > 0);
     const candidates: Record<string, ShopBuyMatchable> = {};
     const candidateIds: string[] = [];
@@ -109,7 +114,7 @@ export function handleShopCommand(
       candidateIds.push(key);
     }
 
-    const matches = findAllMatches(target, candidateIds, candidates);
+    const matches = findAllMatches(itemName, candidateIds, candidates);
     const matchedId = resolveOrDisambiguate(store, matches, candidates, 'item do you want to buy');
     if (!matchedId) {
       if (matches.length === 0) {
@@ -119,23 +124,26 @@ export function handleShopCommand(
     }
 
     const matched = candidates[matchedId];
-    const result = buyItem(store.player, shop, runtime, matched.__entryIndex, itemData, weaponData);
-    if (!result.ok) {
-      if (result.reason === 'insufficient_gold') {
-        addLine(store, `You need ${result.needed} more gold.`, C.ERROR_COLOR);
-      } else if (result.reason === 'out_of_stock') {
-        addLine(store, "That's sold out.", C.ERROR_COLOR);
-      } else {
-        addLine(store, "You can't buy that.", C.ERROR_COLOR);
+    for (let i = 0; i < count; i++) {
+      const result = buyItem(store.player, shop, runtime, matched.__entryIndex, itemData, weaponData);
+      if (!result.ok) {
+        if (i > 0) break; // partial buy succeeded, stop silently
+        if (result.reason === 'insufficient_gold') {
+          addLine(store, `You need ${result.needed} more gold.`, C.ERROR_COLOR);
+        } else if (result.reason === 'out_of_stock') {
+          addLine(store, "That's sold out.", C.ERROR_COLOR);
+        } else {
+          addLine(store, "You can't buy that.", C.ERROR_COLOR);
+        }
+        emitSound(store, 'error');
+        return;
       }
-      emitSound(store, 'error');
-      return;
-    }
 
-    const def = result.type === 'weapon' ? weaponData[result.itemId] : itemData[result.itemId];
-    const name = def?.name ?? result.itemId;
-    addLine(store, iconLine(ICON.loot, `Bought ${name} for ${result.price}g.`), C.ITEM_COLOR);
-    emitSound(store, 'pickup');
+      const def = result.type === 'weapon' ? weaponData[result.itemId] : itemData[result.itemId];
+      const name = def?.name ?? result.itemId;
+      addLine(store, iconLine(ICON.loot, `Bought ${name} for ${result.price}g.`), C.ITEM_COLOR);
+      emitSound(store, 'pickup');
+    }
     refreshHeader();
     return;
   }
@@ -153,8 +161,12 @@ export function handleShopCommand(
     const itemMatches = findAllMatches(target, ownedItemIds, itemData);
     const matchedItemId = resolveOrDisambiguate(store, itemMatches, itemData, 'item do you want to sell');
     if (matchedItemId) {
+      const wasEquippedShield = store.player.equippedShield === matchedItemId;
       const result = sellItem(store.player, shop, matchedItemId, 'item', itemData, weaponData);
       handleSellResult(store, result, itemData[matchedItemId]?.name ?? matchedItemId);
+      if (result.ok && wasEquippedShield) {
+        addLine(store, 'Warning: you sold your equipped shield!', C.COMBAT_COLOR);
+      }
       refreshHeader();
       return;
     }
@@ -163,8 +175,12 @@ export function handleShopCommand(
     const weaponMatches = findAllMatches(target, store.player.weapons, weaponData);
     const matchedWeaponId = resolveOrDisambiguate(store, weaponMatches, weaponData, 'weapon do you want to sell');
     if (matchedWeaponId) {
+      const wasEquippedWeapon = store.player.equippedWeapon === matchedWeaponId;
       const result = sellItem(store.player, shop, matchedWeaponId, 'weapon', itemData, weaponData);
       handleSellResult(store, result, weaponData[matchedWeaponId]?.name ?? matchedWeaponId);
+      if (result.ok && wasEquippedWeapon) {
+        addLine(store, "Warning: you sold your equipped weapon! You're now fighting bare-handed.", C.COMBAT_COLOR);
+      }
       refreshHeader();
       return;
     }
@@ -193,6 +209,25 @@ export function handleShopCommand(
           ? (weaponData[entry.entry.id]?.price ?? 0)
           : (itemData[entry.entry.id]?.price ?? 0);
         addLine(store, `Price: ${price}g`, C.STAT_COLOR);
+
+        // Comparison to equipped gear
+        if (isWeapon) {
+          const bonus = (def as WeaponDef).attack_bonus;
+          const eqId = store.player!.equippedWeapon;
+          const eq = eqId ? weaponData[eqId] : null;
+          const eqLabel = eq ? `${eq.name} (+${eq.attack_bonus} ATK)` : 'Fists';
+          addLine(store, `  Your weapon: ${eqLabel} → This: +${bonus} ATK`, C.STAT_COLOR);
+        } else {
+          const item = def as ItemDef;
+          if (item.type === 'shield' && item.value) {
+            const eqId = store.player!.equippedShield;
+            const eq = eqId ? itemData[eqId] : null;
+            const eqLabel = eq ? `${eq.name} (+${eq.value} DEF)` : '(none)';
+            addLine(store, `  Your shield: ${eqLabel} → This: +${item.value} DEF`, C.STAT_COLOR);
+          } else if (item.effect === 'heal' && item.value) {
+            addLine(store, `  Your HP: ${store.player!.hp}/${store.player!.maxHp}`, C.STAT_COLOR);
+          }
+        }
         return;
       }
     }

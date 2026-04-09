@@ -56,25 +56,33 @@ export function showAchievements(store: GameStore): void {
 
 export function showInventory(store: GameStore): void {
   if (!store.player) return;
+  const inShop = !!store.shopState.activeShopId;
   addLine(store, '');
   addLine(store, '=== Inventory ===', C.STAT_COLOR);
 
   if (store.player.equippedWeapon && weaponData[store.player.equippedWeapon]) {
     const weapon = weaponData[store.player.equippedWeapon];
-    addLine(store, iconLine(ICON.weapon, `Weapon: ${weapon.name} (+${weapon.attack_bonus} ATK)`), C.ITEM_COLOR);
+    let sell = '';
+    if (inShop && weapon.price) sell = ` (sells for ${Math.floor(weapon.price / 2)}g)`;
+    addLine(store, iconLine(ICON.weapon, `Weapon: ${weapon.name} (+${weapon.attack_bonus} ATK)${sell}`), C.ITEM_COLOR);
   } else {
     addLine(store, iconLine(ICON.weapon, 'Weapon: Fists'), C.ITEM_COLOR);
   }
 
   if (store.player.equippedShield && itemData[store.player.equippedShield]) {
     const shield = itemData[store.player.equippedShield];
-    addLine(store, iconLine(ICON.shield, `Shield: ${shield.name} (+${shield.value} DEF)`), C.ITEM_COLOR);
+    let sell = '';
+    if (inShop && shield.price) sell = ` (sells for ${Math.floor(shield.price / 2)}g)`;
+    addLine(store, iconLine(ICON.shield, `Shield: ${shield.name} (+${shield.value} DEF)${sell}`), C.ITEM_COLOR);
   }
 
   const otherWeapons = store.player.weapons.filter(weaponId => weaponId !== store.player!.equippedWeapon);
   for (const weaponId of otherWeapons) {
     const weapon = weaponData[weaponId];
-    if (weapon) addLine(store, iconLine(ICON.weapon, `${weapon.name} (+${weapon.attack_bonus} ATK)`), C.HELP_COLOR);
+    if (!weapon) continue;
+    let sell = '';
+    if (inShop && weapon.price) sell = ` (sells for ${Math.floor(weapon.price / 2)}g)`;
+    addLine(store, iconLine(ICON.weapon, `${weapon.name} (+${weapon.attack_bonus} ATK)${sell}`), C.HELP_COLOR);
   }
 
   let hasItems = false;
@@ -86,7 +94,9 @@ export function showInventory(store: GameStore): void {
     if (item?.effect === 'heal' && item.value) stat = ` (+${item.value} HP)`;
     else if (item?.effect === 'buff_attack' && item.value) stat = ` (+${item.value} ATK, 3 rnd)`;
     else if (item?.type === 'shield' && item.value) stat = ` (+${item.value} DEF)`;
-    const text = (count > 1 ? `${name} x${count}` : name) + stat;
+    let sell = '';
+    if (inShop && item?.price && item.type !== 'key') sell = ` (sells for ${Math.floor(item.price / 2)}g)`;
+    const text = (count > 1 ? `${name} x${count}` : name) + stat + sell;
     const icon = item?.type === 'shield' ? ICON.shield : ICON.item;
     addLine(store, iconLine(icon, text), C.HELP_COLOR);
   }
