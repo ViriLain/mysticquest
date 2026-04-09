@@ -59,6 +59,9 @@ endings.ts              4 ending trigger types (boss, item, choice, exploration)
 events.ts               Room on_enter event triggers.
 effects.ts              Visual effects state (shake, flash, glitch, tint).
 display.ts              Room rendering (name, description, exits, contents).
+objectives.ts           Journal/quest tracker. Loads src/data/objectives.json,
+                        tracks activation and completion via notifyObjectiveEvent,
+                        writes inline notification lines to the terminal.
 output.ts               Terminal write helpers: addLine, addLineInstant,
                         clearTerminal, updateHeader, applyRegionTint,
                         displayAscii, emitSound.
@@ -115,7 +118,12 @@ items.json       Consumables, shields, key items.
 npcs.json        4 NPCs with dialogue trees.
 shops.json       3 merchant shops (dusty/wren/hermit) with finite stock.
 endings.json     4 ending definitions.
+objectives.json  Hand-authored journal objectives (trigger/completion pairs).
 ```
+
+### Journal / objectives
+
+The `journal` command shows hand-authored quest-style objectives defined in `src/data/objectives.json`. Objectives are hidden until their trigger fires in-game (e.g., talking to an NPC, entering a room). See `src/data/README.md` for the schema and trigger/completion type reference. Integration points: `gameReducer.ts::enterRoom`, `handlers/talk.ts`, `handlers/take.ts`, `handlers/search.ts`, and `state/combat.ts` all call `notifyObjectiveEvent` after mutating relevant state.
 
 ### UI (`src/components/`, `src/App.tsx`)
 
