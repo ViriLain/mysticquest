@@ -3,6 +3,7 @@ import * as C from './constants';
 import { addLine } from './output';
 import type {
   GameStore,
+  ObjectiveCompletion,
   ObjectiveDef,
   ObjectiveTrigger,
 } from './types';
@@ -39,6 +40,27 @@ function triggerMatches(trigger: ObjectiveTrigger, event: AnyObjectiveEvent): bo
   }
 }
 
+/** Pure check: does the current store state satisfy this objective's completion? */
+export function isCompletionSatisfied(
+  store: GameStore,
+  completion: ObjectiveCompletion,
+): boolean {
+  if (!store.player) return false;
+  const player = store.player;
+
+  switch (completion.type) {
+    case 'key_items_collected': {
+      const items = completion.items ?? [];
+      if (items.length === 0) return false;
+      return items.every(
+        id => player.keyItems[id] === true || (player.inventory[id] ?? 0) > 0,
+      );
+    }
+    default:
+      return false;
+  }
+}
+
 /**
  * Called from handlers whenever an objective-relevant event occurs. Mutates
  * `store.player.objectives` and queues notification lines via `addLine`
@@ -54,9 +76,8 @@ export function notifyObjectiveEvent(
   if (!store.player) return { activated: [], completed: [] };
   const player = store.player;
 
-  // Track which objectives transitioned in this call so we can write
-  // notification lines in order (activations, then completions).
   const newlyActivated: ObjectiveDef[] = [];
+  const newlyCompleted: ObjectiveDef[] = [];
 
   // Step 1: activate any untriggered objectives whose trigger matches.
   for (const obj of objectives) {
@@ -67,10 +88,25 @@ export function notifyObjectiveEvent(
     }
   }
 
-  // Notification lines. (Completion logic and chaining come in later tasks.)
+  // Step 2: re-check completion for every active objective. Freshly-activated
+  // objectives are checked here too, which handles the "collected items before
+  // the trigger fired" case — they flip untriggered → active → complete in
+  // a single call and both notifications fire in order.
+  for (const obj of objectives) {
+    if (player.objectives[obj.id] !== 'active') continue;
+    if (isCompletionSatisfied(store, obj.completion)) {
+      player.objectives[obj.id] = 'complete';
+      newlyCompleted.push(obj);
+    }
+  }
+
+  // Step 3: write notification lines (activations first, then completions).
   for (const obj of newlyActivated) {
     addLine(store, `* New journal entry: ${obj.title}`, C.STAT_COLOR);
   }
+  for (const obj of newlyCompleted) {
+    addLine(store, `* Journal complete: ${obj.title}`, C.STAT_COLOR);
+  }
 
-  return { activated: newlyActivated, completed: [] };
+  return { activated: newlyActivated, completed: newlyCompleted };
 }
