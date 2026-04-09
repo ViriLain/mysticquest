@@ -22,7 +22,7 @@ export type ObjectiveEvent =
   | { type: 'took_item'; item: string }
   | { type: 'defeated_enemy'; enemy: string };
 
-/** Internal superset — adds the chain event. */
+/** Internal superset — adds the chain event. Used in Task 6 chaining; not yet consumed. */
 type AnyObjectiveEvent =
   | ObjectiveEvent
   | { type: 'objective_completed'; objective: string };
@@ -42,15 +42,16 @@ function triggerMatches(trigger: ObjectiveTrigger, event: AnyObjectiveEvent): bo
 /**
  * Called from handlers whenever an objective-relevant event occurs. Mutates
  * `store.player.objectives` and queues notification lines via `addLine`
- * (which lands in `store.typewriterQueue`). Callers don't need to do
- * anything with the return value.
+ * (which lands in `store.typewriterQueue`). Returns the sets of newly
+ * activated and completed objectives for callers that need to inspect them
+ * (e.g. tests, Task 6 chaining). Production callers can ignore the return.
  */
 export function notifyObjectiveEvent(
   store: GameStore,
   event: ObjectiveEvent,
   objectives: readonly ObjectiveDef[] = OBJECTIVES,
-): void {
-  if (!store.player) return;
+): { activated: ObjectiveDef[]; completed: ObjectiveDef[] } {
+  if (!store.player) return { activated: [], completed: [] };
   const player = store.player;
 
   // Track which objectives transitioned in this call so we can write
@@ -70,4 +71,6 @@ export function notifyObjectiveEvent(
   for (const obj of newlyActivated) {
     addLine(store, `* New journal entry: ${obj.title}`, C.STAT_COLOR);
   }
+
+  return { activated: newlyActivated, completed: [] };
 }

@@ -33,12 +33,21 @@ describe('notifyObjectiveEvent', () => {
     const store = objectivesTestStore();
     expect(store.player!.objectives.the_diner_mystery).toBeUndefined();
 
-    notifyObjectiveEvent(
+    const result = notifyObjectiveEvent(
       store,
       { type: 'talked_to_npc', npc: 'whiskers' },
       whiskersFixture,
     );
 
+    // State mutation
     expect(store.player!.objectives.the_diner_mystery).toBe('active');
+
+    // Notification line written to typewriterQueue
+    const lines = store.typewriterQueue.map(l => l.text);
+    expect(lines).toContain('* New journal entry: The Diner Mystery');
+
+    // Return value
+    expect(result.activated).toEqual([whiskersFixture[0]]);
+    expect(result.completed).toEqual([]);
   });
 });
