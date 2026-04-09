@@ -294,3 +294,66 @@ describe('completion: used_items_in_room', () => {
     expect(store.player!.objectives.enlightened).toBe('complete');
   });
 });
+
+describe('chaining', () => {
+  it('activates a chained objective when its prerequisite completes', () => {
+    const store = objectivesTestStore();
+    store.player!.inventory = { red_mushroom: 1 };
+
+    const fx: ObjectiveDef[] = [
+      {
+        id: 'first',
+        title: 'First',
+        hint: '...',
+        trigger: { type: 'talked_to_npc', npc: 'whiskers' },
+        completion: { type: 'key_items_collected', items: ['red_mushroom'] },
+        completion_text: '...',
+      },
+      {
+        id: 'second',
+        title: 'Second',
+        hint: '...',
+        trigger: { type: 'objective_completed', objective: 'first' },
+        completion: { type: 'key_items_collected', items: ['never'] },
+        completion_text: '...',
+      },
+    ];
+
+    notifyObjectiveEvent(store, { type: 'talked_to_npc', npc: 'whiskers' }, fx);
+
+    expect(store.player!.objectives.first).toBe('complete');
+    expect(store.player!.objectives.second).toBe('active');
+  });
+
+  it('chains across multiple hops in a single call', () => {
+    const store = objectivesTestStore();
+    store.player!.inventory = { red_mushroom: 1 };
+
+    const fx: ObjectiveDef[] = [
+      {
+        id: 'a', title: 'A', hint: '...',
+        trigger: { type: 'talked_to_npc', npc: 'whiskers' },
+        completion: { type: 'key_items_collected', items: ['red_mushroom'] },
+        completion_text: '...',
+      },
+      {
+        id: 'b', title: 'B', hint: '...',
+        trigger: { type: 'objective_completed', objective: 'a' },
+        completion: { type: 'objective_completed', objective: 'a' },
+        completion_text: '...',
+      },
+      {
+        id: 'c', title: 'C', hint: '...',
+        trigger: { type: 'objective_completed', objective: 'b' },
+        completion: { type: 'objective_completed', objective: 'b' },
+        completion_text: '...',
+      },
+    ];
+
+    notifyObjectiveEvent(store, { type: 'talked_to_npc', npc: 'whiskers' }, fx);
+
+    expect(store.player!.objectives.a).toBe('complete');
+    expect(store.player!.objectives.b).toBe('complete');
+    expect(store.player!.objectives.c).toBe('complete');
+  });
+});
