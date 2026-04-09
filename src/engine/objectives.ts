@@ -56,8 +56,36 @@ export function isCompletionSatisfied(
         id => player.keyItems[id] === true || (player.inventory[id] ?? 0) > 0,
       );
     }
-    default:
-      return false;
+
+    case 'enemy_defeated': {
+      if (!completion.enemy || !store.world) return false;
+      return Object.values(store.world.rooms).some(
+        room => room._dead_enemies?.[completion.enemy!] === true,
+      );
+    }
+
+    case 'visited_rooms_percent': {
+      if (completion.percent === undefined || !store.world) return false;
+      const nonHidden = Object.keys(store.world.rooms).filter(id => {
+        const room = store.world!.rooms[id];
+        return room.region !== 'hidden' && !id.startsWith('dng_');
+      });
+      if (nonHidden.length === 0) return false;
+      const visitedNonHidden = nonHidden.filter(id => player.visitedRooms[id]);
+      return visitedNonHidden.length / nonHidden.length >= completion.percent / 100;
+    }
+
+    case 'used_items_in_room': {
+      if (!completion.room || !completion.items) return false;
+      const used = player.usedItemsInRoom[completion.room];
+      if (!used) return false;
+      return completion.items.every(id => used[id] === true);
+    }
+
+    case 'objective_completed': {
+      if (!completion.objective) return false;
+      return player.objectives[completion.objective] === 'complete';
+    }
   }
 }
 

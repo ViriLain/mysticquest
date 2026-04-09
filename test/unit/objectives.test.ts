@@ -206,3 +206,91 @@ describe('trigger types', () => {
     expect(store.player!.objectives.wrong_npc).toBeUndefined();
   });
 });
+
+describe('completion: enemy_defeated', () => {
+  it('completes when the enemy is marked dead in any room', () => {
+    const store = objectivesTestStore();
+    const room = store.world!.rooms.manor_entry;
+    room._dead_enemies = { cellar_shade: true };
+    const fx: ObjectiveDef[] = [{
+      id: 'hero_path',
+      title: 'Hero',
+      hint: 'Begin the fight.',
+      trigger: { type: 'entered_room', room: 'manor_entry' },
+      completion: { type: 'enemy_defeated', enemy: 'cellar_shade' },
+      completion_text: 'Done.',
+    }];
+    notifyObjectiveEvent(store, { type: 'entered_room', room: 'manor_entry' }, fx);
+    expect(store.player!.objectives.hero_path).toBe('complete');
+  });
+});
+
+describe('completion: visited_rooms_percent', () => {
+  it('completes when visited non-hidden non-dungeon rooms meet the threshold', () => {
+    const store = objectivesTestStore();
+    const nonHidden = Object.keys(store.world!.rooms).filter(
+      id => store.world!.rooms[id].region !== 'hidden' && !id.startsWith('dng_'),
+    );
+    const threshold = Math.ceil(nonHidden.length * 0.8);
+    for (const id of nonHidden.slice(0, threshold)) {
+      store.player!.visitedRooms[id] = true;
+    }
+    const fx: ObjectiveDef[] = [{
+      id: 'long_road',
+      title: 'Long Road',
+      hint: '...',
+      trigger: { type: 'entered_room', room: nonHidden[0] },
+      completion: { type: 'visited_rooms_percent', percent: 80 },
+      completion_text: '...',
+    }];
+    notifyObjectiveEvent(
+      store,
+      { type: 'entered_room', room: nonHidden[0] },
+      fx,
+    );
+    expect(store.player!.objectives.long_road).toBe('complete');
+  });
+
+  it('does not complete below the threshold', () => {
+    const store = objectivesTestStore();
+    store.player!.visitedRooms = { manor_entry: true }; // only 1 room
+    const fx: ObjectiveDef[] = [{
+      id: 'long_road',
+      title: 'Long Road',
+      hint: '...',
+      trigger: { type: 'entered_room', room: 'manor_entry' },
+      completion: { type: 'visited_rooms_percent', percent: 80 },
+      completion_text: '...',
+    }];
+    notifyObjectiveEvent(store, { type: 'entered_room', room: 'manor_entry' }, fx);
+    expect(store.player!.objectives.long_road).toBe('active');
+  });
+});
+
+describe('completion: used_items_in_room', () => {
+  it('completes when all listed items were used in the given room', () => {
+    const store = objectivesTestStore();
+    store.player!.usedItemsInRoom = {
+      hidden_diner: {
+        red_mushroom: true,
+        grey_mushroom: true,
+        green_mushroom: true,
+        orange_mushroom: true,
+      },
+    };
+    const fx: ObjectiveDef[] = [{
+      id: 'enlightened',
+      title: 'Enlightened',
+      hint: '...',
+      trigger: { type: 'entered_room', room: 'hidden_diner' },
+      completion: {
+        type: 'used_items_in_room',
+        room: 'hidden_diner',
+        items: ['red_mushroom', 'grey_mushroom', 'green_mushroom', 'orange_mushroom'],
+      },
+      completion_text: '...',
+    }];
+    notifyObjectiveEvent(store, { type: 'entered_room', room: 'hidden_diner' }, fx);
+    expect(store.player!.objectives.enlightened).toBe('complete');
+  });
+});
