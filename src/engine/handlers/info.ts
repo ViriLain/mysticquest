@@ -1,10 +1,11 @@
 import { getAll as getAllAchievements } from '../achievements';
 import * as C from '../constants';
 import { ICON, iconLine } from '../icons';
+import { OBJECTIVES } from '../objectives';
 import { addLine } from '../output';
 import { totalAttack, totalDefense, visitedCount, xpToNextLevel } from '../player';
 import { SKILL_TREE, canLearnSkill, getSkillsByBranch } from '../skills';
-import type { GameStore, ItemDef, WeaponDef } from '../types';
+import type { GameStore, ItemDef, ObjectiveDef, WeaponDef } from '../types';
 
 import itemsJson from '../../data/items.json';
 import weaponsJson from '../../data/weapons.json';
@@ -127,18 +128,30 @@ export function showJournal(store: GameStore): void {
   if (!store.player) return;
   addLine(store, '');
   addLine(store, '=== Journal ===', C.STAT_COLOR);
-  if (store.player.journalEntries.length === 0) {
-    addLine(store, '  (no entries)', C.HELP_COLOR);
+
+  const active: ObjectiveDef[] = [];
+  const complete: ObjectiveDef[] = [];
+  for (const obj of OBJECTIVES) {
+    const status = store.player.objectives[obj.id];
+    if (status === 'active') active.push(obj);
+    else if (status === 'complete') complete.push(obj);
+  }
+
+  if (active.length === 0 && complete.length === 0) {
+    addLine(store, '  (no entries yet — explore the world)', C.HELP_COLOR);
     return;
   }
-  const entries = store.player.journalEntries.slice(-20);
-  for (const entry of entries) {
-    const time = new Date(entry.timestamp).toLocaleTimeString();
-    let color = C.HELP_COLOR;
-    if (entry.type === 'combat') color = C.COMBAT_COLOR;
-    else if (entry.type === 'item') color = C.ITEM_COLOR;
-    else if (entry.type === 'story') color = C.CHOICE_COLOR;
-    addLine(store, `  [${time}] ${entry.text}`, color);
+
+  for (const obj of active) {
+    addLine(store, '');
+    addLine(store, `[ ] ${obj.title}`, C.CHOICE_COLOR);
+    addLine(store, `    ${obj.hint}`, C.CHOICE_COLOR);
+  }
+
+  for (const obj of complete) {
+    addLine(store, '');
+    addLine(store, `[X] ${obj.title}`, C.HELP_COLOR);
+    addLine(store, `    ${obj.completion_text}`, C.HELP_COLOR);
   }
 }
 

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createInitialStore } from '../../src/engine/gameReducer';
 import { tryUnlock } from '../../src/engine/achievements';
-import { showAchievements, showInventory, showJournal, showScore, showSkills, showStats } from '../../src/engine/handlers/info';
+import { showAchievements, showInventory, showJournal, showSkills, showStats } from '../../src/engine/handlers/info';
 import { createPlayer } from '../../src/engine/player';
 
 describe('info handlers', () => {
@@ -42,31 +42,6 @@ describe('info handlers', () => {
     expect(lines).toContain('Skills: Iron Will');
   });
 
-  it('renders journal entries and dungeon score', () => {
-    const store = createInitialStore();
-    const player = createPlayer();
-    player.journalEntries = [{ type: 'item', text: 'Found Potion', timestamp: 123 }];
-    store.player = player;
-    store.gameMode = 'dungeon';
-    store.dungeon = {
-      seed: 42,
-      floor: 3,
-      score: { floorsCleared: 2, enemiesKilled: 5, itemsFound: 4, totalXp: 0 },
-      floorEnemies: {},
-      dungeonPerks: [],
-    };
-
-    showJournal(store);
-    showScore(store);
-
-    const lines = store.typewriterQueue.map(line => line.text);
-    expect(lines).toContain('=== Journal ===');
-    expect(lines.some(line => line.includes('Found Potion'))).toBe(true);
-    expect(lines).toContain('=== Dungeon Score ===');
-    expect(lines).toContain('Floor: 3');
-    expect(lines).toContain('Seed: 42');
-  });
-
   it('renders skills and achievements', () => {
     const store = createInitialStore();
     const player = createPlayer();
@@ -83,5 +58,52 @@ describe('info handlers', () => {
     expect(lines.some(line => line.includes('Iron Will'))).toBe(true);
     expect(lines).toContain('=== Achievements ===');
     expect(lines.some(line => line.includes('First Blood'))).toBe(true);
+  });
+
+  describe('showJournal', () => {
+    it('renders empty state when no objectives are active', () => {
+      const store = createInitialStore();
+      store.player = createPlayer();
+      showJournal(store);
+      const text = store.typewriterQueue.map(l => l.text).join('\n');
+      expect(text).toContain('=== Journal ===');
+      expect(text).toContain('(no entries yet — explore the world)');
+    });
+
+    it('renders active objectives with [ ] prefix and hint line', () => {
+      const store = createInitialStore();
+      store.player = createPlayer();
+      store.player.objectives = { the_diner_mystery: 'active' };
+      showJournal(store);
+      const text = store.typewriterQueue.map(l => l.text).join('\n');
+      expect(text).toMatch(/\[ \] The Diner Mystery/);
+      expect(text).toContain('Sir Whiskers mentioned something about the diner');
+    });
+
+    it('renders completed objectives with [X] prefix and completion_text', () => {
+      const store = createInitialStore();
+      store.player = createPlayer();
+      store.player.objectives = { defeat_evil_king: 'complete' };
+      showJournal(store);
+      const text = store.typewriterQueue.map(l => l.text).join('\n');
+      expect(text).toMatch(/\[X\] The Hero's Path/);
+      expect(text).toContain('The Evil King has fallen.');
+    });
+
+    it('renders active objectives above completed ones', () => {
+      const store = createInitialStore();
+      store.player = createPlayer();
+      store.player.objectives = {
+        defeat_evil_king: 'complete',
+        the_diner_mystery: 'active',
+      };
+      showJournal(store);
+      const lines = store.typewriterQueue.map(l => l.text);
+      const activeIdx = lines.findIndex(l => l.includes('[ ] The Diner Mystery'));
+      const completeIdx = lines.findIndex(l => l.includes("[X] The Hero's Path"));
+      expect(activeIdx).toBeGreaterThan(-1);
+      expect(completeIdx).toBeGreaterThan(-1);
+      expect(activeIdx).toBeLessThan(completeIdx);
+    });
   });
 });
