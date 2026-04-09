@@ -177,7 +177,10 @@ export type ObjectiveEvent =
  *      objectives with `objective_completed` triggers to activate them,
  *      then re-checks their completion, until a fixed point is reached.
  * Returns { activated: ObjectiveDef[], completed: ObjectiveDef[] } in the
- * order the transitions happened, in the order the transitions happened. The function also writes notification lines directly via `addLine` (into `store.typewriterQueue`), so callers don't need to do anything with the return value — it's available for tests and for future chaining inspection.
+ * order the transitions happened. The function also writes notification
+ * lines directly via `addLine` (into `store.typewriterQueue`), so callers
+ * don't need to do anything with the return value — it's available for
+ * tests and for future chaining inspection.
  */
 export function notifyObjectiveEvent(
   store: GameStore,
