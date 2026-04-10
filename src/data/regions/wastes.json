@@ -99,7 +99,7 @@
       "items": [],
       "enemies": [],
       "searchable": true,
-      "search_items": ["anduril"],
+      "search_items": ["keepers_blade"],
       "npcs": ["wastes_last_keeper"],
       "dev_note": "// this is the big reveal. the corruption started HERE"
     }

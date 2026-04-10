@@ -55,10 +55,10 @@ The mine branches south from the village. Three new rooms, accessed linearly.
 - **Exits:** up → wastes_collapsed_temple
 - **Description:** At the bottom of the temple stairs, a circular chamber carved from living rock. The walls glow faintly with symbols that pulse like a heartbeat. In the center, a stone figure kneels — not a statue, but something that was once alive. The air is warm and still. This is where it all began.
 - **Description cleared:** The sanctum is quiet now. The Last Keeper has given you their blessing and faded into the stone. The symbols on the walls have gone dark. You stand where the corruption was born, and where it was understood at last.
-- **Clear flag:** `talked_last_keeper` (set when the player completes the Keeper's dialogue)
+- **Clear flag:** `keepers_ward` (set when the player receives the Keeper's blessing — the room clears after the full interaction, not just first contact)
 - **Enemy:** none — this is a lore/reward room
 - **NPC:** Last Keeper
-- **Searchable:** yes — find Anduril (+30 ATK, currently exists in weapons.json but unplaced)
+- **Searchable:** yes — find Keeper's Blade (+26 ATK, unique to the sanctum)
 - **Dev note:** `// this is the big reveal. the corruption started HERE`
 
 ## New Enemies

@@ -79,8 +79,7 @@ function enemyTurn(
   let reduction = 0;
   if (hasSkill(player, 'arcane_shield')) reduction += 1;
   if (player.firedEvents.keepers_ward) reduction += 3;
-  const damage = Math.max(1, rawDamage - reduction);
-  const actual = takeDamage(player, damage);
+  const actual = takeDamage(player, rawDamage, reduction);
   messages.push({ text: `${combat.enemy.name} deals ${actual} damage to you.`, color: [1, 0.5, 0.5, 1] });
 
   // Roll enemy status effect
