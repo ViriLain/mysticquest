@@ -55,6 +55,14 @@ export function handleCombatCommand(
 
   addLine(store, '');
 
+  // Check if player is stunned
+  const isStunned = store.combat.playerEffects.some(e => e.type === 'stun');
+  if (isStunned && verb !== 'use') {
+    addLine(store, 'You are stunned! You can only use items.', C.COMBAT_COLOR);
+    emitSound(store, 'error');
+    return;
+  }
+
   let msgs: CombatMessage[] = [];
 
   if (verb === 'attack') {

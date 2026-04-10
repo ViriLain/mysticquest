@@ -249,3 +249,65 @@ describe('bleed escalation', () => {
     expect(effects[0].remaining).toBe(3);
   });
 });
+
+describe('effect ticking in combat', () => {
+  it('ticks player poison at the start of playerAttack', () => {
+    const player = createPlayer();
+    player.attack = 100; // one-shot the enemy to simplify
+    const combat = createCombat(player, 'shadow_rat', enemyData);
+    combat.playerEffects = [
+      { type: 'poison', damage: 5, remaining: 2, baseDamage: 5 },
+    ];
+    const startHp = player.hp;
+
+    playerAttack(combat, player, weaponData, itemData, seededRng(1));
+
+    // Player took at least 5 from poison (enemy might be dead before hitting back)
+    expect(player.hp).toBeLessThanOrEqual(startHp - 5);
+    expect(combat.playerEffects[0]?.remaining ?? 0).toBeLessThanOrEqual(1);
+  });
+
+  it('ticks enemy effects and deals DoT damage to enemy', () => {
+    const player = createPlayer();
+    const combat = createCombat(player, 'shadow_rat', enemyData);
+    combat.enemy.hp = 999; // keep alive
+    combat.enemyEffects = [
+      { type: 'poison', damage: 3, remaining: 2, baseDamage: 3 },
+    ];
+    const startEnemyHp = combat.enemy.hp;
+
+    playerAttack(combat, player, weaponData, itemData, seededRng(1));
+
+    // Enemy took player attack damage + 3 poison
+    expect(combat.enemy.hp).toBeLessThan(startEnemyHp - 3);
+  });
+
+  it('kills the player from DoT before they can act', () => {
+    const player = createPlayer();
+    player.hp = 1;
+    const combat = createCombat(player, 'shadow_rat', enemyData);
+    combat.playerEffects = [
+      { type: 'burn', damage: 5, remaining: 2, baseDamage: 5 },
+    ];
+
+    const msgs = playerAttack(combat, player, weaponData, itemData, seededRng(1));
+
+    expect(combat.finished).toBe(true);
+    expect(combat.playerWon).toBe(false);
+    expect(msgs.some(m => m.text.includes('slain'))).toBe(true);
+  });
+
+  it('kills the enemy from DoT before enemy can act', () => {
+    const player = createPlayer();
+    const combat = createCombat(player, 'shadow_rat', enemyData);
+    combat.enemy.hp = 2; // almost dead
+    combat.enemyEffects = [
+      { type: 'poison', damage: 5, remaining: 2, baseDamage: 5 },
+    ];
+
+    playerAttack(combat, player, weaponData, itemData, seededRng(1));
+
+    expect(combat.finished).toBe(true);
+    expect(combat.playerWon).toBe(true);
+  });
+});

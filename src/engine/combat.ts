@@ -118,6 +118,21 @@ export function playerAttack(
   const messages: CombatMessage[] = [];
   combat.round++;
 
+  // Tick player effects (DoT)
+  const playerTick = tickStatusEffects(combat.playerEffects);
+  messages.push(...playerTick.messages);
+  if (playerTick.damage > 0) {
+    player.hp -= playerTick.damage;
+    messages.push({ text: `You take ${playerTick.damage} effect damage. (${player.hp}/${player.maxHp} HP)`, color: [1, 0.4, 0.4, 1] });
+    if (player.hp <= 0) {
+      player.hp = 0;
+      combat.finished = true;
+      combat.playerWon = false;
+      messages.push({ text: 'You have been slain...', color: [1, 0.2, 0.2, 1] });
+      return messages;
+    }
+  }
+
   let atk = getPlayerAttack(player, weaponData);
   let critChance = 10;
   let critMult = 2;
@@ -146,6 +161,23 @@ export function playerAttack(
   }
 
   messages.push({ text: `${combat.enemy.name} has ${combat.enemy.hp} HP remaining.`, color: [0.6, 0.6, 0.6, 1] });
+
+  // Tick enemy effects
+  const enemyTick = tickStatusEffects(combat.enemyEffects);
+  if (enemyTick.damage > 0) {
+    combat.enemy.hp -= enemyTick.damage;
+    for (const m of enemyTick.messages) {
+      messages.push({ text: `${combat.enemy.name}: ${m.text}`, color: m.color });
+    }
+    if (combat.enemy.hp <= 0) {
+      combat.enemy.hp = 0;
+      combat.finished = true;
+      combat.playerWon = true;
+      messages.push({ text: `${combat.enemy.name} is defeated!`, color: [1, 1, 0.4, 1] });
+      return messages;
+    }
+  }
+
   enemyTurn(combat, player, itemData, messages, rng);
   tickBuffs(player, messages);
   applyMeditation(player, messages);
@@ -160,8 +192,41 @@ export function playerDefend(
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
+
+  // Tick player effects (DoT)
+  const playerTick = tickStatusEffects(combat.playerEffects);
+  messages.push(...playerTick.messages);
+  if (playerTick.damage > 0) {
+    player.hp -= playerTick.damage;
+    messages.push({ text: `You take ${playerTick.damage} effect damage. (${player.hp}/${player.maxHp} HP)`, color: [1, 0.4, 0.4, 1] });
+    if (player.hp <= 0) {
+      player.hp = 0;
+      combat.finished = true;
+      combat.playerWon = false;
+      messages.push({ text: 'You have been slain...', color: [1, 0.2, 0.2, 1] });
+      return messages;
+    }
+  }
+
   player.defending = true;
   messages.push({ text: 'You brace yourself for the next attack.', color: [0.6, 0.8, 1, 1] });
+
+  // Tick enemy effects
+  const enemyTick = tickStatusEffects(combat.enemyEffects);
+  if (enemyTick.damage > 0) {
+    combat.enemy.hp -= enemyTick.damage;
+    for (const m of enemyTick.messages) {
+      messages.push({ text: `${combat.enemy.name}: ${m.text}`, color: m.color });
+    }
+    if (combat.enemy.hp <= 0) {
+      combat.enemy.hp = 0;
+      combat.finished = true;
+      combat.playerWon = true;
+      messages.push({ text: `${combat.enemy.name} is defeated!`, color: [1, 1, 0.4, 1] });
+      return messages;
+    }
+  }
+
   enemyTurn(combat, player, itemData, messages, rng);
   tickBuffs(player, messages);
   applyMeditation(player, messages);
@@ -176,6 +241,22 @@ export function playerFlee(
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
+
+  // Tick player effects (DoT)
+  const playerTick = tickStatusEffects(combat.playerEffects);
+  messages.push(...playerTick.messages);
+  if (playerTick.damage > 0) {
+    player.hp -= playerTick.damage;
+    messages.push({ text: `You take ${playerTick.damage} effect damage. (${player.hp}/${player.maxHp} HP)`, color: [1, 0.4, 0.4, 1] });
+    if (player.hp <= 0) {
+      player.hp = 0;
+      combat.finished = true;
+      combat.playerWon = false;
+      messages.push({ text: 'You have been slain...', color: [1, 0.2, 0.2, 1] });
+      return messages;
+    }
+  }
+
   const fleeThreshold = hasSkill(player, 'quick_feet') ? 90 : 70;
   const roll = randInt(1, 100, rng);
   if (roll <= fleeThreshold) {
@@ -184,6 +265,23 @@ export function playerFlee(
     messages.push({ text: 'You flee from combat!', color: [0.8, 0.8, 0.2, 1] });
   } else {
     messages.push({ text: 'You fail to escape!', color: [1, 0.4, 0.4, 1] });
+
+    // Tick enemy effects before enemy acts
+    const enemyTick = tickStatusEffects(combat.enemyEffects);
+    if (enemyTick.damage > 0) {
+      combat.enemy.hp -= enemyTick.damage;
+      for (const m of enemyTick.messages) {
+        messages.push({ text: `${combat.enemy.name}: ${m.text}`, color: m.color });
+      }
+      if (combat.enemy.hp <= 0) {
+        combat.enemy.hp = 0;
+        combat.finished = true;
+        combat.playerWon = true;
+        messages.push({ text: `${combat.enemy.name} is defeated!`, color: [1, 1, 0.4, 1] });
+        return messages;
+      }
+    }
+
     enemyTurn(combat, player, itemData, messages, rng);
   }
   tickBuffs(player, messages);
@@ -215,6 +313,21 @@ export function playerUseItem(
     return messages;
   }
 
+  // Tick player effects (DoT) — use items are still subject to DoT
+  const playerTick = tickStatusEffects(combat.playerEffects);
+  messages.push(...playerTick.messages);
+  if (playerTick.damage > 0) {
+    player.hp -= playerTick.damage;
+    messages.push({ text: `You take ${playerTick.damage} effect damage. (${player.hp}/${player.maxHp} HP)`, color: [1, 0.4, 0.4, 1] });
+    if (player.hp <= 0) {
+      player.hp = 0;
+      combat.finished = true;
+      combat.playerWon = false;
+      messages.push({ text: 'You have been slain...', color: [1, 0.2, 0.2, 1] });
+      return messages;
+    }
+  }
+
   removeItem(player, itemId);
 
   if (item.effect === 'heal' && item.value) {
@@ -228,6 +341,22 @@ export function playerUseItem(
     player.buffRounds = hasSkill(player, 'buff_mastery') ? 5 : 3;
     const rounds = player.buffRounds;
     messages.push({ text: `You drink ${item.name}! +${item.value} Attack for ${rounds} rounds.`, color: [1, 0.6, 0.2, 1] });
+  }
+
+  // Tick enemy effects before enemy acts
+  const enemyTick = tickStatusEffects(combat.enemyEffects);
+  if (enemyTick.damage > 0) {
+    combat.enemy.hp -= enemyTick.damage;
+    for (const m of enemyTick.messages) {
+      messages.push({ text: `${combat.enemy.name}: ${m.text}`, color: m.color });
+    }
+    if (combat.enemy.hp <= 0) {
+      combat.enemy.hp = 0;
+      combat.finished = true;
+      combat.playerWon = true;
+      messages.push({ text: `${combat.enemy.name} is defeated!`, color: [1, 1, 0.4, 1] });
+      return messages;
+    }
   }
 
   enemyTurn(combat, player, itemData, messages, rng);
