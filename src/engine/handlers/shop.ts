@@ -4,7 +4,8 @@ import { ICON, iconLine } from '../icons';
 import { findAllMatches, resolveOrDisambiguate, singularize, type Matchable } from '../matching';
 import { addLine, emitSound } from '../output';
 import { parseBatchCount } from '../state/exploring';
-import type { GameStore, ItemDef, WeaponDef } from '../types';
+import { displayDialogueNode } from './talk';
+import type { GameStore, ItemDef, NpcDef, WeaponDef } from '../types';
 
 interface ShopBuyMatchable extends Matchable {
   __entryIndex: number;
@@ -69,6 +70,7 @@ export function handleShopCommand(
   shops: Record<string, ShopDef>,
   itemData: Record<string, ItemDef>,
   weaponData: Record<string, WeaponDef>,
+  npcData: Record<string, NpcDef>,
   refreshHeader: () => void,
 ): void {
   if (!store.player || !store.shopState.activeShopId) return;
@@ -80,7 +82,16 @@ export function handleShopCommand(
   if (verb === 'leave' || verb === 'exit' || verb === 'quit') {
     addLine(store, 'You leave the shop.', C.HELP_COLOR);
     store.shopState.activeShopId = null;
-    store.state = 'exploring';
+    store.shopMenuMode = null;
+    store.shopMenuItems = [];
+    store.shopMenuSelected = 0;
+    // Return to NPC dialogue if the shop was opened from a conversation
+    if (store.npcDialogue) {
+      store.state = 'dialogue';
+      displayDialogueNode(store, npcData);
+    } else {
+      store.state = 'exploring';
+    }
     return;
   }
 

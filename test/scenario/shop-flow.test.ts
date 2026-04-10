@@ -84,7 +84,7 @@ describe('shop flow', () => {
     expectLine(s, 'Sold Small Potion');
   });
 
-  it('leave returns to exploring state', () => {
+  it('leave returns to NPC dialogue after shopping', () => {
     let s = newGame();
     s.player!.attack = 100;
     s = input(s, 'attack rat');
@@ -97,8 +97,9 @@ describe('shop flow', () => {
     s = input(s, '2');
 
     s = input(s, 'leave');
-    expect(s.state).toBe('exploring');
+    expect(s.state).toBe('dialogue');
     expect(s.shopState.activeShopId).toBe(null);
+    expect(s.npcDialogue).not.toBe(null);
   });
 
   it('refuses to sell key items', () => {

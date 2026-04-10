@@ -127,6 +127,7 @@
       "id": "manor_wine_cellar",
       "name": "Wine Cellar",
       "region": "manor",
+      "on_enter": "require:rusty_key",
       "description": "The cellar is cold and damp. Wine racks line the walls but most bottles are broken. Something dark moves in the shadows between the racks. It smells like old wine and something else... something wrong. The darkness down here feels thicker somehow.",
       "description_cleared": "The Cellar Shade is dead!! There's just a pile of dust where it used to be. The wine racks are still here and the broken bottles too but the air down here finally smells like just regular old wine. You can breathe again.",
       "exits": {"up": "manor_north_wing", "south": "manor_dungeon"},

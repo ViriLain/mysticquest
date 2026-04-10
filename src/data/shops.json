@@ -7,7 +7,9 @@
       { "id": "small_potion", "qty": 5 },
       { "id": "potion", "qty": 3 },
       { "id": "iron_shield", "qty": 1 },
-      { "id": "rusty_dagger", "qty": 1, "type": "weapon" }
+      { "id": "rusty_dagger", "qty": 1, "type": "weapon" },
+      { "id": "antidote", "qty": 3 },
+      { "id": "salve", "qty": 3 }
     ]
   },
   "wilds_wren": {
@@ -18,7 +20,9 @@
       { "id": "potion", "qty": 4 },
       { "id": "large_potion", "qty": 1 },
       { "id": "strength_tonic", "qty": 2 },
-      { "id": "spear", "qty": 1, "type": "weapon" }
+      { "id": "spear", "qty": 1, "type": "weapon" },
+      { "id": "antidote", "qty": 5 },
+      { "id": "salve", "qty": 5 }
     ]
   },
   "wastes_hermit": {
@@ -28,7 +32,10 @@
     "stock": [
       { "id": "large_potion", "qty": 2 },
       { "id": "strength_tonic", "qty": 3 },
-      { "id": "steel_shield", "qty": 1 }
+      { "id": "steel_shield", "qty": 1 },
+      { "id": "antidote", "qty": 5 },
+      { "id": "salve", "qty": 5 },
+      { "id": "panacea", "qty": 2 }
     ]
   }
 }

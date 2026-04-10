@@ -47,8 +47,11 @@ state/                  One file per GameStateKind dispatcher. Handles input
 world.ts                Room graph, regions, dynamic exits. createStoryWorld()
                         loads all 5 region JSON files.
 player.ts               Player stats, inventory, leveling, visited rooms.
-combat.ts               Pure turn-based combat with optional injected RNG
-                        for deterministic tests.
+combat.ts               Pure turn-based combat with optional injected RNG.
+                        Status effects: poison, burn, bleed (escalating),
+                        stun. Applied by weapons (on hit) and enemies
+                        (regular: every hit; boss: special attack only).
+                        Cure items clear effects via cure_effects field.
 save.ts                 Multi-slot localStorage persistence. v1→v2 format
                         migration (v2 added gold).
 economy.ts              Shop stock management.

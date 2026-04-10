@@ -1,4 +1,4 @@
-import type { CombatMessage, EnemyDef, GameStore, ItemDef, RoomDef, WeaponDef } from '../types';
+import type { CombatMessage, EnemyDef, GameStore, ItemDef, RoomDef, StatusEffect, WeaponDef } from '../types';
 import * as C from '../constants';
 import { notifyObjectiveEvent } from '../objectives';
 import { playerAttack, playerDefend, playerFlee, playerUseItem, enemyDefeated } from '../combat';
@@ -19,6 +19,14 @@ export interface CombatDeps {
   checkAchievement: (id: string) => void;
   startGameover: () => void;
   getRoom: (id: string) => RoomDef | undefined;
+}
+
+function formatEffects(effects: StatusEffect[]): string {
+  if (effects.length === 0) return '';
+  return '  ' + effects.map(e => {
+    const label = e.type.toUpperCase();
+    return `[${label} ${e.remaining} rnd]`;
+  }).join(' ');
 }
 
 function processCombatMessages(store: GameStore, msgs: CombatMessage[]): void {
@@ -54,6 +62,22 @@ export function handleCombatCommand(
   }
 
   addLine(store, '');
+
+  // Check if player is stunned — can only use items, other commands
+  // run a "lost turn" (round advances, effects tick, enemy acts)
+  const isStunned = store.combat.playerEffects.some(e => e.type === 'stun');
+  if (isStunned && verb !== 'use') {
+    addLine(store, 'You are stunned! You can only use items.', C.COMBAT_COLOR);
+    emitSound(store, 'error');
+    // Run a lost turn so the stun decrements and the enemy gets to act
+    const stunMsgs = playerDefend(store.combat, store.player, deps.itemData);
+    processCombatMessages(store, stunMsgs);
+    deps.refreshHeader();
+    if (store.combat && store.combat.playerEffects.length > 0) {
+      addLine(store, `Active effects:${formatEffects(store.combat.playerEffects)}`, C.COMBAT_COLOR);
+    }
+    return;
+  }
 
   let msgs: CombatMessage[] = [];
 
@@ -95,6 +119,12 @@ export function handleCombatCommand(
 
   processCombatMessages(store, msgs);
   deps.refreshHeader();
+
+  // Show active player effects
+  if (store.combat && store.combat.playerEffects.length > 0) {
+    const effectStr = formatEffects(store.combat.playerEffects);
+    addLine(store, `Active effects:${effectStr}`, C.COMBAT_COLOR);
+  }
 
   if (store.player.hp > 0 && store.player.hp < store.player.maxHp * 0.3) {
     pushEffect(store.effects, 'jitter', 1.0, { intensity: 0.2 });
