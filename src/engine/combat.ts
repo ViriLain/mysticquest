@@ -80,15 +80,20 @@ function enemyTurn(
     const isSpecialRound = combat.enemy.isBoss && combat.round % 3 === 0;
     const shouldRoll = combat.enemy.isBoss ? isSpecialRound : true;
     if (shouldRoll && rng() * 100 < se.chance) {
-      const effect: StatusEffect = {
-        type: se.type,
-        damage: se.damage ?? 0,
-        remaining: se.duration ?? 1,
-        baseDamage: se.damage ?? 0,
-      };
-      applyStatusEffect(combat.playerEffects, effect);
-      const label = se.type.toUpperCase();
-      messages.push({ text: `You are ${label}ED!`, color: [1, 0.3, 0.1, 1] });
+      // Iron Will stun resistance
+      if (se.type === 'stun' && hasSkill(player, 'iron_will') && rng() < 0.5) {
+        messages.push({ text: 'Your Iron Will resists the stun!', color: [0.4, 1, 0.8, 1] });
+      } else {
+        const effect: StatusEffect = {
+          type: se.type,
+          damage: se.damage ?? 0,
+          remaining: se.duration ?? 1,
+          baseDamage: se.damage ?? 0,
+        };
+        applyStatusEffect(combat.playerEffects, effect);
+        const label = se.type.toUpperCase();
+        messages.push({ text: `You are ${label}ED!`, color: [1, 0.3, 0.1, 1] });
+      }
     }
   }
 
@@ -375,6 +380,19 @@ export function playerUseItem(
     player.buffRounds = hasSkill(player, 'buff_mastery') ? 5 : 3;
     const rounds = player.buffRounds;
     messages.push({ text: `You drink ${item.name}! +${item.value} Attack for ${rounds} rounds.`, color: [1, 0.6, 0.2, 1] });
+  } else if (item.effect === 'cure' && item.cure_effects) {
+    combat.playerEffects = combat.playerEffects.filter(
+      e => !item.cure_effects!.includes(e.type),
+    );
+    const cured = item.cure_effects.join(', ');
+    messages.push({ text: `You use ${item.name}. Cleared: ${cured}.`, color: [0.4, 1, 0.4, 1] });
+    if (hasSkill(player, 'herbalism')) {
+      const oldHp = player.hp;
+      heal(player, 10);
+      if (player.hp > oldHp) {
+        messages.push({ text: 'Herbalism restores 10 HP!', color: [0.4, 1, 0.4, 1] });
+      }
+    }
   }
 
   // Tick enemy effects before enemy acts

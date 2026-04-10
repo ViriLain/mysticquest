@@ -427,3 +427,122 @@ describe('effect ticking in combat', () => {
     expect(combat.playerWon).toBe(true);
   });
 });
+
+describe('cure items', () => {
+  const cureItemData: Record<string, ItemDef> = {
+    ...itemData,
+    antidote: {
+      name: 'Antidote',
+      type: 'consumable',
+      effect: 'cure',
+      cure_effects: ['poison', 'bleed'],
+      description: 'cures',
+    },
+    salve: {
+      name: 'Salve',
+      type: 'consumable',
+      effect: 'cure',
+      cure_effects: ['burn', 'stun'],
+      description: 'soothes',
+    },
+  };
+
+  it('removes matching effects when cure item is used', () => {
+    const player = createPlayer();
+    addItem(player, 'antidote', cureItemData);
+    const combat = createCombat(player, 'shadow_rat', enemyData);
+    combat.playerEffects = [
+      { type: 'poison', damage: 2, remaining: 3, baseDamage: 2 },
+      { type: 'burn', damage: 3, remaining: 2, baseDamage: 3 },
+    ];
+
+    playerUseItem(combat, player, 'antidote', cureItemData, seededRng(1));
+
+    expect(combat.playerEffects.some(e => e.type === 'poison')).toBe(false);
+    expect(combat.playerEffects.some(e => e.type === 'burn')).toBe(true);
+  });
+
+  it('salve clears burn and stun but not poison', () => {
+    const player = createPlayer();
+    addItem(player, 'salve', cureItemData);
+    const combat = createCombat(player, 'shadow_rat', enemyData);
+    combat.playerEffects = [
+      { type: 'poison', damage: 2, remaining: 3, baseDamage: 2 },
+      { type: 'burn', damage: 3, remaining: 2, baseDamage: 3 },
+      { type: 'stun', damage: 0, remaining: 1, baseDamage: 0 },
+    ];
+
+    playerUseItem(combat, player, 'salve', cureItemData, seededRng(1));
+
+    expect(combat.playerEffects.some(e => e.type === 'poison')).toBe(true);
+    expect(combat.playerEffects.some(e => e.type === 'burn')).toBe(false);
+    expect(combat.playerEffects.some(e => e.type === 'stun')).toBe(false);
+  });
+
+  it('herbalism skill heals 10 HP on cure use', () => {
+    const player = createPlayer();
+    player.hp = 15;
+    player.skills.herbalism = true;
+    addItem(player, 'antidote', cureItemData);
+    const combat = createCombat(player, 'shadow_rat', enemyData);
+    combat.playerEffects = [
+      { type: 'poison', damage: 2, remaining: 3, baseDamage: 2 },
+    ];
+
+    const msgs = playerUseItem(combat, player, 'antidote', cureItemData, seededRng(1));
+
+    expect(combat.playerEffects.some(e => e.type === 'poison')).toBe(false);
+    expect(msgs.some(m => m.text.includes('Herbalism restores 10 HP'))).toBe(true);
+  });
+});
+
+describe('Iron Will stun resistance', () => {
+  const stunEnemyData = {
+    knight: {
+      name: 'Knight',
+      hp: 55,
+      attack: 16,
+      defense: 8,
+      xp: 45,
+      loot: [] as string[],
+      region: 'darkness',
+      description: 'knight',
+      is_boss: false,
+      status_effect: { type: 'stun' as const, duration: 1, chance: 100 },
+    },
+  };
+
+  it('resists stun some of the time with Iron Will', () => {
+    const player = createPlayer();
+    player.skills.iron_will = true;
+    player.hp = 500;
+    player.maxHp = 500;
+    player.defense = 50;
+
+    let stunCount = 0;
+    for (let i = 0; i < 20; i++) {
+      const combat = createCombat(player, 'knight', stunEnemyData);
+      playerDefend(combat, player, itemData, seededRng(i));
+      if (combat.playerEffects.some(e => e.type === 'stun')) stunCount++;
+    }
+    // With 50% resist over 20 trials: expect some resists and some successes
+    expect(stunCount).toBeGreaterThan(0);
+    expect(stunCount).toBeLessThan(20);
+  });
+
+  it('does not resist stun without Iron Will', () => {
+    const player = createPlayer();
+    player.hp = 500;
+    player.maxHp = 500;
+    player.defense = 50;
+
+    let stunCount = 0;
+    for (let i = 0; i < 10; i++) {
+      const combat = createCombat(player, 'knight', stunEnemyData);
+      playerDefend(combat, player, itemData, seededRng(i));
+      if (combat.playerEffects.some(e => e.type === 'stun')) stunCount++;
+    }
+    // Without Iron Will, 100% chance should always apply
+    expect(stunCount).toBe(10);
+  });
+});
