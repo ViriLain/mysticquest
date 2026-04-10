@@ -53,6 +53,10 @@ export function handleUse(
     }
 
     if (item.type === 'consumable' && hasItem(player, itemId)) {
+      if (item.effect === 'cure') {
+        addLine(store, 'Cure items can only be used in combat.', C.HELP_COLOR);
+        return true;
+      }
       removeItem(player, itemId);
       if (item.effect === 'heal' && item.value) {
         const healAmount = hasSkill(player, 'herbalism') ? Math.floor(item.value * 1.5) : item.value;

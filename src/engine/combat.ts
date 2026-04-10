@@ -54,6 +54,12 @@ function enemyTurn(
 ): void {
   if (combat.finished) return;
 
+  // Check if enemy is stunned
+  if (combat.enemyEffects.some(e => e.type === 'stun')) {
+    messages.push({ text: `${combat.enemy.name} is stunned and can't act!`, color: [1, 0.6, 0.2, 1] });
+    return;
+  }
+
   let atk = combat.enemy.attack;
   if (combat.enemy.isBoss && combat.round % 3 === 0) {
     atk = Math.floor(atk * 1.5);

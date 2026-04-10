@@ -63,11 +63,19 @@ export function handleCombatCommand(
 
   addLine(store, '');
 
-  // Check if player is stunned
+  // Check if player is stunned — can only use items, other commands
+  // run a "lost turn" (round advances, effects tick, enemy acts)
   const isStunned = store.combat.playerEffects.some(e => e.type === 'stun');
   if (isStunned && verb !== 'use') {
     addLine(store, 'You are stunned! You can only use items.', C.COMBAT_COLOR);
     emitSound(store, 'error');
+    // Run a lost turn so the stun decrements and the enemy gets to act
+    const stunMsgs = playerDefend(store.combat, store.player, deps.itemData);
+    processCombatMessages(store, stunMsgs);
+    deps.refreshHeader();
+    if (store.combat && store.combat.playerEffects.length > 0) {
+      addLine(store, `Active effects:${formatEffects(store.combat.playerEffects)}`, C.COMBAT_COLOR);
+    }
     return;
   }
 
