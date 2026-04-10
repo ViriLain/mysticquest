@@ -76,6 +76,15 @@ export interface ObjectiveDef {
   completion_text: string;
 }
 
+export type StatusEffectType = 'poison' | 'burn' | 'bleed' | 'stun';
+
+export interface StatusEffect {
+  type: StatusEffectType;
+  damage: number;    // per-tick damage (0 for stun)
+  remaining: number; // rounds left
+  baseDamage: number; // original damage (for bleed escalation reset)
+}
+
 export interface WeaponDef {
   name: string;
   attack_bonus: number;
@@ -83,6 +92,12 @@ export interface WeaponDef {
   description: string;
   match_words?: string[];
   price?: number;
+  status_effect?: {
+    type: StatusEffectType;
+    damage: number;
+    duration: number;
+    chance: number; // 0–100
+  };
 }
 
 export interface ItemDef {
@@ -93,6 +108,7 @@ export interface ItemDef {
   description: string;
   match_words?: string[];
   price?: number;
+  cure_effects?: StatusEffectType[];
 }
 
 export interface EnemyDef {
@@ -107,6 +123,12 @@ export interface EnemyDef {
   region: string;
   description: string;
   is_boss: boolean;
+  status_effect?: {
+    type: 'poison' | 'burn' | 'stun';
+    damage?: number;
+    duration?: number;
+    chance: number; // 0–100
+  };
 }
 
 export interface RoomDef {
@@ -272,6 +294,7 @@ export interface EnemyInstance {
   lootWeapon?: string;
   isBoss: boolean;
   description: string;
+  statusEffect: EnemyDef['status_effect'] | null;
 }
 
 export interface CombatState {
@@ -280,6 +303,8 @@ export interface CombatState {
   finished: boolean;
   fled: boolean;
   playerWon: boolean;
+  playerEffects: StatusEffect[];
+  enemyEffects: StatusEffect[];
 }
 
 export interface EffectsState {

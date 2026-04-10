@@ -97,11 +97,14 @@ export function createCombat(_player: PlayerState, enemyId: string, enemyData: R
       lootWeapon: edata.loot_weapon,
       isBoss: edata.is_boss,
       description: edata.description,
+      statusEffect: edata.status_effect ?? null,
     },
     round: 0,
     finished: false,
     fled: false,
     playerWon: false,
+    playerEffects: [],
+    enemyEffects: [],
   };
 }
 
