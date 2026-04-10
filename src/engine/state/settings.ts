@@ -8,7 +8,7 @@ import {
   TEXT_SPEED_OPTIONS,
 } from '../settings';
 
-const SETTINGS_ROWS = ['Font Size', 'Color Mode', 'Text Speed', 'Master Volume', 'Sound Effects', 'Ambient Music', 'Typewriter Clicks'] as const;
+const SETTINGS_ROWS = ['Font Size', 'Color Mode', 'Text Speed', 'Master Volume', 'Sound Effects', 'Ambient Music', 'Typewriter Clicks', 'Reduce Motion'] as const;
 
 export function openSettings(s: GameStore, fromState: GameStateKind): void {
   s.settingsPrevState = fromState;
@@ -46,6 +46,8 @@ export function handleSettingsKey(s: GameStore, key: string): void {
       settings.ambientEnabled = !settings.ambientEnabled;
     } else if (row === 6) {
       settings.typewriterSound = !settings.typewriterSound;
+    } else if (row === 7) {
+      settings.reduceMotion = !settings.reduceMotion;
     }
 
     saveSettings(settings);
