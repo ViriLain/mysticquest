@@ -206,12 +206,21 @@ export function handleShopCommand(
     const itemMatches = findAllMatches(target, ownedItemIds, itemData);
     const matchedItemId = resolveOrDisambiguate(store, itemMatches, itemData, 'item do you want to sell');
     if (matchedItemId) {
-      const wasEquippedShield = store.player.equippedShield === matchedItemId;
+      // Confirm before selling equipped shield
+      if (store.player.equippedShield === matchedItemId) {
+        const name = itemData[matchedItemId]?.name ?? matchedItemId;
+        addLine(store, `${name} is your equipped shield. Are you sure?`, C.COMBAT_COLOR);
+        store.shopMenuMode = 'sell_confirm';
+        store.shopMenuItems = [
+          { label: 'Yes, sell it', id: matchedItemId, index: 0 },
+          { label: 'No, keep it', id: '', index: 0 },
+        ];
+        store.shopMenuSelected = 1; // default to No
+        store.shopSellConfirm = { id: matchedItemId, type: 'item' };
+        return;
+      }
       const result = sellItem(store.player, shop, matchedItemId, 'item', itemData, weaponData);
       handleSellResult(store, result, itemData[matchedItemId]?.name ?? matchedItemId);
-      if (result.ok && wasEquippedShield) {
-        addLine(store, 'Warning: you sold your equipped shield!', C.COMBAT_COLOR);
-      }
       refreshHeader();
       return;
     }
@@ -220,12 +229,21 @@ export function handleShopCommand(
     const weaponMatches = findAllMatches(target, store.player.weapons, weaponData);
     const matchedWeaponId = resolveOrDisambiguate(store, weaponMatches, weaponData, 'weapon do you want to sell');
     if (matchedWeaponId) {
-      const wasEquippedWeapon = store.player.equippedWeapon === matchedWeaponId;
+      // Confirm before selling equipped weapon
+      if (store.player.equippedWeapon === matchedWeaponId) {
+        const name = weaponData[matchedWeaponId]?.name ?? matchedWeaponId;
+        addLine(store, `${name} is your equipped weapon. Are you sure?`, C.COMBAT_COLOR);
+        store.shopMenuMode = 'sell_confirm';
+        store.shopMenuItems = [
+          { label: 'Yes, sell it', id: matchedWeaponId, index: 0 },
+          { label: 'No, keep it', id: '', index: 0 },
+        ];
+        store.shopMenuSelected = 1; // default to No
+        store.shopSellConfirm = { id: matchedWeaponId, type: 'weapon' };
+        return;
+      }
       const result = sellItem(store.player, shop, matchedWeaponId, 'weapon', itemData, weaponData);
       handleSellResult(store, result, weaponData[matchedWeaponId]?.name ?? matchedWeaponId);
-      if (result.ok && wasEquippedWeapon) {
-        addLine(store, "Warning: you sold your equipped weapon! You're now fighting bare-handed.", C.COMBAT_COLOR);
-      }
       refreshHeader();
       return;
     }

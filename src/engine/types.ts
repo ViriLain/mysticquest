@@ -372,10 +372,11 @@ export interface GameStore {
   // NPC dialogue
   npcDialogue: { npcId: string; currentNode: string } | null;
 
-  // Shop menu (buy/sell without target)
-  shopMenuMode: 'buy' | 'sell' | null;
+  // Shop menu (buy/sell without target, sell confirmation)
+  shopMenuMode: 'buy' | 'sell' | 'sell_confirm' | null;
   shopMenuItems: Array<{ label: string; id: string; index: number }>;
   shopMenuSelected: number;
+  shopSellConfirm: { id: string; type: 'item' | 'weapon' } | null;
 
   // Minimap
   minimapOpen: boolean;

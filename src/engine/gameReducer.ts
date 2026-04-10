@@ -439,6 +439,7 @@ export function createInitialStore(): GameStore {
     shopMenuMode: null,
     shopMenuItems: [],
     shopMenuSelected: 0,
+    shopSellConfirm: null,
     minimapOpen: false,
     minimapPan: { x: 0, y: 0 },
     gameMode: 'story',
@@ -754,16 +755,32 @@ function handleKeyPressed(s: GameStore, key: string): void {
     } else if (s.state === 'shop' && s.shopMenuMode) {
       // Enter with empty input in shop menu: submit the selected item
       emitSound(s, 'menuSelect');
-      const item = s.shopMenuItems[s.shopMenuSelected];
-      if (item) {
-        const mode = s.shopMenuMode;
+      if (s.shopMenuMode === 'sell_confirm' && s.shopSellConfirm) {
+        // Confirmation menu: Yes (0) or No (1)
+        const confirmed = s.shopMenuSelected === 0;
+        const { id, type } = s.shopSellConfirm;
         s.shopMenuMode = null;
         s.shopMenuItems = [];
         s.shopMenuSelected = 0;
-        if (mode === 'buy') {
-          handleShopInput(s, 'buy', item.label, buildShopDeps(s));
+        s.shopSellConfirm = null;
+        if (confirmed) {
+          handleShopInput(s, 'sell', id, buildShopDeps(s));
         } else {
-          handleShopInput(s, 'sell', item.label, buildShopDeps(s));
+          addLineInstant(s, 'Sale cancelled.', C.HELP_COLOR);
+        }
+        void type; // used by the sell handler via the id match
+      } else {
+        const item = s.shopMenuItems[s.shopMenuSelected];
+        if (item) {
+          const mode = s.shopMenuMode;
+          s.shopMenuMode = null;
+          s.shopMenuItems = [];
+          s.shopMenuSelected = 0;
+          if (mode === 'buy') {
+            handleShopInput(s, 'buy', item.label, buildShopDeps(s));
+          } else {
+            handleShopInput(s, 'sell', item.label, buildShopDeps(s));
+          }
         }
       }
     } else if (isTyping(s)) {
