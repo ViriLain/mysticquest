@@ -68,5 +68,19 @@
       "items": ["dark_crown"]
     },
     "completion_text": "You hold the dark crown. The choice is yours."
+  },
+  {
+    "id": "the_lost_sanctum",
+    "title": "The Lost Sanctum",
+    "hint": "Something lies beneath the abandoned mine west of the village.",
+    "trigger": {
+      "type": "entered_room",
+      "room": "wastes_abandoned_mine"
+    },
+    "completion": {
+      "type": "visited_room",
+      "room": "wastes_buried_sanctum"
+    },
+    "completion_text": "You reached the heart of the lost civilization."
   }
 ]
