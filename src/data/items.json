@@ -11,5 +11,8 @@
   "red_mushroom": {"name": "Red Mushroom", "type": "key", "description": "A bright red mushroom. Smells... interesting.", "match_words": ["red mushroom", "red", "mushroom"]},
   "grey_mushroom": {"name": "Grey Mushroom", "type": "key", "description": "A dull grey mushroom. Looks boring but it's not.", "match_words": ["grey mushroom", "grey", "gray mushroom", "gray", "mushroom"]},
   "green_mushroom": {"name": "Green Mushroom", "type": "key", "description": "A vibrant green mushroom. Slightly luminous.", "match_words": ["green mushroom", "green", "mushroom"]},
-  "orange_mushroom": {"name": "Orange Mushroom", "type": "key", "description": "An orange mushroom. Warm to the touch.", "match_words": ["orange mushroom", "orange", "mushroom"]}
+  "orange_mushroom": {"name": "Orange Mushroom", "type": "key", "description": "An orange mushroom. Warm to the touch.", "match_words": ["orange mushroom", "orange", "mushroom"]},
+  "antidote": {"name": "Antidote", "type": "consumable", "effect": "cure", "cure_effects": ["poison", "bleed"], "price": 8, "description": "A bitter herbal remedy. Cures poison and stops bleeding.", "match_words": ["antidote"]},
+  "salve": {"name": "Salve", "type": "consumable", "effect": "cure", "cure_effects": ["burn", "stun"], "price": 8, "description": "A cool ointment. Soothes burns and clears the head.", "match_words": ["salve"]},
+  "panacea": {"name": "Panacea", "type": "consumable", "effect": "cure", "cure_effects": ["poison", "burn", "bleed", "stun"], "price": 20, "description": "A rare elixir that cures all afflictions.", "match_words": ["panacea", "elixir"]}
 }
