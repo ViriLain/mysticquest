@@ -1,8 +1,9 @@
 import * as C from '../constants';
 import { buyItem, getEffectiveStock, sellItem, type ShopDef } from '../economy';
 import { ICON, iconLine } from '../icons';
-import { findAllMatches, resolveOrDisambiguate, type Matchable } from '../matching';
+import { findAllMatches, resolveOrDisambiguate, singularize, type Matchable } from '../matching';
 import { addLine, emitSound } from '../output';
+import { parseBatchCount } from '../state/exploring';
 import type { GameStore, ItemDef, WeaponDef } from '../types';
 
 interface ShopBuyMatchable extends Matchable {
@@ -37,12 +38,22 @@ export function displayShop(
       const price = isWeapon
         ? (weaponData[entry.entry.id]?.price ?? 0)
         : (itemData[entry.entry.id]?.price ?? 0);
-      const tag = isWeapon ? ' (weapon)' : '';
-      const namePadded = def.name.padEnd(20, '.');
+      let label = def.name;
+      if (isWeapon) {
+        label += ` (+${(def as WeaponDef).attack_bonus} ATK)`;
+      } else {
+        const item = def as ItemDef;
+        if (item.effect === 'heal' && item.value) label += ` (+${item.value} HP)`;
+        else if (item.effect === 'buff_attack' && item.value) label += ` (+${item.value} ATK, 3 rnd)`;
+        else if (item.type === 'shield' && item.value) label += ` (+${item.value} DEF)`;
+      }
+      const namePadded = label.padEnd(28, '.');
+      const affordable = store.player!.gold >= price;
+      const suffix = affordable ? '' : ` [need ${price - store.player!.gold}g more]`;
       addLine(
         store,
-        `  ${namePadded} ${String(price).padStart(4)}g  (${entry.remaining} left${tag})`,
-        C.HELP_COLOR,
+        `  ${namePadded} ${String(price).padStart(4)}g  (${entry.remaining} left)${suffix}`,
+        affordable ? C.HELP_COLOR : C.ERROR_COLOR,
       );
     }
   }
@@ -80,9 +91,28 @@ export function handleShopCommand(
 
   if (verb === 'buy') {
     if (!target) {
-      addLine(store, 'Buy what?', C.ERROR_COLOR);
+      // Open buy menu
+      const stock = getEffectiveStock(shop, runtime).filter(entry => entry.remaining > 0);
+      const items: typeof store.shopMenuItems = [];
+      for (const entry of stock) {
+        const isWeapon = entry.entry.type === 'weapon';
+        const def = isWeapon ? weaponData[entry.entry.id] : itemData[entry.entry.id];
+        if (!def) continue;
+        const price = isWeapon ? (weaponData[entry.entry.id]?.price ?? 0) : (itemData[entry.entry.id]?.price ?? 0);
+        items.push({ label: def.name, id: entry.entry.id, index: entry.index });
+        void price; // price shown in the menu render
+      }
+      if (items.length === 0) {
+        addLine(store, '-- SOLD OUT --', C.HELP_COLOR);
+      } else {
+        store.shopMenuMode = 'buy';
+        store.shopMenuItems = items;
+        store.shopMenuSelected = 0;
+      }
       return;
     }
+
+    const [itemName, count] = parseBatchCount(target);
 
     const stock = getEffectiveStock(shop, runtime).filter(entry => entry.remaining > 0);
     const candidates: Record<string, ShopBuyMatchable> = {};
@@ -101,7 +131,11 @@ export function handleShopCommand(
       candidateIds.push(key);
     }
 
-    const matches = findAllMatches(target, candidateIds, candidates);
+    let matches = findAllMatches(itemName, candidateIds, candidates);
+    if (matches.length === 0) {
+      const singular = singularize(itemName);
+      if (singular) matches = findAllMatches(singular, candidateIds, candidates);
+    }
     const matchedId = resolveOrDisambiguate(store, matches, candidates, 'item do you want to buy');
     if (!matchedId) {
       if (matches.length === 0) {
@@ -111,30 +145,57 @@ export function handleShopCommand(
     }
 
     const matched = candidates[matchedId];
-    const result = buyItem(store.player, shop, runtime, matched.__entryIndex, itemData, weaponData);
-    if (!result.ok) {
-      if (result.reason === 'insufficient_gold') {
-        addLine(store, `You need ${result.needed} more gold.`, C.ERROR_COLOR);
-      } else if (result.reason === 'out_of_stock') {
-        addLine(store, "That's sold out.", C.ERROR_COLOR);
-      } else {
-        addLine(store, "You can't buy that.", C.ERROR_COLOR);
+    for (let i = 0; i < count; i++) {
+      const result = buyItem(store.player, shop, runtime, matched.__entryIndex, itemData, weaponData);
+      if (!result.ok) {
+        if (i > 0) break; // partial buy succeeded, stop silently
+        if (result.reason === 'insufficient_gold') {
+          addLine(store, `You need ${result.needed} more gold.`, C.ERROR_COLOR);
+        } else if (result.reason === 'out_of_stock') {
+          addLine(store, "That's sold out.", C.ERROR_COLOR);
+        } else {
+          addLine(store, "You can't buy that.", C.ERROR_COLOR);
+        }
+        emitSound(store, 'error');
+        return;
       }
-      emitSound(store, 'error');
-      return;
-    }
 
-    const def = result.type === 'weapon' ? weaponData[result.itemId] : itemData[result.itemId];
-    const name = def?.name ?? result.itemId;
-    addLine(store, iconLine(ICON.loot, `Bought ${name} for ${result.price}g.`), C.ITEM_COLOR);
-    emitSound(store, 'pickup');
+      const def = result.type === 'weapon' ? weaponData[result.itemId] : itemData[result.itemId];
+      const name = def?.name ?? result.itemId;
+      addLine(store, iconLine(ICON.loot, `Bought ${name} for ${result.price}g.`), C.ITEM_COLOR);
+      emitSound(store, 'pickup');
+    }
+    addLine(store, `Gold remaining: ${store.player.gold}g`, C.LOOT_COLOR);
     refreshHeader();
     return;
   }
 
   if (verb === 'sell') {
     if (!target) {
-      addLine(store, 'Sell what?', C.ERROR_COLOR);
+      // Open sell menu
+      const items: typeof store.shopMenuItems = [];
+      for (const [itemId, count] of Object.entries(store.player.inventory)) {
+        const item = itemData[itemId];
+        if (!item || item.type === 'key') continue;
+        const sv = item.price ? Math.floor(item.price / 2) : 0;
+        if (sv <= 0) continue;
+        const label = count > 1 ? `${item.name} x${count} (${sv}g each)` : `${item.name} (${sv}g)`;
+        items.push({ label, id: itemId, index: 0 });
+      }
+      for (const weaponId of store.player.weapons) {
+        const weapon = weaponData[weaponId];
+        if (!weapon || !weapon.price) continue;
+        const sv = Math.floor(weapon.price / 2);
+        const eq = store.player.equippedWeapon === weaponId ? ' [equipped]' : '';
+        items.push({ label: `${weapon.name} (${sv}g)${eq}`, id: weaponId, index: 0 });
+      }
+      if (items.length === 0) {
+        addLine(store, "You don't have anything to sell.", C.HELP_COLOR);
+      } else {
+        store.shopMenuMode = 'sell';
+        store.shopMenuItems = items;
+        store.shopMenuSelected = 0;
+      }
       return;
     }
 
@@ -145,6 +206,19 @@ export function handleShopCommand(
     const itemMatches = findAllMatches(target, ownedItemIds, itemData);
     const matchedItemId = resolveOrDisambiguate(store, itemMatches, itemData, 'item do you want to sell');
     if (matchedItemId) {
+      // Confirm before selling equipped shield
+      if (store.player.equippedShield === matchedItemId) {
+        const name = itemData[matchedItemId]?.name ?? matchedItemId;
+        addLine(store, `${name} is your equipped shield. Are you sure?`, C.COMBAT_COLOR);
+        store.shopMenuMode = 'sell_confirm';
+        store.shopMenuItems = [
+          { label: 'Yes, sell it', id: matchedItemId, index: 0 },
+          { label: 'No, keep it', id: '', index: 0 },
+        ];
+        store.shopMenuSelected = 1; // default to No
+        store.shopSellConfirm = { id: matchedItemId, type: 'item' };
+        return;
+      }
       const result = sellItem(store.player, shop, matchedItemId, 'item', itemData, weaponData);
       handleSellResult(store, result, itemData[matchedItemId]?.name ?? matchedItemId);
       refreshHeader();
@@ -155,6 +229,19 @@ export function handleShopCommand(
     const weaponMatches = findAllMatches(target, store.player.weapons, weaponData);
     const matchedWeaponId = resolveOrDisambiguate(store, weaponMatches, weaponData, 'weapon do you want to sell');
     if (matchedWeaponId) {
+      // Confirm before selling equipped weapon
+      if (store.player.equippedWeapon === matchedWeaponId) {
+        const name = weaponData[matchedWeaponId]?.name ?? matchedWeaponId;
+        addLine(store, `${name} is your equipped weapon. Are you sure?`, C.COMBAT_COLOR);
+        store.shopMenuMode = 'sell_confirm';
+        store.shopMenuItems = [
+          { label: 'Yes, sell it', id: matchedWeaponId, index: 0 },
+          { label: 'No, keep it', id: '', index: 0 },
+        ];
+        store.shopMenuSelected = 1; // default to No
+        store.shopSellConfirm = { id: matchedWeaponId, type: 'weapon' };
+        return;
+      }
       const result = sellItem(store.player, shop, matchedWeaponId, 'weapon', itemData, weaponData);
       handleSellResult(store, result, weaponData[matchedWeaponId]?.name ?? matchedWeaponId);
       refreshHeader();
@@ -185,6 +272,25 @@ export function handleShopCommand(
           ? (weaponData[entry.entry.id]?.price ?? 0)
           : (itemData[entry.entry.id]?.price ?? 0);
         addLine(store, `Price: ${price}g`, C.STAT_COLOR);
+
+        // Comparison to equipped gear
+        if (isWeapon) {
+          const bonus = (def as WeaponDef).attack_bonus;
+          const eqId = store.player!.equippedWeapon;
+          const eq = eqId ? weaponData[eqId] : null;
+          const eqLabel = eq ? `${eq.name} (+${eq.attack_bonus} ATK)` : 'Fists';
+          addLine(store, `  Your weapon: ${eqLabel} → This: +${bonus} ATK`, C.STAT_COLOR);
+        } else {
+          const item = def as ItemDef;
+          if (item.type === 'shield' && item.value) {
+            const eqId = store.player!.equippedShield;
+            const eq = eqId ? itemData[eqId] : null;
+            const eqLabel = eq ? `${eq.name} (+${eq.value} DEF)` : '(none)';
+            addLine(store, `  Your shield: ${eqLabel} → This: +${item.value} DEF`, C.STAT_COLOR);
+          } else if (item.effect === 'heal' && item.value) {
+            addLine(store, `  Your HP: ${store.player!.hp}/${store.player!.maxHp}`, C.STAT_COLOR);
+          }
+        }
         return;
       }
     }
@@ -220,6 +326,7 @@ export function handleShopCommand(
 function handleSellResult(store: GameStore, result: ReturnType<typeof sellItem>, name: string): void {
   if (result.ok) {
     addLine(store, iconLine(ICON.loot, `Sold ${name} for ${result.price}g.`), C.ITEM_COLOR);
+    addLine(store, `Gold remaining: ${store.player!.gold}g`, C.LOOT_COLOR);
     emitSound(store, 'save');
   } else {
     if (result.reason === 'key_item') addLine(store, "You can't sell that.", C.ERROR_COLOR);

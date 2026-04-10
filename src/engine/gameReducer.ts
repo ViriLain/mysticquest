@@ -85,11 +85,9 @@ function enterRoom(store: GameStore, roomId: string): boolean {
   if (store.gameMode === 'dungeon' && roomId.startsWith('dng_rest_')) {
     store.state = 'dialogue';
     store.dialogueOptions = ['Rest (heal 50% HP)', 'Save', 'Continue to next floor'];
+    store.dialogueSelected = 0;
     addLine(store, '');
     addLine(store, 'What would you like to do?', C.CHOICE_COLOR);
-    store.dialogueOptions.forEach((opt, i) => {
-      addLine(store, `[${i + 1}] ${opt}`, C.CHOICE_COLOR);
-    });
     return true;
   }
 
@@ -133,13 +131,10 @@ function startDialogue(store: GameStore, ending: EndingDef): void {
   store.state = 'dialogue';
   store.dialogueEnding = ending;
   store.dialogueOptions = ending.choice_options || [];
+  store.dialogueSelected = 0;
 
   addLine(store, '');
   addLine(store, ending.choice_prompt || '', C.CHOICE_COLOR);
-  addLine(store, '');
-  store.dialogueOptions.forEach((opt, i) => {
-    addLine(store, `[${i + 1}] ${opt}`, C.CHOICE_COLOR);
-  });
   addLine(store, '');
 }
 
@@ -422,6 +417,7 @@ export function createInitialStore(): GameStore {
     menuSelected: 0,
     dialogueEnding: null,
     dialogueOptions: [],
+    dialogueSelected: 0,
     endingData: null,
     endingLineIndex: 0,
     endingTimer: 0,
@@ -440,6 +436,10 @@ export function createInitialStore(): GameStore {
     renamingSlot: false,
     renameBuffer: '',
     npcDialogue: null,
+    shopMenuMode: null,
+    shopMenuItems: [],
+    shopMenuSelected: 0,
+    shopSellConfirm: null,
     minimapOpen: false,
     minimapPan: { x: 0, y: 0 },
     gameMode: 'story',
@@ -626,6 +626,14 @@ function handleKeyPressed(s: GameStore, key: string): void {
     return;
   }
 
+  // Escape exits shop menu mode back to regular shop input
+  if (s.state === 'shop' && s.shopMenuMode && key === 'Escape') {
+    s.shopMenuMode = null;
+    s.shopMenuItems = [];
+    s.shopMenuSelected = 0;
+    return;
+  }
+
   // States with text input — allow typing while typewriter runs
   if (key === 'Tab') {
     // Autocomplete
@@ -661,6 +669,17 @@ function handleKeyPressed(s: GameStore, key: string): void {
     s.input = s.input.slice(0, -1);
     s.historyIndex = -1; // reset history browsing on edit
   } else if (key === 'ArrowUp') {
+    // Dialogue/shop menu: navigate selection
+    if (s.state === 'dialogue' && s.dialogueOptions.length > 0) {
+      s.dialogueSelected = (s.dialogueSelected - 1 + s.dialogueOptions.length) % s.dialogueOptions.length;
+      emitSound(s, 'menuMove');
+      return;
+    }
+    if (s.state === 'shop' && s.shopMenuMode) {
+      s.shopMenuSelected = (s.shopMenuSelected - 1 + s.shopMenuItems.length) % s.shopMenuItems.length;
+      emitSound(s, 'menuMove');
+      return;
+    }
     // Browse command history (older)
     if (s.commandHistory.length === 0) return;
     if (s.historyIndex === -1) {
@@ -671,6 +690,17 @@ function handleKeyPressed(s: GameStore, key: string): void {
     }
     s.input = s.commandHistory[s.historyIndex];
   } else if (key === 'ArrowDown') {
+    // Dialogue/shop menu: navigate selection
+    if (s.state === 'dialogue' && s.dialogueOptions.length > 0) {
+      s.dialogueSelected = (s.dialogueSelected + 1) % s.dialogueOptions.length;
+      emitSound(s, 'menuMove');
+      return;
+    }
+    if (s.state === 'shop' && s.shopMenuMode) {
+      s.shopMenuSelected = (s.shopMenuSelected + 1) % s.shopMenuItems.length;
+      emitSound(s, 'menuMove');
+      return;
+    }
     // Browse command history (newer)
     if (s.historyIndex === -1) return;
     if (s.historyIndex < s.commandHistory.length - 1) {
@@ -686,8 +716,11 @@ function handleKeyPressed(s: GameStore, key: string): void {
 
     const input = s.input;
     if (input.length > 0) {
-      // Push to command history (skip duplicates of last entry)
-      if (s.commandHistory.length === 0 || s.commandHistory[s.commandHistory.length - 1] !== input) {
+      // Push to command history — but skip dialogue/shop inputs (numbered
+      // choices and buy/sell commands) so that "talk dusty" stays as the
+      // last real command the player typed.
+      const skipHistory = s.state === 'dialogue' || s.state === 'shop';
+      if (!skipHistory && (s.commandHistory.length === 0 || s.commandHistory[s.commandHistory.length - 1] !== input)) {
         s.commandHistory.push(input);
         if (s.commandHistory.length > 50) s.commandHistory.shift(); // cap at 50
       }
@@ -711,6 +744,42 @@ function handleKeyPressed(s: GameStore, key: string): void {
             handleShopInput(s, verb, target, buildShopDeps(s));
           } else {
             handleExploringCommand(s, verb, target);
+          }
+        }
+      }
+    } else if (s.state === 'dialogue' && s.dialogueOptions.length > 0) {
+      // Enter with empty input in dialogue: submit the selected option
+      emitSound(s, 'menuSelect');
+      const selected = String(s.dialogueSelected + 1);
+      handleDialogueInput(s, selected);
+    } else if (s.state === 'shop' && s.shopMenuMode) {
+      // Enter with empty input in shop menu: submit the selected item
+      emitSound(s, 'menuSelect');
+      if (s.shopMenuMode === 'sell_confirm' && s.shopSellConfirm) {
+        // Confirmation menu: Yes (0) or No (1)
+        const confirmed = s.shopMenuSelected === 0;
+        const { id, type } = s.shopSellConfirm;
+        s.shopMenuMode = null;
+        s.shopMenuItems = [];
+        s.shopMenuSelected = 0;
+        s.shopSellConfirm = null;
+        if (confirmed) {
+          handleShopInput(s, 'sell', id, buildShopDeps(s));
+        } else {
+          addLineInstant(s, 'Sale cancelled.', C.HELP_COLOR);
+        }
+        void type; // used by the sell handler via the id match
+      } else {
+        const item = s.shopMenuItems[s.shopMenuSelected];
+        if (item) {
+          const mode = s.shopMenuMode;
+          s.shopMenuMode = null;
+          s.shopMenuItems = [];
+          s.shopMenuSelected = 0;
+          if (mode === 'buy') {
+            handleShopInput(s, 'buy', item.label, buildShopDeps(s));
+          } else {
+            handleShopInput(s, 'sell', item.label, buildShopDeps(s));
           }
         }
       }

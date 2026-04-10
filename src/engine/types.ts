@@ -345,6 +345,7 @@ export interface GameStore {
   menuSelected: number;
   dialogueEnding: EndingDef | null;
   dialogueOptions: string[];
+  dialogueSelected: number;
   endingData: EndingDef | null;
   endingLineIndex: number;
   endingTimer: number;
@@ -370,6 +371,12 @@ export interface GameStore {
 
   // NPC dialogue
   npcDialogue: { npcId: string; currentNode: string } | null;
+
+  // Shop menu (buy/sell without target, sell confirmation)
+  shopMenuMode: 'buy' | 'sell' | 'sell_confirm' | null;
+  shopMenuItems: Array<{ label: string; id: string; index: number }>;
+  shopMenuSelected: number;
+  shopSellConfirm: { id: string; type: 'item' | 'weapon' } | null;
 
   // Minimap
   minimapOpen: boolean;

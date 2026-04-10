@@ -77,19 +77,15 @@ export function handleDungeonSpecialRoom(store: GameStore, room: RoomDef): void 
   if (room.specialType === 'fountain' && !store.player.firedEvents[`used_fountain_${room.id}`]) {
     store.state = 'dialogue';
     store.dialogueOptions = ['Drink from the fountain', 'Leave it alone'];
+    store.dialogueSelected = 0;
     addLine(store, '');
     addLine(store, 'The fountain beckons...', C.CHOICE_COLOR);
-    store.dialogueOptions.forEach((opt, i) => {
-      addLine(store, `[${i + 1}] ${opt}`, C.CHOICE_COLOR);
-    });
   } else if (room.specialType === 'altar' && !store.player.firedEvents[`used_altar_${room.id}`]) {
     store.state = 'dialogue';
     store.dialogueOptions = ['Embrace the darkness (+5 ATK, -3 DEF)', 'Resist (heal 10 HP)', 'Ignore'];
+    store.dialogueSelected = 0;
     addLine(store, '');
     addLine(store, 'The altar pulses with dark energy...', C.CHOICE_COLOR);
-    store.dialogueOptions.forEach((opt, i) => {
-      addLine(store, `[${i + 1}] ${opt}`, C.CHOICE_COLOR);
-    });
   } else if (room.specialType === 'library' && !store.player.firedEvents[`used_library_${room.id}`]) {
     const perks = [
       { label: 'Tome of Strength (+2 ATK)' },
@@ -103,11 +99,9 @@ export function handleDungeonSpecialRoom(store: GameStore, room: RoomDef): void 
 
     store.state = 'dialogue';
     store.dialogueOptions = [chosen[0].label, chosen[1].label, 'Leave'];
+    store.dialogueSelected = 0;
     addLine(store, '');
     addLine(store, 'Ancient tomes offer forbidden knowledge. Choose wisely...', C.CHOICE_COLOR);
-    store.dialogueOptions.forEach((opt, i) => {
-      addLine(store, `[${i + 1}] ${opt}`, C.CHOICE_COLOR);
-    });
   }
 }
 
@@ -195,9 +189,7 @@ function handleDungeonRestInput(store: GameStore, input: string, deps: DialogueD
     addLine(store, '');
     addLine(store, 'What would you like to do?', C.CHOICE_COLOR);
     store.dialogueOptions = ['Rest (heal 50% HP)', 'Save', 'Continue to next floor'];
-    store.dialogueOptions.forEach((opt, i) => {
-      addLine(store, `[${i + 1}] ${opt}`, C.CHOICE_COLOR);
-    });
+    store.dialogueSelected = 0;
   } else if (trimmed === '2' || trimmed === 'save') {
     deps.openSlotPicker('save');
   } else if (trimmed === '3' || trimmed === 'continue' || trimmed === 'descend') {

@@ -31,7 +31,7 @@ describe('info handlers', () => {
     expect(lines).toContain('=== Inventory ===');
     expect(lines).toContain('[+] Weapon: Rusty Dagger (+2 ATK)');
     expect(lines).toContain('[=] Shield: Iron Shield (+3 DEF)');
-    expect(lines).toContain('[*] Potion x2');
+    expect(lines).toContain('[*] Potion x2 (+25 HP)');
     expect(lines).toContain('[#] Rusty Key [key]');
     expect(lines).toContain('=== Stats ===');
     expect(lines).toContain('Level: 2');

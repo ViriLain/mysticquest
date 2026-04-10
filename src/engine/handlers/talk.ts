@@ -82,10 +82,7 @@ export function displayDialogueNode(store: GameStore, npcData: Record<string, Np
   );
 
   store.dialogueOptions = visibleChoices.map(c => c.label);
-  addLine(store, '');
-  visibleChoices.forEach((choice, i) => {
-    addLine(store, `[${i + 1}] ${choice.label}`, C.CHOICE_COLOR);
-  });
+  store.dialogueSelected = 0;
 }
 
 export function handleNpcDialogueInput(
