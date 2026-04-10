@@ -342,6 +342,7 @@ function buildShopDeps(store: GameStore): ShopDeps {
     shops: shopData,
     itemData,
     weaponData,
+    npcData,
     refreshHeader: () => updateHeader(store),
   };
 }

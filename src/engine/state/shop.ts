@@ -1,11 +1,12 @@
 import { getEffectiveStock, type ShopDef } from '../economy';
 import { displayShop, handleShopCommand } from '../handlers/shop';
-import type { GameStore, ItemDef, WeaponDef } from '../types';
+import type { GameStore, ItemDef, NpcDef, WeaponDef } from '../types';
 
 export interface ShopDeps {
   shops: Record<string, ShopDef>;
   itemData: Record<string, ItemDef>;
   weaponData: Record<string, WeaponDef>;
+  npcData: Record<string, NpcDef>;
   refreshHeader: () => void;
 }
 
@@ -17,7 +18,7 @@ export function enterShop(
   const shop = deps.shops[shopId];
   if (!shop) return;
   store.state = 'shop';
-  store.npcDialogue = null;
+  // Preserve npcDialogue so leaving the shop returns to the conversation
   store.shopState.activeShopId = shopId;
   if (!store.shopState.runtime[shopId]) {
     store.shopState.runtime[shopId] = { shopId, remainingStock: {} };
@@ -31,7 +32,7 @@ export function handleShopInput(
   target: string,
   deps: ShopDeps,
 ): void {
-  handleShopCommand(store, verb, target, deps.shops, deps.itemData, deps.weaponData, deps.refreshHeader);
+  handleShopCommand(store, verb, target, deps.shops, deps.itemData, deps.weaponData, deps.npcData, deps.refreshHeader);
 }
 
 export function getShopAutocompleteSuggestions(
