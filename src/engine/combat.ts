@@ -1,4 +1,4 @@
-import type { CombatMessage, CombatResults, CombatState, EnemyDef, ItemDef, PlayerState, WeaponDef } from './types';
+import type { CombatMessage, CombatResults, CombatState, EnemyDef, ItemDef, PlayerState, StatusEffect, WeaponDef } from './types';
 import { totalAttack, totalDefense, addXp, hasItem, removeItem, heal, takeDamage, isDead, hasSkill } from './player';
 
 type Rng = () => number;
@@ -243,6 +243,53 @@ function applyMeditation(player: PlayerState, messages: CombatMessage[]): void {
     if (player.hp > oldHp) {
       messages.push({ text: 'You regenerate 2 HP.', color: [0.4, 1, 0.4, 1] });
     }
+  }
+}
+
+// ---- Status effect helpers ----
+
+export interface TickResult {
+  damage: number;
+  stunned: boolean;
+  messages: CombatMessage[];
+}
+
+export function tickStatusEffects(effects: StatusEffect[]): TickResult {
+  let damage = 0;
+  let stunned = false;
+  const messages: CombatMessage[] = [];
+
+  for (let i = effects.length - 1; i >= 0; i--) {
+    const eff = effects[i];
+    if (eff.type === 'stun') {
+      stunned = true;
+    } else if (eff.type === 'bleed') {
+      damage += eff.damage;
+      messages.push({ text: `Bleeding for ${eff.damage} damage!`, color: [1, 0.3, 0.3, 1] });
+      eff.damage++; // escalation
+    } else {
+      // poison / burn
+      damage += eff.damage;
+      const label = eff.type === 'poison' ? 'Poison' : 'Burn';
+      messages.push({ text: `${label} deals ${eff.damage} damage!`, color: [1, 0.3, 0.3, 1] });
+    }
+    eff.remaining--;
+    if (eff.remaining <= 0) {
+      effects.splice(i, 1);
+    }
+  }
+
+  return { damage, stunned, messages };
+}
+
+export function applyStatusEffect(effects: StatusEffect[], effect: StatusEffect): void {
+  const existing = effects.find(e => e.type === effect.type);
+  if (existing) {
+    existing.remaining = effect.remaining;
+    existing.damage = effect.baseDamage;
+    existing.baseDamage = effect.baseDamage;
+  } else {
+    effects.push({ ...effect });
   }
 }
 

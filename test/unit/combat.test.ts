@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createCombat, enemyDefeated, playerAttack, playerDefend, playerFlee, playerUseItem } from '../../src/engine/combat';
+import { createCombat, enemyDefeated, playerAttack, playerDefend, playerFlee, playerUseItem, tickStatusEffects, applyStatusEffect } from '../../src/engine/combat';
 import { addItem, addWeapon, createPlayer, equipWeapon } from '../../src/engine/player';
 import { createRng } from '../../src/engine/rng';
-import type { ItemDef, WeaponDef } from '../../src/engine/types';
+import type { ItemDef, StatusEffect, WeaponDef } from '../../src/engine/types';
 
 const itemData: Record<string, ItemDef> = {
   potion: { name: 'Potion', type: 'consumable', effect: 'heal', value: 25, description: 'heals' },
@@ -153,5 +153,99 @@ describe('enemyDefeated', () => {
     expect(results.weapon).toBe('iron_sword');
     expect(results.loot).toEqual([]);
     expect(results.messages.some(message => message.text.includes('You gain 30 XP.'))).toBe(true);
+  });
+});
+
+describe('tickStatusEffects', () => {
+  it('deals poison damage and decrements remaining', () => {
+    const effects: StatusEffect[] = [
+      { type: 'poison', damage: 2, remaining: 3, baseDamage: 2 },
+    ];
+    const result = tickStatusEffects(effects);
+    expect(result.damage).toBe(2);
+    expect(effects[0].remaining).toBe(2);
+    expect(result.stunned).toBe(false);
+  });
+
+  it('deals burn damage independently of poison', () => {
+    const effects: StatusEffect[] = [
+      { type: 'poison', damage: 2, remaining: 2, baseDamage: 2 },
+      { type: 'burn', damage: 3, remaining: 1, baseDamage: 3 },
+    ];
+    const result = tickStatusEffects(effects);
+    expect(result.damage).toBe(5);
+  });
+
+  it('removes effects when remaining reaches 0', () => {
+    const effects: StatusEffect[] = [
+      { type: 'burn', damage: 3, remaining: 1, baseDamage: 3 },
+    ];
+    tickStatusEffects(effects);
+    expect(effects).toHaveLength(0);
+  });
+
+  it('reports stunned from stun effect', () => {
+    const effects: StatusEffect[] = [
+      { type: 'stun', damage: 0, remaining: 1, baseDamage: 0 },
+    ];
+    const result = tickStatusEffects(effects);
+    expect(result.stunned).toBe(true);
+    expect(effects).toHaveLength(0);
+  });
+});
+
+describe('applyStatusEffect', () => {
+  it('adds a new effect to an empty list', () => {
+    const effects: StatusEffect[] = [];
+    applyStatusEffect(effects, { type: 'poison', damage: 2, remaining: 3, baseDamage: 2 });
+    expect(effects).toHaveLength(1);
+    expect(effects[0]).toEqual({ type: 'poison', damage: 2, remaining: 3, baseDamage: 2 });
+  });
+
+  it('refreshes duration on same-type effect without stacking damage', () => {
+    const effects: StatusEffect[] = [
+      { type: 'poison', damage: 2, remaining: 1, baseDamage: 2 },
+    ];
+    applyStatusEffect(effects, { type: 'poison', damage: 2, remaining: 3, baseDamage: 2 });
+    expect(effects).toHaveLength(1);
+    expect(effects[0].remaining).toBe(3);
+    expect(effects[0].damage).toBe(2);
+  });
+
+  it('allows different types to coexist', () => {
+    const effects: StatusEffect[] = [
+      { type: 'poison', damage: 2, remaining: 3, baseDamage: 2 },
+    ];
+    applyStatusEffect(effects, { type: 'burn', damage: 3, remaining: 2, baseDamage: 3 });
+    expect(effects).toHaveLength(2);
+  });
+});
+
+describe('bleed escalation', () => {
+  it('increases bleed damage by 1 each tick', () => {
+    const effects: StatusEffect[] = [
+      { type: 'bleed', damage: 1, remaining: 3, baseDamage: 1 },
+    ];
+
+    const r1 = tickStatusEffects(effects);
+    expect(r1.damage).toBe(1);
+    expect(effects[0].damage).toBe(2);
+
+    const r2 = tickStatusEffects(effects);
+    expect(r2.damage).toBe(2);
+    expect(effects[0].damage).toBe(3);
+
+    const r3 = tickStatusEffects(effects);
+    expect(r3.damage).toBe(3);
+    expect(effects).toHaveLength(0);
+  });
+
+  it('resets escalation when same-type bleed is reapplied', () => {
+    const effects: StatusEffect[] = [
+      { type: 'bleed', damage: 5, remaining: 2, baseDamage: 1 },
+    ];
+    applyStatusEffect(effects, { type: 'bleed', damage: 1, remaining: 3, baseDamage: 1 });
+    expect(effects[0].damage).toBe(1);
+    expect(effects[0].remaining).toBe(3);
   });
 });
