@@ -250,6 +250,122 @@ describe('bleed escalation', () => {
   });
 });
 
+describe('weapon effect application', () => {
+  const poisonWeapons: Record<string, WeaponDef> = {
+    tyrfing: {
+      name: 'Tyrfing',
+      attack_bonus: 16,
+      region: 'wilds',
+      description: 'cursed',
+      status_effect: { type: 'poison', damage: 3, duration: 3, chance: 100 },
+    },
+  };
+
+  it('applies weapon effect to enemy on hit when chance is 100', () => {
+    const player = createPlayer();
+    addWeapon(player, 'tyrfing');
+    equipWeapon(player, 'tyrfing');
+    const combat = createCombat(player, 'shadow_rat', {
+      ...enemyData,
+      shadow_rat: { ...enemyData.shadow_rat, hp: 999 },
+    });
+
+    playerAttack(combat, player, poisonWeapons, itemData, seededRng(1));
+
+    expect(combat.enemyEffects).toHaveLength(1);
+    expect(combat.enemyEffects[0].type).toBe('poison');
+    expect(combat.enemyEffects[0].damage).toBe(3);
+    expect(combat.enemyEffects[0].remaining).toBe(3);
+  });
+
+  const noEffectWeapons: Record<string, WeaponDef> = {
+    tyrfing: {
+      name: 'Tyrfing',
+      attack_bonus: 16,
+      region: 'wilds',
+      description: 'cursed',
+      status_effect: { type: 'poison', damage: 3, duration: 3, chance: 0 },
+    },
+  };
+
+  it('does not apply weapon effect when chance is 0', () => {
+    const player = createPlayer();
+    addWeapon(player, 'tyrfing');
+    equipWeapon(player, 'tyrfing');
+    const combat = createCombat(player, 'shadow_rat', {
+      ...enemyData,
+      shadow_rat: { ...enemyData.shadow_rat, hp: 999 },
+    });
+
+    playerAttack(combat, player, noEffectWeapons, itemData, seededRng(1));
+
+    expect(combat.enemyEffects).toHaveLength(0);
+  });
+});
+
+describe('enemy effect application', () => {
+  const poisonEnemyData = {
+    spider: {
+      name: 'Spider',
+      hp: 18,
+      attack: 8,
+      defense: 1,
+      xp: 14,
+      loot: [] as string[],
+      region: 'wilds',
+      description: 'spider',
+      is_boss: false,
+      status_effect: { type: 'poison' as const, damage: 2, duration: 3, chance: 100 },
+    },
+  };
+
+  it('applies enemy effect to player on hit', () => {
+    const player = createPlayer();
+    player.hp = 200;
+    player.maxHp = 200;
+    const combat = createCombat(player, 'spider', poisonEnemyData);
+
+    playerDefend(combat, player, itemData, seededRng(1));
+
+    expect(combat.playerEffects.some(e => e.type === 'poison')).toBe(true);
+  });
+
+  const stunBossData = {
+    troll: {
+      name: 'Troll',
+      hp: 60,
+      attack: 12,
+      defense: 5,
+      xp: 50,
+      loot: [] as string[],
+      region: 'wilds',
+      description: 'troll',
+      is_boss: true,
+      status_effect: { type: 'stun' as const, duration: 1, chance: 100 },
+    },
+  };
+
+  it('boss applies effect only on special attack round (round % 3)', () => {
+    const player = createPlayer();
+    player.hp = 500;
+    player.maxHp = 500;
+    player.defense = 50; // survive easily
+    const combat = createCombat(player, 'troll', stunBossData);
+
+    // Round 1 — not special (round becomes 1 after round++)
+    playerDefend(combat, player, itemData, seededRng(1));
+    expect(combat.playerEffects.some(e => e.type === 'stun')).toBe(false);
+
+    // Round 2
+    playerDefend(combat, player, itemData, seededRng(2));
+    expect(combat.playerEffects.some(e => e.type === 'stun')).toBe(false);
+
+    // Round 3 — special (3 % 3 === 0)
+    playerDefend(combat, player, itemData, seededRng(3));
+    expect(combat.playerEffects.some(e => e.type === 'stun')).toBe(true);
+  });
+});
+
 describe('effect ticking in combat', () => {
   it('ticks player poison at the start of playerAttack', () => {
     const player = createPlayer();

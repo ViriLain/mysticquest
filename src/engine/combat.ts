@@ -74,6 +74,24 @@ function enemyTurn(
   const actual = takeDamage(player, damage);
   messages.push({ text: `${combat.enemy.name} deals ${actual} damage to you.`, color: [1, 0.5, 0.5, 1] });
 
+  // Roll enemy status effect
+  const se = combat.enemy.statusEffect;
+  if (se) {
+    const isSpecialRound = combat.enemy.isBoss && combat.round % 3 === 0;
+    const shouldRoll = combat.enemy.isBoss ? isSpecialRound : true;
+    if (shouldRoll && rng() * 100 < se.chance) {
+      const effect: StatusEffect = {
+        type: se.type,
+        damage: se.damage ?? 0,
+        remaining: se.duration ?? 1,
+        baseDamage: se.damage ?? 0,
+      };
+      applyStatusEffect(combat.playerEffects, effect);
+      const label = se.type.toUpperCase();
+      messages.push({ text: `You are ${label}ED!`, color: [1, 0.3, 0.1, 1] });
+    }
+  }
+
   if (isDead(player)) {
     combat.finished = true;
     combat.playerWon = false;
@@ -175,6 +193,22 @@ export function playerAttack(
       combat.playerWon = true;
       messages.push({ text: `${combat.enemy.name} is defeated!`, color: [1, 1, 0.4, 1] });
       return messages;
+    }
+  }
+
+  // Roll weapon status effect (applied after tick so it takes effect next round)
+  if (player.equippedWeapon && weaponData[player.equippedWeapon]?.status_effect) {
+    const se = weaponData[player.equippedWeapon].status_effect!;
+    if (rng() * 100 < se.chance) {
+      const effect: StatusEffect = {
+        type: se.type,
+        damage: se.damage,
+        remaining: se.duration,
+        baseDamage: se.damage,
+      };
+      applyStatusEffect(combat.enemyEffects, effect);
+      const label = se.type.toUpperCase();
+      messages.push({ text: `The enemy is now ${label}ED!`, color: [1, 0.6, 0.2, 1] });
     }
   }
 
