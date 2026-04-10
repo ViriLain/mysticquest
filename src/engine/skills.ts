@@ -1,6 +1,6 @@
-import type { SkillDef, SkillBranch } from './types';
-
-export const SKILL_TREE: SkillDef[] = [
+// Single source of truth for the skill tree. SkillId and SkillBranch are
+// derived from this array — adding a skill here is all that's needed.
+const _SKILLS = [
   // Warrior
   { id: 'iron_will', name: 'Iron Will', branch: 'warrior', description: '+5 max HP per level', tier: 1 },
   { id: 'heavy_blows', name: 'Heavy Blows', branch: 'warrior', description: '+2 base attack', tier: 2 },
@@ -19,7 +19,23 @@ export const SKILL_TREE: SkillDef[] = [
   { id: 'buff_mastery', name: 'Buff Mastery', branch: 'mage', description: 'Buffs last 5 rounds (not 3)', tier: 3 },
   { id: 'meditation', name: 'Meditation', branch: 'mage', description: 'Regenerate 2 HP per combat round', tier: 4 },
   { id: 'enlightened', name: 'Enlightened', branch: 'mage', description: '+50% XP from all sources', tier: 5 },
-];
+] as const;
+
+/** All valid skill IDs — derived from the SKILL_TREE array. */
+export type SkillId = typeof _SKILLS[number]['id'];
+
+/** Skill tree branches — derived from the SKILL_TREE array. */
+export type SkillBranch = typeof _SKILLS[number]['branch'];
+
+export interface SkillDef {
+  id: SkillId;
+  name: string;
+  branch: SkillBranch;
+  description: string;
+  tier: number;
+}
+
+export const SKILL_TREE: readonly SkillDef[] = _SKILLS;
 
 export function getSkillsByBranch(branch: SkillBranch): SkillDef[] {
   return SKILL_TREE.filter(s => s.branch === branch).sort((a, b) => a.tier - b.tier);
