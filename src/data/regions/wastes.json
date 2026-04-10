@@ -16,7 +16,7 @@
       "name": "Empty Village",
       "region": "wastes",
       "description": "There used to be people here you can tell. Houses with doors hanging open and market stalls with nothing on them. The well in the center is dry. Wind blows through the empty streets and makes the signs creak. Its sad but also kind of beautiful.",
-      "exits": {"north": "wastes_path", "south": "wastes_desert"},
+      "exits": {"north": "wastes_path", "south": "wastes_desert", "west": "wastes_abandoned_mine"},
       "items": ["potion"],
       "weapons": [],
       "enemies": ["wasteland_wraith"],
@@ -63,6 +63,45 @@
       "searchable": true,
       "search_items": ["ancient_map"],
       "dev_note": "// this is the most epic area I think. the ruins guardian is the boss"
+    },
+    {
+      "id": "wastes_abandoned_mine",
+      "name": "Abandoned Mine",
+      "region": "wastes",
+      "description": "Dark tunnels with rusted minecart tracks and collapsed support beams. The miners dug too deep and found something they shouldn't have. Broken tools litter the ground and the air smells like dust and something much older. The walls are scratched with tally marks — someone was counting the days down here.",
+      "exits": {"east": "wastes_village", "south": "wastes_collapsed_temple"},
+      "items": [],
+      "enemies": ["cave_crawler"],
+      "searchable": true,
+      "search_items": ["steel_sword"],
+      "dev_note": "// the mine is spooky. I want players to feel like they're going somewhere they shouldn't"
+    },
+    {
+      "id": "wastes_collapsed_temple",
+      "name": "Collapsed Temple",
+      "region": "wastes",
+      "description": "The miners broke through into this place. Carved stone walls show scenes of a civilization building something — a crown, a throne, a kingdom. Then the carvings change: darkness spreading, people fleeing, the crown consuming its wearer. The ceiling has partially caved in and rubble covers the intricate floor mosaics.",
+      "exits": {"north": "wastes_abandoned_mine", "down": "wastes_buried_sanctum"},
+      "items": [],
+      "enemies": ["temple_sentinel"],
+      "searchable": true,
+      "search_items": ["strength_tonic"],
+      "dev_note": "// the carvings tell the story of how the corruption started"
+    },
+    {
+      "id": "wastes_buried_sanctum",
+      "name": "Buried Sanctum",
+      "region": "wastes",
+      "description": "At the bottom of the temple stairs, a circular chamber carved from living rock. The walls glow faintly with symbols that pulse like a heartbeat. In the center a stone figure kneels — not a statue but something that was once alive. The air is warm and still. This is where it all began.",
+      "description_cleared": "The sanctum is quiet now. The Last Keeper has given you their blessing and faded into the stone. The symbols on the walls have gone dark. You stand where the corruption was born and where it was understood at last.",
+      "clear_flag": "keepers_ward",
+      "exits": {"up": "wastes_collapsed_temple"},
+      "items": [],
+      "enemies": [],
+      "searchable": true,
+      "search_items": ["anduril"],
+      "npcs": ["wastes_last_keeper"],
+      "dev_note": "// this is the big reveal. the corruption started HERE"
     }
   ]
 }
