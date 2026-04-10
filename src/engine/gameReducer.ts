@@ -615,9 +615,18 @@ function handleKeyPressed(s: GameStore, key: string): void {
   }
 
   if (s.state === 'minimap') {
+    const PAN_STEP = 30;
     if (key === 'Escape') {
       s.state = 'exploring';
       s.minimapOpen = false;
+    } else if (key === 'ArrowUp') {
+      s.minimapPan = { x: s.minimapPan.x, y: s.minimapPan.y - PAN_STEP };
+    } else if (key === 'ArrowDown') {
+      s.minimapPan = { x: s.minimapPan.x, y: s.minimapPan.y + PAN_STEP };
+    } else if (key === 'ArrowLeft') {
+      s.minimapPan = { x: s.minimapPan.x - PAN_STEP, y: s.minimapPan.y };
+    } else if (key === 'ArrowRight') {
+      s.minimapPan = { x: s.minimapPan.x + PAN_STEP, y: s.minimapPan.y };
     }
     return;
   }
