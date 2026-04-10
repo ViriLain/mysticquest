@@ -55,7 +55,7 @@ export function handleExploringCommand(
   if (verb === 'go') {
     deps.goDirection(target);
   } else if (verb === 'look') {
-    handleLook(store);
+    handleLook(store, target);
   } else if (verb === 'inventory') {
     showInventory(store);
   } else if (verb === 'stats') {
