@@ -1,5 +1,5 @@
 import * as C from '../constants';
-import { addLine, clearTerminal } from '../output';
+import { addLineInstant, clearTerminal } from '../output';
 import { applySkillEffects, canLearnSkill, getSkillsByTier } from '../skills';
 import type { GameStore } from '../types';
 
@@ -17,14 +17,14 @@ export function displaySkillTree(store: GameStore): void {
   if (!store.player) return;
   clearTerminal(store);
 
-  addLine(store, '=== Skill Tree ===', C.STAT_COLOR);
-  addLine(store, `Skill Points: ${store.player.skillPoints}`, C.CHOICE_COLOR);
-  addLine(store, '');
+  addLineInstant(store, '=== Skill Tree ===', C.STAT_COLOR);
+  addLineInstant(store, `Skill Points: ${store.player.skillPoints}`, C.CHOICE_COLOR);
+  addLineInstant(store, '');
 
   const sel = store.skillTreeSelected;
 
   for (let tier = 1; tier <= MAX_TIER; tier++) {
-    addLine(store, `--- Tier ${tier} ---`, C.COMBAT_COLOR);
+    addLineInstant(store, `--- Tier ${tier} ---`, C.COMBAT_COLOR);
     const skills = getSkillsByTier(tier);
     for (let i = 0; i < skills.length; i++) {
       const skill = skills[i];
@@ -48,9 +48,9 @@ export function displaySkillTree(store: GameStore): void {
         color = C.HELP_COLOR;
       }
 
-      addLine(store, `  ${marker} ${skill.name} - ${skill.description}`, color);
+      addLineInstant(store, `  ${marker} ${skill.name} - ${skill.description}`, color);
     }
-    addLine(store, '');
+    addLineInstant(store, '');
   }
 
   // Detail line for selected skill
@@ -60,18 +60,18 @@ export function displaySkillTree(store: GameStore): void {
     const learned = store.player.skills[selectedSkill.id];
     const available = canLearnSkill(store.player.skills, selectedSkill.id);
     if (learned) {
-      addLine(store, `> ${selectedSkill.name} — LEARNED`, C.ITEM_COLOR);
+      addLineInstant(store, `> ${selectedSkill.name} — LEARNED`, C.ITEM_COLOR);
     } else if (available && store.player.skillPoints > 0) {
-      addLine(store, `> ${selectedSkill.name} — ${selectedSkill.description}  [press Enter to learn]`, C.CHOICE_COLOR);
+      addLineInstant(store, `> ${selectedSkill.name} — ${selectedSkill.description}  [press Enter to learn]`, C.CHOICE_COLOR);
     } else if (available) {
-      addLine(store, `> ${selectedSkill.name} — ${selectedSkill.description}  [no skill points]`, C.HELP_COLOR);
+      addLineInstant(store, `> ${selectedSkill.name} — ${selectedSkill.description}  [no skill points]`, C.HELP_COLOR);
     } else {
-      addLine(store, `> ${selectedSkill.name} — ${selectedSkill.description}  [requires a skill from previous tier]`, C.HELP_COLOR);
+      addLineInstant(store, `> ${selectedSkill.name} — ${selectedSkill.description}  [requires a skill from previous tier]`, C.HELP_COLOR);
     }
   }
 
-  addLine(store, '');
-  addLine(store, 'Arrow keys to navigate, Enter to learn, Escape to close', [0.5, 0.5, 0.5, 0.8]);
+  addLineInstant(store, '');
+  addLineInstant(store, 'Arrow keys to navigate, Enter to learn, Escape to close', [0.5, 0.5, 0.5, 0.8]);
 }
 
 export function handleSkillTreeKey(
@@ -101,17 +101,17 @@ export function handleSkillTreeKey(
     if (!skill) return;
 
     if (store.player.skills[skill.id]) {
-      addLine(store, `You already know ${skill.name}.`, C.ERROR_COLOR);
+      addLineInstant(store, `You already know ${skill.name}.`, C.ERROR_COLOR);
       return;
     }
 
     if (!canLearnSkill(store.player.skills, skill.id)) {
-      addLine(store, 'Learn a skill from the previous tier first.', C.ERROR_COLOR);
+      addLineInstant(store, 'Learn a skill from the previous tier first.', C.ERROR_COLOR);
       return;
     }
 
     if (store.player.skillPoints <= 0) {
-      addLine(store, 'You have no skill points. Level up to earn more.', C.ERROR_COLOR);
+      addLineInstant(store, 'You have no skill points. Level up to earn more.', C.ERROR_COLOR);
       return;
     }
 
@@ -119,7 +119,7 @@ export function handleSkillTreeKey(
     store.player.skillPoints--;
     applySkillEffects(store.player, skill.id);
 
-    addLine(store, `Learned ${skill.name}! ${skill.description}`, C.ITEM_COLOR);
+    addLineInstant(store, `Learned ${skill.name}! ${skill.description}`, C.ITEM_COLOR);
     deps.emit('levelUp');
     deps.refreshHeader();
     deps.checkScholar();
