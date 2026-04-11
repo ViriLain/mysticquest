@@ -9,6 +9,12 @@ function classTag(weapon: WeaponDef): string {
   return `[${weapon.weapon_class.charAt(0).toUpperCase() + weapon.weapon_class.slice(1)}] `;
 }
 
+const CLASS_BLURB: Record<string, string> = {
+  blade: 'Blade: +10% critical hit chance',
+  heavy: 'Heavy: Ignores 2 points of enemy armor',
+  pierce: 'Pierce: Strike first on round 1',
+};
+
 export function handleExamine(
   store: GameStore,
   target: string,
@@ -53,6 +59,7 @@ export function handleExamine(
       addLine(store, iconLine(ICON.weapon, `=== ${classTag(weapon)}${weapon.name} ===`), C.ITEM_COLOR);
       addLine(store, weapon.description, C.HELP_COLOR);
       addLine(store, `Attack bonus: +${weapon.attack_bonus}`, C.STAT_COLOR);
+      addLine(store, CLASS_BLURB[weapon.weapon_class], C.CHOICE_COLOR);
       if (store.player.equippedWeapon === weaponId) {
         addLine(store, '(currently equipped)', C.ITEM_COLOR);
       } else if (store.player.equippedWeapon) {
@@ -103,6 +110,7 @@ export function handleExamine(
         addLine(store, iconLine(ICON.weapon, `=== ${classTag(weapon)}${weapon.name} ===`), C.ITEM_COLOR);
         addLine(store, weapon.description, C.HELP_COLOR);
         addLine(store, `Attack bonus: +${weapon.attack_bonus}`, C.STAT_COLOR);
+        addLine(store, CLASS_BLURB[weapon.weapon_class], C.CHOICE_COLOR);
         return;
       }
     }

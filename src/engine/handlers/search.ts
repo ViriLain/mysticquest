@@ -29,10 +29,7 @@ export function handleSearch(
   let foundSomething = false;
   if (room.search_items) {
     for (const id of room.search_items) {
-      // Reveal as ground loot/weapons so the player still has to `take` them.
-      // Weapons live in a separate list because the take handler dispatches
-      // weapons and items through different pickup paths.
-      if (weaponData[id]) {
+      if (weaponData[id]) {                                   // reveal as ground loot — player still has to `take`
         if (!room._ground_weapons) room._ground_weapons = [];
         if (!room._ground_weapons.includes(id)) room._ground_weapons.push(id);
         addLine(store, `You find a ${weaponData[id].name}.`, C.LOOT_COLOR);
@@ -46,8 +43,7 @@ export function handleSearch(
     }
   }
 
-  // Reveal any hidden exits as real (dynamic) exits.
-  if (room.secret_exits) {
+  if (room.secret_exits) {                                    // reveal hidden exits as dynamic exits
     for (const [dir, target] of Object.entries(room.secret_exits)) {
       addDynamicExit(store.world, room.id, dir, target);
       addLine(store, `You find a hidden passage leading ${dir}.`, C.LOOT_COLOR);
