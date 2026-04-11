@@ -87,10 +87,13 @@ export interface StatusEffect {
   baseDamage: number; // original damage (for bleed escalation reset)
 }
 
+export type WeaponClass = 'blade' | 'heavy' | 'pierce';
+
 export interface WeaponDef {
   name: string;
   attack_bonus: number;
   region: string;
+  weapon_class: WeaponClass;
   description: string;
   match_words?: string[];
   price?: number;
@@ -430,6 +433,7 @@ export interface DungeonState {
   floor: number;
   score: DungeonScore;
   floorEnemies: Record<string, EnemyDef>;
+  floorWeapons: Record<string, WeaponDef>;
   dungeonPerks: string[];
 }
 

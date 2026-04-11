@@ -10,8 +10,8 @@ const itemData: Record<string, ItemDef> = {
 };
 
 const weaponData: Record<string, WeaponDef> = {
-  rusty_dagger: { name: 'Rusty Dagger', attack_bonus: 2, region: 'manor', description: 'dull' },
-  iron_sword: { name: 'Iron Sword', attack_bonus: 5, region: 'manor', description: 'solid' },
+  rusty_dagger: { name: 'Rusty Dagger', attack_bonus: 2, region: 'manor', weapon_class: 'blade', description: 'dull' },
+  iron_sword: { name: 'Iron Sword', attack_bonus: 5, region: 'manor', weapon_class: 'blade', description: 'solid' },
 };
 
 const enemyData = {
@@ -256,6 +256,7 @@ describe('weapon effect application', () => {
       name: 'Tyrfing',
       attack_bonus: 16,
       region: 'wilds',
+      weapon_class: 'blade',
       description: 'cursed',
       status_effect: { type: 'poison', damage: 3, duration: 3, chance: 100 },
     },
@@ -283,6 +284,7 @@ describe('weapon effect application', () => {
       name: 'Tyrfing',
       attack_bonus: 16,
       region: 'wilds',
+      weapon_class: 'blade',
       description: 'cursed',
       status_effect: { type: 'poison', damage: 3, duration: 3, chance: 0 },
     },
@@ -300,6 +302,124 @@ describe('weapon effect application', () => {
     playerAttack(combat, player, noEffectWeapons, itemData, seededRng(1));
 
     expect(combat.enemyEffects).toHaveLength(0);
+  });
+});
+
+describe('weapon class passives', () => {
+  it('blade class adds 10% crit chance', () => {
+    const bladeWeaponData: Record<string, WeaponDef> = {
+      test_blade: { name: 'Test Blade', attack_bonus: 5, region: 'manor', weapon_class: 'blade', description: 'test' },
+    };
+
+    let bladeCrits = 0;
+    let normalCrits = 0;
+    const noClassWeaponData: Record<string, WeaponDef> = {
+      test_heavy: { name: 'Test Heavy', attack_bonus: 5, region: 'manor', weapon_class: 'heavy', description: 'test' },
+    };
+
+    for (let seed = 0; seed < 200; seed++) {
+      const p1 = createPlayer();
+      addWeapon(p1, 'test_blade');
+      equipWeapon(p1, 'test_blade');
+      const combat1 = createCombat(p1, 'shadow_rat', enemyData);
+      const msgs1 = playerAttack(combat1, p1, bladeWeaponData, itemData, seededRng(seed));
+      if (msgs1.some(m => m.text.includes('CRITICAL HIT') || m.text.includes('blade finds a weak point'))) bladeCrits++;
+
+      const p2 = createPlayer();
+      addWeapon(p2, 'test_heavy');
+      equipWeapon(p2, 'test_heavy');
+      const combat2 = createCombat(p2, 'shadow_rat', enemyData);
+      const msgs2 = playerAttack(combat2, p2, noClassWeaponData, itemData, seededRng(seed));
+      if (msgs2.some(m => m.text === 'CRITICAL HIT!')) normalCrits++;
+    }
+
+    expect(bladeCrits).toBeGreaterThan(normalCrits);
+  });
+
+  it('heavy class ignores 2 enemy DEF', () => {
+    const heavyWeaponData: Record<string, WeaponDef> = {
+      test_heavy: { name: 'Test Heavy', attack_bonus: 5, region: 'manor', weapon_class: 'heavy', description: 'test' },
+    };
+    const bladeWeaponData: Record<string, WeaponDef> = {
+      test_blade: { name: 'Test Blade', attack_bonus: 5, region: 'manor', weapon_class: 'blade', description: 'test' },
+    };
+
+    const highDefEnemy = {
+      tank: {
+        name: 'Tank',
+        hp: 1000,
+        attack: 1,
+        defense: 10,
+        xp: 1,
+        loot: [] as string[],
+        region: 'test',
+        description: 'tanky',
+        is_boss: false,
+      },
+    };
+
+    let heavyTotal = 0;
+    let bladeTotal = 0;
+
+    for (let seed = 0; seed < 100; seed++) {
+      const p1 = createPlayer();
+      p1.attack = 10;
+      addWeapon(p1, 'test_heavy');
+      equipWeapon(p1, 'test_heavy');
+      const c1 = createCombat(p1, 'tank', highDefEnemy);
+      playerAttack(c1, p1, heavyWeaponData, itemData, seededRng(seed));
+      heavyTotal += (1000 - c1.enemy.hp);
+
+      const p2 = createPlayer();
+      p2.attack = 10;
+      addWeapon(p2, 'test_blade');
+      equipWeapon(p2, 'test_blade');
+      const c2 = createCombat(p2, 'tank', highDefEnemy);
+      playerAttack(c2, p2, bladeWeaponData, itemData, seededRng(seed));
+      bladeTotal += (1000 - c2.enemy.hp);
+    }
+
+    // Heavy should deal more total damage due to -2 DEF
+    expect(heavyTotal).toBeGreaterThan(bladeTotal);
+  });
+
+  it('heavy class shows armor pierce message', () => {
+    const heavyWeaponData: Record<string, WeaponDef> = {
+      test_heavy: { name: 'Test Heavy', attack_bonus: 5, region: 'manor', weapon_class: 'heavy', description: 'test' },
+    };
+    const player = createPlayer();
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'shadow_rat', enemyData);
+
+    const messages = playerAttack(combat, player, heavyWeaponData, itemData, seededRng(1));
+
+    expect(messages.some(m => m.text.includes('smashes through armor'))).toBe(true);
+  });
+
+  it('pierce class skips enemy attack on round 1', () => {
+    const pierceWeaponData: Record<string, WeaponDef> = {
+      test_spear: { name: 'Test Spear', attack_bonus: 5, region: 'manor', weapon_class: 'pierce', description: 'test' },
+    };
+    const player = createPlayer();
+    addWeapon(player, 'test_spear');
+    equipWeapon(player, 'test_spear');
+    const startHp = player.hp;
+
+    const combat = createCombat(player, 'shadow_rat', enemyData);
+    const msgs = playerAttack(combat, player, pierceWeaponData, itemData, seededRng(42));
+
+    // Player should take no damage on round 1 (enemy skipped)
+    expect(player.hp).toBe(startHp);
+    expect(msgs.some(m => m.text.includes('strike first'))).toBe(true);
+
+    // Round 2 — enemy should attack normally
+    if (!combat.finished) {
+      const hpBeforeRound2 = player.hp;
+      playerAttack(combat, player, pierceWeaponData, itemData, seededRng(43));
+      expect(combat.round).toBe(2);
+      expect(player.hp).toBeLessThan(hpBeforeRound2);
+    }
   });
 });
 

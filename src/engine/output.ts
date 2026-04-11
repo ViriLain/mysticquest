@@ -42,11 +42,9 @@ export function updateHeader(store: GameStore): void {
   store.header.maxHp = store.player.maxHp;
   store.header.level = store.player.level;
   store.header.gold = store.player.gold;
-  if (store.player.equippedWeapon && weaponData[store.player.equippedWeapon]) {
-    store.header.weapon = weaponData[store.player.equippedWeapon].name;
-  } else {
-    store.header.weapon = 'Fists';
-  }
+  const wid = store.player.equippedWeapon;
+  const wdef = wid ? (weaponData[wid] ?? store.dungeon?.floorWeapons[wid]) : null;
+  store.header.weapon = wdef ? wdef.name : 'Fists';
 }
 
 export function hideHeader(store: GameStore): void {

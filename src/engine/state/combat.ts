@@ -37,9 +37,13 @@ function processCombatMessages(store: GameStore, msgs: CombatMessage[]): void {
       pushEffect(store.effects, 'flash', 0.2, { r: 1, g: 0, b: 0 });
       emitSound(store, 'playerHit');
     }
-    if (msg.text.includes('CRITICAL HIT!')) {
+    if (msg.text.includes('CRITICAL HIT!') || msg.text.includes('blade finds a weak point')) {
       pushEffect(store.effects, 'flash', 0.3, { r: 1, g: 1, b: 1 });
       emitSound(store, 'critical');
+    }
+    if (msg.text.includes('smashes through armor')) {
+      pushEffect(store.effects, 'shake', 0.2, { intensity: 3 });
+      emitSound(store, 'playerHit');
     }
     if (msg.text.includes('enemy lands a CRITICAL HIT')) {
       pushEffect(store.effects, 'shake', 0.4, { intensity: 6 });

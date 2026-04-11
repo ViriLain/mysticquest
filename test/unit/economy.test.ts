@@ -20,8 +20,8 @@ const items: Record<string, ItemDef> = {
 };
 
 const weapons: Record<string, WeaponDef> = {
-  rusty_dagger: { name: 'Rusty Dagger', attack_bonus: 2, region: 'manor', price: 15, description: 'dull' },
-  no_price: { name: 'No Price', attack_bonus: 1, region: 'manor', description: 'priceless' },
+  rusty_dagger: { name: 'Rusty Dagger', attack_bonus: 2, region: 'manor', weapon_class: 'blade', price: 15, description: 'dull' },
+  no_price: { name: 'No Price', attack_bonus: 1, region: 'manor', weapon_class: 'blade', description: 'priceless' },
 };
 
 const dustyShop: ShopDef = {

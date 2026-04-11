@@ -62,11 +62,13 @@ export function startContinue(store: GameStore, slot: number): void {
       floor: result.dungeon.floor,
       score: result.dungeon.score,
       floorEnemies: {},
+      floorWeapons: {},
       dungeonPerks: result.dungeon.dungeon_perks || [],
     };
-    // Re-generate the current floor enemies
+    // Re-generate the current floor enemies and weapons
     const floorResult = generateFloor(store.dungeon.floor, store.dungeon.seed);
     store.dungeon.floorEnemies = floorResult.enemies;
+    store.dungeon.floorWeapons = floorResult.weapons;
     for (const [id, room] of Object.entries(floorResult.rooms)) {
       store.world.rooms[id] = room;
     }
@@ -96,6 +98,7 @@ export function startDungeonMode(store: GameStore, deps: LifecycleDeps, seed?: n
     floor: 1,
     score: { floorsCleared: 0, enemiesKilled: 0, itemsFound: 0, totalXp: 0 },
     floorEnemies: {},
+    floorWeapons: {},
     dungeonPerks: [],
   };
   store.combat = null;
@@ -117,6 +120,7 @@ export function loadDungeonFloor(store: GameStore, floor: number): void {
   if (!store.dungeon || !store.world || !store.player) return;
   const result = generateFloor(floor, store.dungeon.seed);
   store.dungeon.floorEnemies = result.enemies;
+  store.dungeon.floorWeapons = result.weapons;
   for (const [id, room] of Object.entries(result.rooms)) {
     store.world.rooms[id] = room;
   }

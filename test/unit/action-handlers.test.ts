@@ -292,4 +292,14 @@ describe('action handlers', () => {
 
     expect(started).toEqual(['shadow_rat']);
   });
+
+  it('examine weapon shows class tag', () => {
+    const store = makeStoryStore();
+    store.player!.weapons = ['iron_sword'];
+
+    handleExamine(store, 'iron sword', enemyData, itemData, weaponData);
+    const lines = store.typewriterQueue.map(line => line.text);
+
+    expect(lines.some(l => l.includes('[Blade]'))).toBe(true);
+  });
 });
