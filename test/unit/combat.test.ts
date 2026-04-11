@@ -10,8 +10,8 @@ const itemData: Record<string, ItemDef> = {
 };
 
 const weaponData: Record<string, WeaponDef> = {
-  rusty_dagger: { name: 'Rusty Dagger', attack_bonus: 2, region: 'manor', description: 'dull' },
-  iron_sword: { name: 'Iron Sword', attack_bonus: 5, region: 'manor', description: 'solid' },
+  rusty_dagger: { name: 'Rusty Dagger', attack_bonus: 2, region: 'manor', weapon_class: 'blade', description: 'dull' },
+  iron_sword: { name: 'Iron Sword', attack_bonus: 5, region: 'manor', weapon_class: 'blade', description: 'solid' },
 };
 
 const enemyData = {
