@@ -5,6 +5,11 @@ import { addLine } from '../output';
 import type { EnemyDef, GameStore, ItemDef, WeaponDef } from '../types';
 import { getLivingEnemies, getRoom } from '../world';
 
+function classTag(weapon: WeaponDef): string {
+  if (!weapon.weapon_class) return '';
+  return `[${weapon.weapon_class.charAt(0).toUpperCase() + weapon.weapon_class.slice(1)}] `;
+}
+
 export function handleExamine(
   store: GameStore,
   target: string,
@@ -46,7 +51,7 @@ export function handleExamine(
     if (!weapon) continue;
     if (weapon.name.toLowerCase().includes(target.toLowerCase()) || weaponId.toLowerCase().includes(target.toLowerCase())) {
       addLine(store, '');
-      addLine(store, iconLine(ICON.weapon, `=== ${weapon.name} ===`), C.ITEM_COLOR);
+      addLine(store, iconLine(ICON.weapon, `=== ${classTag(weapon)}${weapon.name} ===`), C.ITEM_COLOR);
       addLine(store, weapon.description, C.HELP_COLOR);
       addLine(store, `Attack bonus: +${weapon.attack_bonus}`, C.STAT_COLOR);
       if (store.player.equippedWeapon === weaponId) {
@@ -96,7 +101,7 @@ export function handleExamine(
       const weapon = weaponData[id];
       if (weapon && (weapon.name.toLowerCase().includes(target.toLowerCase()) || id.toLowerCase().includes(target.toLowerCase()))) {
         addLine(store, '');
-        addLine(store, iconLine(ICON.weapon, `=== ${weapon.name} ===`), C.ITEM_COLOR);
+        addLine(store, iconLine(ICON.weapon, `=== ${classTag(weapon)}${weapon.name} ===`), C.ITEM_COLOR);
         addLine(store, weapon.description, C.HELP_COLOR);
         addLine(store, `Attack bonus: +${weapon.attack_bonus}`, C.STAT_COLOR);
         return;
