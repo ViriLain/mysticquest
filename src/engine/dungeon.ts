@@ -5,7 +5,7 @@
  * chain of rooms with optional branch rooms, scaled enemies, and loot.
  */
 
-import type { RoomDef, EnemyDef, WeaponClass } from './types';
+import type { RoomDef, EnemyDef, WeaponClass, WeaponDef } from './types';
 import { createRng, rngPick } from './rng';
 
 // ---------------------------------------------------------------------------
@@ -78,6 +78,7 @@ export function generateDungeonWeapon(
 export interface FloorResult {
   rooms: Record<string, RoomDef>;
   enemies: Record<string, EnemyDef>;
+  weapons: Record<string, WeaponDef>;
   entryRoomId: string;
   exitRoomId: string;
   restRoomId: string;
@@ -93,6 +94,7 @@ export function generateFloor(floor: number, seed: number): FloorResult {
 
   const rooms: Record<string, RoomDef> = {};
   const enemies: Record<string, EnemyDef> = {};
+  const weapons: Record<string, WeaponDef> = {};
 
   // --- 1. Determine room count (5-8) ---
   const roomCount = 5 + (floor % 4);
@@ -206,6 +208,13 @@ export function generateFloor(floor: number, seed: number): FloorResult {
       loot = ['large_potion'];
       const weapon = generateDungeonWeapon(floor, rng);
       lootWeapon = weapon.id;
+      weapons[weapon.id] = {
+        name: weapon.name,
+        attack_bonus: weapon.attack_bonus,
+        weapon_class: weapon.weapon_class,
+        region: 'dungeon',
+        description: `A dungeon weapon found on floor ${floor}.`,
+      };
     } else if (isMiniBoss) {
       loot = ['potion'];
     } else {
@@ -329,6 +338,7 @@ export function generateFloor(floor: number, seed: number): FloorResult {
   return {
     rooms,
     enemies,
+    weapons,
     entryRoomId,
     exitRoomId,
     restRoomId,

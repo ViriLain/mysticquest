@@ -433,6 +433,7 @@ export interface DungeonState {
   floor: number;
   score: DungeonScore;
   floorEnemies: Record<string, EnemyDef>;
+  floorWeapons: Record<string, WeaponDef>;
   dungeonPerks: string[];
 }
 

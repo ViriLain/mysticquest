@@ -44,6 +44,13 @@ const enemyData = enemiesJson as Record<string, EnemyDef>;
 const endingsData = endingsJson as Record<string, EndingDef>;
 const shopData = shopsJson as Record<string, ShopDef>;
 
+function effectiveWeaponData(store: GameStore): Record<string, WeaponDef> {
+  if (store.gameMode === 'dungeon' && store.dungeon?.floorWeapons) {
+    return { ...weaponData, ...store.dungeon.floorWeapons };
+  }
+  return weaponData;
+}
+
 // ---- Helpers ----
 
 function enterRoom(store: GameStore, roomId: string): boolean {
@@ -208,7 +215,7 @@ function startCombat(store: GameStore, enemyId: string): void {
 function buildCombatDeps(store: GameStore): CombatDeps {
   return {
     itemData,
-    weaponData,
+    weaponData: effectiveWeaponData(store),
     enemyData,
     refreshHeader: () => updateHeader(store),
     checkEndingsForBoss: enemyId => {
@@ -243,7 +250,7 @@ function buildExploringDeps(store: GameStore): ExploringDeps {
   return {
     enemyData,
     itemData,
-    weaponData,
+    weaponData: effectiveWeaponData(store),
     npcData,
     refreshHeader: () => updateHeader(store),
     enterRoom: roomId => enterRoom(store, roomId),
@@ -336,14 +343,14 @@ function getAutocompleteSuggestions(store: GameStore, input: string): string[] {
   if (store.state === 'shop') {
     return getShopAutocompleteSuggestions(store, input, buildShopDeps(store));
   }
-  return getAutocompleteSuggestionsRaw(store, input, enemyData, itemData, weaponData, npcData);
+  return getAutocompleteSuggestionsRaw(store, input, enemyData, itemData, effectiveWeaponData(store), npcData);
 }
 
 function buildShopDeps(store: GameStore): ShopDeps {
   return {
     shops: shopData,
     itemData,
-    weaponData,
+    weaponData: effectiveWeaponData(store),
     npcData,
     refreshHeader: () => updateHeader(store),
   };
@@ -352,7 +359,7 @@ function buildShopDeps(store: GameStore): ShopDeps {
 function buildDialogueDeps(store: GameStore): DialogueDeps {
   return {
     itemData,
-    weaponData,
+    weaponData: effectiveWeaponData(store),
     npcData,
     refreshHeader: () => updateHeader(store),
     startCombat: enemyId => startCombat(store, enemyId),
