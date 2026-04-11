@@ -415,9 +415,10 @@ describe('weapon class passives', () => {
 
     // Round 2 — enemy should attack normally
     if (!combat.finished) {
+      const hpBeforeRound2 = player.hp;
       playerAttack(combat, player, pierceWeaponData, itemData, seededRng(43));
-      // On round 2 enemy should act — verify round incremented
       expect(combat.round).toBe(2);
+      expect(player.hp).toBeLessThan(hpBeforeRound2);
     }
   });
 });

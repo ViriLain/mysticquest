@@ -6,7 +6,6 @@ import type { EnemyDef, GameStore, ItemDef, WeaponDef } from '../types';
 import { getLivingEnemies, getRoom } from '../world';
 
 function classTag(weapon: WeaponDef): string {
-  if (!weapon.weapon_class) return '';
   return `[${weapon.weapon_class.charAt(0).toUpperCase() + weapon.weapon_class.slice(1)}] `;
 }
 
