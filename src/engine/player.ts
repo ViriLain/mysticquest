@@ -119,11 +119,14 @@ export function heal(p: PlayerState, amount: number): void {
   p.hp = Math.min(p.hp + amount, p.maxHp);
 }
 
-export function takeDamage(p: PlayerState, amount: number): number {
+export function takeDamage(p: PlayerState, amount: number, flatReduction = 0): number {
   let actual = amount;
   if (p.defending) {
     actual = Math.max(1, Math.floor(amount / 2));
     p.defending = false;
+  }
+  if (flatReduction > 0) {
+    actual = Math.max(1, actual - flatReduction);
   }
   p.hp -= actual;
   return actual;

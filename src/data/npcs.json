@@ -185,6 +185,7 @@
           { "label": "Who are you?", "next": "identity" },
           { "label": "What do you know about the ruins?", "next": "ruins_lore" },
           { "label": "I need healing.", "next": "heal" },
+          { "label": "Know anything about the mine?", "next": "mine_hint" },
           { "label": "Leave him alone.", "next": null }
         ]
       },
@@ -255,6 +256,106 @@
         "choices": [
           { "label": "Thank you.", "next": null },
           { "label": "Tell me about the ruins.", "next": "ruins_lore" }
+        ]
+      },
+      "mine_hint": {
+        "text": [
+          "There's an old mine west of the village. The miners dug too deep and found something.",
+          "People stopped coming back from it.",
+          "If you're brave enough... or foolish enough..."
+        ],
+        "choices": [
+          { "label": "I'll check it out.", "next": null },
+          { "label": "Maybe later.", "next": null }
+        ]
+      }
+    }
+  },
+  "wastes_last_keeper": {
+    "name": "The Last Keeper",
+    "description": "A translucent figure kneeling in the center of the sanctum. Not a ghost — more like a recording etched into the stone itself. Its face is ancient and serene.",
+    "match_words": ["keeper", "last keeper", "spirit", "figure", "statue"],
+    "dialogue": {
+      "start": {
+        "text": [
+          "You have come further than anyone has in a thousand years.",
+          "I am what remains of the last keeper of this place."
+        ],
+        "choices": [
+          { "label": "What happened here?", "next": "history" },
+          { "label": "What is this place?", "next": "sanctum" },
+          { "label": "Who are you?", "next": "keeper" }
+        ]
+      },
+      "history": {
+        "text": [
+          "We built a kingdom here, in the wastes that were not yet wastes.",
+          "Our smiths forged a crown of dark iron to unite the people.",
+          "But the crown had its own will. It consumed the king who wore it.",
+          "The corruption spread from this room, through the temple, through the mines, until everything above was dust."
+        ],
+        "choices": [
+          { "label": "The dark crown... I've seen it.", "next": "crown_lore", "condition": { "type": "has_key_item", "value": "dark_crown" } },
+          { "label": "Can it be stopped?", "next": "blessing" },
+          { "label": "I'm sorry.", "next": "blessing" }
+        ]
+      },
+      "sanctum": {
+        "text": [
+          "This was the heart of our civilization. The forge where the crown was made.",
+          "The symbols on the walls are warnings we carved too late."
+        ],
+        "choices": [
+          { "label": "Can it be stopped?", "next": "blessing" },
+          { "label": "Tell me more about the crown.", "next": "history" }
+        ]
+      },
+      "keeper": {
+        "text": [
+          "I was the last priest. When the corruption took everything, I stayed to guard the truth.",
+          "I have waited here, in the stone, for someone to find this place."
+        ],
+        "choices": [
+          { "label": "What happened here?", "next": "history" },
+          { "label": "I'm here now.", "next": "blessing" }
+        ]
+      },
+      "crown_lore": {
+        "text": [
+          "Then you know its pull. The crown wants to be worn.",
+          "If you wear it, you will become what our king became. The corruption will begin again.",
+          "If you destroy the one who sits on the throne now, the cycle may finally end."
+        ],
+        "choices": [
+          { "label": "I'll end it.", "next": "blessing" },
+          { "label": "What if I wear the crown?", "next": "crown_warning" }
+        ]
+      },
+      "crown_warning": {
+        "text": [
+          "Then you are lost. And so is everything else."
+        ],
+        "choices": [
+          { "label": "I understand.", "next": "blessing" }
+        ]
+      },
+      "blessing": {
+        "text": [
+          "You have come here seeking answers. I will give you what I can.",
+          "Take this ward. It will shield you from harm.",
+          "Remember what happened here. Do not let the crown win."
+        ],
+        "choices": [
+          { "label": "Thank you, Keeper.", "next": "farewell", "effect": { "set_flag": "keepers_ward", "heal": 9999 } }
+        ]
+      },
+      "farewell": {
+        "text": [
+          "Go now. The throne awaits.",
+          "The Last Keeper's form shimmers and fades into the stone. The sanctum falls silent."
+        ],
+        "choices": [
+          { "label": "(Leave)", "next": null }
         ]
       }
     }

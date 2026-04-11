@@ -86,6 +86,11 @@ export function isCompletionSatisfied(
       if (!completion.objective) return false;
       return player.objectives[completion.objective] === 'complete';
     }
+
+    case 'visited_room': {
+      if (!completion.room) return false;
+      return player.visitedRooms[completion.room] === true;
+    }
   }
 }
 

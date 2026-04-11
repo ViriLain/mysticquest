@@ -52,6 +52,7 @@ export interface ObjectiveTrigger {
  * | visited_rooms_percent  | percent            | Visited non-hidden non-dungeon rooms ≥ percent × non-hidden total    |
  * | used_items_in_room     | room, items[]      | All listed items appear in `usedItemsInRoom[room]`                   |
  * | objective_completed    | objective          | Another objective (by id) is in `complete` state                     |
+ * | visited_room           | room               | The player has visited the named room                                |
  */
 export interface ObjectiveCompletion {
   type:
@@ -59,7 +60,8 @@ export interface ObjectiveCompletion {
     | 'enemy_defeated'
     | 'visited_rooms_percent'
     | 'used_items_in_room'
-    | 'objective_completed';
+    | 'objective_completed'
+    | 'visited_room';
   items?: string[];
   enemy?: string;
   percent?: number;

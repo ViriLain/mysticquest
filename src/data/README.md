@@ -56,6 +56,7 @@ Triggers fire at most once per objective. Re-triggering is a no-op.
 | `visited_rooms_percent` | `percent`         | Visited non-hidden, non-dungeon rooms ≥ `percent` × non-hidden total |
 | `used_items_in_room`    | `room`, `items[]` | All listed items appear in `usedItemsInRoom[room]`                  |
 | `objective_completed`   | `objective`       | Another objective (by id) is in `complete` state                    |
+| `visited_room`          | `room`            | The player has visited the named room                               |
 
 Completion is re-checked after every trigger fires. If a completion condition is already satisfied at trigger time, the objective transitions untriggered → active → complete in a single call and both notification lines fire in order.
 

@@ -18,5 +18,6 @@
   "badger_on_stick": {"name": "Badger on a Stick", "attack_bonus": 30, "region": "hidden", "price": 999, "description": "It's... a badger. On a stick. Surprisingly effective.", "match_words": ["badger", "badger on a stick", "stick"]},
   "buster_sword": {"name": "Buster Sword", "attack_bonus": 32, "region": "darkness", "price": 500, "description": "Absurdly large. Somehow it works.", "match_words": ["buster sword", "buster", "sword"]},
   "ragnarok": {"name": "Ragnarok", "attack_bonus": 35, "region": "darkness", "price": 600, "description": "The end of all things. A weapon of terrible power.", "match_words": ["ragnarok"]},
-  "falcon_punch": {"name": "FALCON PUNCH", "attack_bonus": 40, "region": "hidden", "price": 999, "description": "SHOW ME YOUR MOVES! The ultimate weapon.", "match_words": ["falcon punch", "falcon"]}
+  "falcon_punch": {"name": "FALCON PUNCH", "attack_bonus": 40, "region": "hidden", "price": 999, "description": "SHOW ME YOUR MOVES! The ultimate weapon.", "match_words": ["falcon punch", "falcon"]},
+  "keepers_blade": {"name": "Keeper's Blade", "attack_bonus": 26, "region": "wastes", "description": "Forged by the civilization that built the crown. The blade remembers what its makers forgot — that some things are worth protecting.", "match_words": ["keeper", "keepers blade", "blade"]}
 }

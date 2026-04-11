@@ -295,6 +295,45 @@ describe('completion: used_items_in_room', () => {
   });
 });
 
+describe('completion: visited_room', () => {
+  it('completes when the player has visited the specified room', () => {
+    const store = objectivesTestStore();
+    store.player!.visitedRooms.wastes_buried_sanctum = true;
+    const fx: ObjectiveDef[] = [{
+      id: 'sanctum_visit',
+      title: 'Visit Sanctum',
+      hint: '...',
+      trigger: { type: 'entered_room', room: 'wastes_abandoned_mine' },
+      completion: { type: 'visited_room', room: 'wastes_buried_sanctum' },
+      completion_text: '...',
+    }];
+    notifyObjectiveEvent(
+      store,
+      { type: 'entered_room', room: 'wastes_abandoned_mine' },
+      fx,
+    );
+    expect(store.player!.objectives.sanctum_visit).toBe('complete');
+  });
+
+  it('stays active when the room has not been visited', () => {
+    const store = objectivesTestStore();
+    const fx: ObjectiveDef[] = [{
+      id: 'sanctum_visit',
+      title: 'Visit Sanctum',
+      hint: '...',
+      trigger: { type: 'entered_room', room: 'wastes_abandoned_mine' },
+      completion: { type: 'visited_room', room: 'wastes_buried_sanctum' },
+      completion_text: '...',
+    }];
+    notifyObjectiveEvent(
+      store,
+      { type: 'entered_room', room: 'wastes_abandoned_mine' },
+      fx,
+    );
+    expect(store.player!.objectives.sanctum_visit).toBe('active');
+  });
+});
+
 describe('chaining', () => {
   it('activates a chained objective when its prerequisite completes', () => {
     const store = objectivesTestStore();

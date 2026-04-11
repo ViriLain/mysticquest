@@ -496,6 +496,64 @@ describe('cure items', () => {
   });
 });
 
+describe("Keeper's Ward", () => {
+  it('reduces enemy damage by 3 when keepers_ward flag is set', () => {
+    const player = createPlayer();
+    player.firedEvents.keepers_ward = true;
+    player.defense = 0;
+    const combat = createCombat(player, 'shadow_rat', enemyData);
+
+    playerDefend(combat, player, itemData, seededRng(1));
+    const withWard = 30 - player.hp;
+
+    const player2 = createPlayer();
+    player2.defense = 0;
+    const combat2 = createCombat(player2, 'shadow_rat', enemyData);
+    playerDefend(combat2, player2, itemData, seededRng(1));
+    const withoutWard = 30 - player2.hp;
+
+    expect(withWard).toBeLessThan(withoutWard);
+  });
+
+  it('stacks with arcane_shield for -4 total reduction', () => {
+    const player = createPlayer();
+    player.firedEvents.keepers_ward = true;
+    player.skills.arcane_shield = true;
+    player.defense = 0;
+    player.hp = 200;
+    player.maxHp = 200;
+
+    const strongEnemy = {
+      brute: {
+        name: 'Brute',
+        hp: 100,
+        attack: 20,
+        defense: 0,
+        xp: 10,
+        loot: [] as string[],
+        region: 'test',
+        description: 'big',
+        is_boss: false,
+      },
+    };
+    // Use playerAttack (not playerDefend) so the defending flag does not halve damage,
+    // letting us observe the raw -4 reduction cleanly.
+    const combat = createCombat(player, 'brute', strongEnemy);
+    playerAttack(combat, player, weaponData, itemData, seededRng(1));
+    const withBoth = 200 - player.hp;
+
+    const player2 = createPlayer();
+    player2.defense = 0;
+    player2.hp = 200;
+    player2.maxHp = 200;
+    const combat2 = createCombat(player2, 'brute', strongEnemy);
+    playerAttack(combat2, player2, weaponData, itemData, seededRng(1));
+    const withNeither = 200 - player2.hp;
+
+    expect(withNeither - withBoth).toBe(4);
+  });
+});
+
 describe('Iron Will stun resistance', () => {
   const stunEnemyData = {
     knight: {
