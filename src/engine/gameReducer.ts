@@ -818,6 +818,12 @@ function handleSkillTreeKey(s: GameStore, key: string): void {
         checkAchievement(s, 'scholar');
       }
     },
+    redisplayRoom: () => {
+      if (s.player && s.world) {
+        clearTerminal(s);
+        displayRoom(s, s.player.currentRoom);
+      }
+    },
   };
   handleSkillTreeKeyRaw(s, key, deps);
 }

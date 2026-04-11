@@ -22,6 +22,7 @@ function makeDeps(): SkillTreeDeps {
     refreshHeader: () => {},
     emit: () => {},
     checkScholar: () => {},
+    redisplayRoom: () => {},
   };
 }
 

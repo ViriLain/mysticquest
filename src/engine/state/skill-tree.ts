@@ -7,6 +7,7 @@ export interface SkillTreeDeps {
   refreshHeader: () => void;
   emit: (sound: string) => void;
   checkScholar: () => void;
+  redisplayRoom: () => void;
 }
 
 const MAX_TIER = 5;
@@ -127,5 +128,6 @@ export function handleSkillTreeKey(
     displaySkillTree(store);
   } else if (key === 'Escape') {
     store.state = store.skillTreePrevState;
+    deps.redisplayRoom();
   }
 }
