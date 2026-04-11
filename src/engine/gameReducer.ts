@@ -25,6 +25,7 @@ import { getAutocompleteSuggestions as getAutocompleteSuggestionsRaw, handleExpl
 import { loadDungeonFloor, startContinue as startContinueRaw, startDungeonMode as startDungeonModeRaw, startMenu, startNewGame as startNewGameRaw } from './state/lifecycle';
 import { handleMenuKey as handleMenuKeyRaw } from './state/menu';
 import { openSettings, handleSettingsKey } from './state/settings';
+import { handleSkillTreeKey as handleSkillTreeKeyRaw, type SkillTreeDeps } from './state/skill-tree';
 import { enterShop, getShopAutocompleteSuggestions, handleShopInput, type ShopDeps } from './state/shop';
 import { openSlotPicker, handleSlotPickerKey as handleSlotPickerKeyRaw } from './state/slot-picker';
 import npcsJson from '../data/npcs.json';
@@ -452,6 +453,8 @@ export function createInitialStore(): GameStore {
     tabPrefix: '',
     settingsSelected: 0,
     settingsPrevState: 'menu',
+    skillTreeSelected: { tier: 1, index: 0 },
+    skillTreePrevState: 'exploring',
   };
   return store;
 }
@@ -637,6 +640,11 @@ function handleKeyPressed(s: GameStore, key: string): void {
     return;
   }
 
+  if (s.state === 'skill_tree') {
+    handleSkillTreeKey(s, key);
+    return;
+  }
+
   // Escape exits shop menu mode back to regular shop input
   if (s.state === 'shop' && s.shopMenuMode && key === 'Escape') {
     s.shopMenuMode = null;
@@ -800,6 +808,20 @@ function handleKeyPressed(s: GameStore, key: string): void {
   }
 }
 
+function handleSkillTreeKey(s: GameStore, key: string): void {
+  const deps: SkillTreeDeps = {
+    refreshHeader: () => updateHeader(s),
+    emit: sound => emitSound(s, sound),
+    checkScholar: () => {
+      const learnedCount = Object.values(s.player!.skills).filter(Boolean).length;
+      if (learnedCount >= 5) {
+        checkAchievement(s, 'scholar');
+      }
+    },
+  };
+  handleSkillTreeKeyRaw(s, key, deps);
+}
+
 function handleMenuKey(s: GameStore, key: string): void {
   handleMenuKeyRaw(s, key, {
     startNewGame: () => startNewGame(s),
@@ -810,7 +832,7 @@ function handleMenuKey(s: GameStore, key: string): void {
 }
 
 function handleTextInput(s: GameStore, text: string): void {
-  if (s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'minimap' || s.state === 'settings' || s.state === 'quit') return;
+  if (s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'minimap' || s.state === 'settings' || s.state === 'skill_tree' || s.state === 'quit') return;
   if (s.state === 'slot_picker' && s.renamingSlot) {
     s.renameBuffer += text;
     return;

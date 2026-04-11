@@ -412,6 +412,10 @@ export interface GameStore {
   // Settings
   settingsSelected: number;       // which setting row is focused
   settingsPrevState: GameStateKind; // state to return to on Escape
+
+  // Skill tree
+  skillTreeSelected: { tier: number; index: number };
+  skillTreePrevState: GameStateKind;
 }
 
 export interface DungeonScore {
