@@ -40,8 +40,10 @@ MysticQuest is played entirely through text commands typed into a terminal. The 
 | `leave` | Exit the shop |
 | `inventory` / `i` | Show your inventory |
 | `stats` | Show your character stats |
-| `skills` | View the skill tree |
+| `skills` | Open the interactive skill tree |
 | `learn <skill>` | Spend a skill point to learn a skill |
+| `warp` | List visited rooms you can teleport to |
+| `warp <place>` | Teleport to a visited room (costs HP) |
 | `journal` | View your adventure journal |
 | `map` | Open the minimap overlay |
 | `achievements` | View your achievement progress |
@@ -65,18 +67,35 @@ Critical hits have a 10% chance (18% with Sharp Eyes) and deal 2x damage (3x wit
 
 ### Skill Tree
 
-Earn 1 skill point per level-up (14 total). Three branches:
+Earn 1 skill point per level-up (14 total). Skills are organized into 5 tiers, from general to specialized. You need at least one skill from the previous tier to unlock the next.
 
-**Warrior** (offensive/tanky):
-- Iron Will, Heavy Blows, Thick Skin, Berserker, Titan
+| Tier | Skills |
+|------|--------|
+| 1 — General | Iron Will (+5 HP/lvl), Sharp Eyes (crit%), Herbalism (heal+) |
+| 2 — Utility | Heavy Blows (+ATK), Quick Feet (flee%), Arcane Shield (-dmg) |
+| 3 — Mid-spec | Thick Skin (+DEF), Precision (+ATK, pierce DEF), Buff Mastery (duration+) |
+| 4 — Specialized | Berserker (low-HP dmg+), Lucky (dodge%), Meditation (regen) |
+| 5 — Capstone | Titan (HP/ATK/DEF), Assassin (3x crits), Enlightened (XP+) |
 
-**Rogue** (crits/evasion):
-- Sharp Eyes, Quick Feet, Precision, Lucky, Assassin
+Type `skills` to open the interactive skill tree — navigate with arrow keys, press Enter to learn. You can also type `learn <name>` directly.
 
-**Mage** (healing/buffs):
-- Herbalism, Arcane Shield, Buff Mastery, Meditation, Enlightened
+### Fast Travel (Warp)
 
-Skills must be unlocked in order within each branch. Type `skills` to view the tree and `learn <name>` to unlock.
+Teleport to any room you've already visited using the `warp` command.
+
+- `warp` — lists all visited rooms grouped by region, with HP costs
+- `warp <room name>` — teleport to that room (fuzzy matching supported)
+- `teleport` works as an alias for `warp`
+
+**Cost:** 2 HP per room of distance (BFS shortest path). Cannot kill you — blocked if HP would drop below 1.
+
+**Free hub rooms** (always 0 HP cost):
+- Main Hall (Manor)
+- Central Forest (Wilds)
+- Dark Abyss (Darkness)
+- Path (Wastes)
+
+Warp is not available in Dungeon Mode.
 
 ### Economy
 
@@ -143,7 +162,8 @@ Type `score` in dungeon mode to see your run stats.
 - **Minimap** - Canvas overlay showing visited rooms, connections, and travel route
 - **3 Save Slots** - With custom names, auto-save on room entry
 - **Command History** - Up/Down arrows to recall previous commands
-- **Tab Autocomplete** - Context-aware completion for commands, items, enemies, NPCs
+- **Fast Travel** - Warp to any visited room with distance-based HP cost; hub rooms are free
+- **Tab Autocomplete** - Context-aware completion for commands, items, enemies, NPCs, warp destinations
 - **13 Achievements** - Tracked globally across all saves
 - **Settings** - Font size, color mode (normal/high contrast/colorblind), text speed, volume controls
 - **Colorblind Mode** - Deuteranopia-friendly color remapping
@@ -176,7 +196,7 @@ Tests live in `test/`:
 ```
 src/
   engine/          # Pure game logic (no React dependencies)
-    gameReducer.ts # Central state machine (~2000 lines)
+    gameReducer.ts # Central state machine
     types.ts       # All TypeScript interfaces
     player.ts      # Player stats, inventory, leveling
     combat.ts      # Turn-based combat with skill integration
@@ -186,7 +206,8 @@ src/
     endings.ts     # 4 ending trigger types
     save.ts        # Multi-slot localStorage save system
     commands.ts    # Command parser with aliases
-    skills.ts      # Skill tree definitions
+    skills.ts      # Tiered skill tree definitions + applySkillEffects
+    warp.ts        # BFS distance, hub definitions, warp cost logic
     achievements.ts # Achievement tracking
     audio.ts       # Web Audio API sound effects + ambient music
     minimap.ts     # BFS-based room layout computation
@@ -194,6 +215,8 @@ src/
     rng.ts         # Seeded PRNG (Mulberry32)
     settings.ts    # Persistent settings (font, color, speed, volume)
     asciiArt.ts    # ASCII art loader
+    handlers/      # One file per player command (look, take, use, attack, warp, etc.)
+    state/         # One file per GameStateKind (exploring, combat, dialogue, shop, skill-tree, etc.)
   components/
     Game.tsx       # Main game component (render loop, input, UI)
     Minimap.tsx    # Canvas-based minimap overlay
