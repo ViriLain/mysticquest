@@ -5,7 +5,7 @@
  * chain of rooms with optional branch rooms, scaled enemies, and loot.
  */
 
-import type { RoomDef, EnemyDef } from './types';
+import type { RoomDef, EnemyDef, WeaponClass } from './types';
 import { createRng, rngPick } from './rng';
 
 // ---------------------------------------------------------------------------
@@ -42,6 +42,14 @@ const BOSS_SUFFIXES = ['Lord', 'Guardian', 'Behemoth', 'Colossus', 'Archon'];
 const WEAPON_PREFIXES = ['Rusted', 'Dark', 'Shadow', 'Flame', 'Frost'];
 const WEAPON_SUFFIXES = ['Blade', 'Axe', 'Mace', 'Spear', 'Staff'];
 
+const SUFFIX_CLASS: Record<string, WeaponClass> = {
+  Blade: 'blade',
+  Axe: 'heavy',
+  Mace: 'heavy',
+  Spear: 'pierce',
+  Staff: 'blade',
+};
+
 // ---------------------------------------------------------------------------
 // Procedural weapon generator
 // ---------------------------------------------------------------------------
@@ -53,13 +61,14 @@ const WEAPON_SUFFIXES = ['Blade', 'Axe', 'Mace', 'Spear', 'Staff'];
 export function generateDungeonWeapon(
   floor: number,
   rng: () => number,
-): { id: string; name: string; attack_bonus: number } {
+): { id: string; name: string; attack_bonus: number; weapon_class: WeaponClass } {
   const prefix = rngPick(rng, WEAPON_PREFIXES);
   const suffix = rngPick(rng, WEAPON_SUFFIXES);
   const name = `${prefix} ${suffix}`;
   const id = `dng_weapon_f${floor}_${prefix.toLowerCase()}_${suffix.toLowerCase()}`;
   const attack_bonus = 2 + floor * 2;
-  return { id, name, attack_bonus };
+  const weapon_class = SUFFIX_CLASS[suffix] ?? 'blade';
+  return { id, name, attack_bonus, weapon_class };
 }
 
 // ---------------------------------------------------------------------------
