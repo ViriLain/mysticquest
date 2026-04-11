@@ -245,6 +245,7 @@ function buildExploringDeps(store: GameStore): ExploringDeps {
     weaponData,
     npcData,
     refreshHeader: () => updateHeader(store),
+    enterRoom: roomId => enterRoom(store, roomId),
     emit: sound => emitSound(store, sound),
     startCombat: enemyId => startCombat(store, enemyId),
     checkEndingsForItem: itemId => {

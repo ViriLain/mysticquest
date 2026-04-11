@@ -7,6 +7,7 @@ import { handleLook } from '../handlers/look';
 import { showAchievements, showInventory, showJournal, showSkills, showStats } from '../handlers/info';
 import { handleLearn } from '../handlers/meta';
 import { handleSearch } from '../handlers/search';
+import { handleWarp } from '../handlers/warp';
 import { handleTake } from '../handlers/take';
 import { handleTalk } from '../handlers/talk';
 import { handleUse } from '../handlers/use';
@@ -25,6 +26,7 @@ export interface ExploringDeps {
   checkChatterbox: () => void;
   checkScholar: () => void;
   checkItemAchievements: () => void;
+  enterRoom: (roomId: string) => boolean;
   goDirection: (direction: string) => void;
   doSave: () => void;
   doLoadPicker: () => void;
@@ -40,7 +42,7 @@ const HANDLED_BY_INFO_VERBS = new Set(['help', 'inventory', 'stats', 'journal', 
 const ALL_VERBS = [
   'go', 'look', 'take', 'use', 'drop', 'search', 'attack', 'defend', 'flee',
   'inventory', 'stats', 'save', 'load', 'help', 'quit', 'talk', 'journal',
-  'map', 'score', 'again', 'examine', 'skills', 'learn', 'achievements', 'settings',
+  'map', 'score', 'again', 'examine', 'skills', 'learn', 'achievements', 'settings', 'warp',
   'north', 'south', 'east', 'west', 'up', 'down',
 ];
 
@@ -105,6 +107,12 @@ export function handleExploringCommand(
     showSkills(store);
   } else if (verb === 'learn') {
     handleLearn(store, target, deps.refreshHeader, deps.emit, deps.checkScholar);
+  } else if (verb === 'warp') {
+    handleWarp(store, target, {
+      enterRoom: deps.enterRoom,
+      refreshHeader: deps.refreshHeader,
+      emit: deps.emit,
+    });
   } else if (verb === 'achievements') {
     showAchievements(store);
   } else if (verb === 'settings') {
@@ -204,6 +212,13 @@ export function getAutocompleteSuggestions(
     for (const skill of SKILL_TREE) {
       if (canLearnSkill(store.player.skills, skill.id)) {
         candidates.push(skill.name);
+      }
+    }
+  } else if (verb === 'warp') {
+    if (store.world) {
+      for (const roomId of Object.keys(store.player.visitedRooms)) {
+        const room = store.world.rooms[roomId];
+        if (room) candidates.push(room.name);
       }
     }
   }
