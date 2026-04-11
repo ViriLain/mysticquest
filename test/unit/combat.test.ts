@@ -396,6 +396,30 @@ describe('weapon class passives', () => {
 
     expect(messages.some(m => m.text.includes('smashes through armor'))).toBe(true);
   });
+
+  it('pierce class skips enemy attack on round 1', () => {
+    const pierceWeaponData: Record<string, WeaponDef> = {
+      test_spear: { name: 'Test Spear', attack_bonus: 5, region: 'manor', weapon_class: 'pierce', description: 'test' },
+    };
+    const player = createPlayer();
+    addWeapon(player, 'test_spear');
+    equipWeapon(player, 'test_spear');
+    const startHp = player.hp;
+
+    const combat = createCombat(player, 'shadow_rat', enemyData);
+    const msgs = playerAttack(combat, player, pierceWeaponData, itemData, seededRng(42));
+
+    // Player should take no damage on round 1 (enemy skipped)
+    expect(player.hp).toBe(startHp);
+    expect(msgs.some(m => m.text.includes('strike first'))).toBe(true);
+
+    // Round 2 — enemy should attack normally
+    if (!combat.finished) {
+      playerAttack(combat, player, pierceWeaponData, itemData, seededRng(43));
+      // On round 2 enemy should act — verify round incremented
+      expect(combat.round).toBe(2);
+    }
+  });
 });
 
 describe('enemy effect application', () => {

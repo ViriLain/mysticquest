@@ -148,6 +148,12 @@ export function playerAttack(
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
+  const equippedWeapon = player.equippedWeapon ? weaponData[player.equippedWeapon] : null;
+
+  // Pierce first strike message on round 1
+  if (equippedWeapon?.weapon_class === 'pierce' && combat.round === 1) {
+    messages.push({ text: 'You strike first with your spear!', color: [0.4, 1, 0.8, 1] });
+  }
 
   // Tick player effects (DoT)
   const playerTick = tickStatusEffects(combat.playerEffects);
@@ -169,7 +175,6 @@ export function playerAttack(
   let critMult = 2;
   if (hasSkill(player, 'sharp_eyes')) critChance = 18;
   if (hasSkill(player, 'assassin')) critMult = 3;
-  const equippedWeapon = player.equippedWeapon ? weaponData[player.equippedWeapon] : null;
   if (equippedWeapon?.weapon_class === 'blade') critChance += 10;
   let effectiveDef = combat.enemy.defense;
   if (hasSkill(player, 'precision')) { atk += 3; effectiveDef = Math.max(0, effectiveDef - 2); }
@@ -235,7 +240,11 @@ export function playerAttack(
     }
   }
 
-  enemyTurn(combat, player, itemData, messages, rng);
+  if (equippedWeapon?.weapon_class === 'pierce' && combat.round === 1) {
+    // Pierce first strike: enemy skips round 1
+  } else {
+    enemyTurn(combat, player, itemData, messages, rng);
+  }
   tickBuffs(player, messages);
   applyMeditation(player, messages);
   return messages;
