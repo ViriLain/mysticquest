@@ -234,12 +234,12 @@ export interface SaveManifest {
   slots: SaveSlotMeta[];
 }
 
-// SkillId, SkillBranch, and SkillDef are derived from the SKILL_TREE array
-// in skills.ts — that file is the single source of truth. Re-exported here
-// so existing imports from types.ts continue to work.
-export type { SkillId, SkillBranch, SkillDef } from './skills';
+// SkillId and SkillDef are derived from the SKILL_TREE array in skills.ts —
+// that file is the single source of truth. Re-exported here so existing
+// imports from types.ts continue to work.
+export type { SkillId, SkillDef } from './skills';
 
-export type GameStateKind = 'boot' | 'menu' | 'exploring' | 'combat' | 'dialogue' | 'ending' | 'gameover' | 'slot_picker' | 'minimap' | 'settings' | 'shop' | 'quit';
+export type GameStateKind = 'boot' | 'menu' | 'exploring' | 'combat' | 'dialogue' | 'ending' | 'gameover' | 'slot_picker' | 'minimap' | 'settings' | 'shop' | 'skill_tree' | 'quit';
 
 export type RGBA = [number, number, number, number];
 
