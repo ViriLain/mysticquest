@@ -4,7 +4,7 @@ import { ICON, iconLine } from '../icons';
 import { OBJECTIVES } from '../objectives';
 import { addLine } from '../output';
 import { totalAttack, totalDefense, visitedCount, xpToNextLevel } from '../player';
-import { SKILL_TREE, canLearnSkill, getSkillsByBranch } from '../skills';
+import { SKILL_TREE, canLearnSkill, getSkillsByTier } from '../skills';
 import type { GameStore, ItemDef, ObjectiveDef, WeaponDef } from '../types';
 
 import itemsJson from '../../data/items.json';
@@ -20,10 +20,9 @@ export function showSkills(store: GameStore): void {
   addLine(store, `Skill Points: ${store.player.skillPoints}`, C.CHOICE_COLOR);
   addLine(store, '');
 
-  const branches: Array<'warrior' | 'rogue' | 'mage'> = ['warrior', 'rogue', 'mage'];
-  for (const branch of branches) {
-    addLine(store, `--- ${branch.charAt(0).toUpperCase() + branch.slice(1)} ---`, C.COMBAT_COLOR);
-    const skills = getSkillsByBranch(branch);
+  for (let tier = 1; tier <= 5; tier++) {
+    addLine(store, `--- Tier ${tier} ---`, C.COMBAT_COLOR);
+    const skills = getSkillsByTier(tier);
     for (const skill of skills) {
       if (store.player.skills[skill.id]) {
         addLine(store, `  [*] ${skill.name} - ${skill.description}`, C.ITEM_COLOR);

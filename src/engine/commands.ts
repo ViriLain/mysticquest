@@ -12,6 +12,7 @@ const VERB_ALIASES: Record<string, string> = {
   l: 'look', i: 'inventory',
   '?': 'help', q: 'quit',
   equip: 'use', status: 'stats', repeat: 'again', g: 'again', inspect: 'examine',
+  teleport: 'warp',
 };
 
 const KNOWN_VERBS = new Set([

@@ -11,6 +11,7 @@ export function handleHelp(store: GameStore): void {
   addLine(store, '  go <direction>  - Move (north/south/east/west/up/down)', C.HELP_COLOR);
   addLine(store, '  look (l)        - Look around the current room', C.HELP_COLOR);
   addLine(store, '  search          - Search for hidden items', C.HELP_COLOR);
+  addLine(store, "  warp <place>    - Teleport to a visited location", C.HELP_COLOR);
   addLine(store, '');
   addLine(store, ' ITEMS', C.ITEM_COLOR);
   addLine(store, '  take <item>     - Pick up an item or weapon', C.HELP_COLOR);
@@ -28,7 +29,7 @@ export function handleHelp(store: GameStore): void {
   addLine(store, '  journal         - View your adventure journal', C.HELP_COLOR);
   addLine(store, '  map             - Open the area map', C.HELP_COLOR);
   addLine(store, '  talk <npc>      - Talk to someone in the room', C.HELP_COLOR);
-  addLine(store, '  skills          - View the skill tree', C.HELP_COLOR);
+  addLine(store, '  skills          - Open the skill tree', C.HELP_COLOR);
   addLine(store, '  learn <skill>   - Learn a new skill', C.HELP_COLOR);
   addLine(store, '  achievements    - View achievements', C.HELP_COLOR);
   addLine(store, '  save / load     - Save or load your game', C.HELP_COLOR);

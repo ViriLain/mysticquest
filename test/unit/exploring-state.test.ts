@@ -33,6 +33,7 @@ function makeDeps(store: ReturnType<typeof makeExploringStore>) {
     refreshHeader: () => {
       store.header.weapon = store.player?.equippedWeapon ? weaponData[store.player.equippedWeapon].name : 'Fists';
     },
+    enterRoom: () => true,
     emit: () => {},
     startCombat: () => {},
     checkEndingsForItem: () => {},

@@ -235,7 +235,7 @@ export default function Game() {
 
     const s = storeRef.current;
     const isSpecialKey = ['ArrowUp', 'ArrowDown', 'Enter', 'Backspace', 'Escape'].includes(e.key);
-    const isNonTextState = s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'slot_picker' || s.state === 'minimap' || s.state === 'settings' || s.state === 'quit';
+    const isNonTextState = s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'slot_picker' || s.state === 'minimap' || s.state === 'settings' || s.state === 'skill_tree' || s.state === 'quit';
 
     if (isSpecialKey || isNonTextState) {
       e.preventDefault();
@@ -391,7 +391,7 @@ export default function Game() {
         </div>
 
         {/* Input area (hidden during boot/menu/ending/slot_picker/minimap/settings/quit) */}
-        {store.state !== 'boot' && store.state !== 'menu' && store.state !== 'ending' && store.state !== 'slot_picker' && store.state !== 'minimap' && store.state !== 'settings' && store.state !== 'quit' && (
+        {store.state !== 'boot' && store.state !== 'menu' && store.state !== 'ending' && store.state !== 'slot_picker' && store.state !== 'minimap' && store.state !== 'settings' && store.state !== 'skill_tree' && store.state !== 'quit' && (
           <>
             <div className="terminal-input-separator" style={{ backgroundColor: dimColor }} />
             <div className="terminal-input-area" style={{ color: headerColor }}>

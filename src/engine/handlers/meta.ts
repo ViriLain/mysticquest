@@ -1,6 +1,6 @@
 import * as C from '../constants';
 import { addLine } from '../output';
-import { canLearnSkill, findSkillByName } from '../skills';
+import { applySkillEffects, canLearnSkill, findSkillByName } from '../skills';
 import type { GameStore } from '../types';
 
 export function handleLearn(
@@ -28,7 +28,7 @@ export function handleLearn(
   }
 
   if (!canLearnSkill(store.player.skills, skill.id)) {
-    addLine(store, `You need to learn earlier skills in the ${skill.branch} branch first.`, C.ERROR_COLOR);
+    addLine(store, 'You need to learn a skill from the previous tier first.', C.ERROR_COLOR);
     return;
   }
 
@@ -39,21 +39,7 @@ export function handleLearn(
 
   store.player.skills[skill.id] = true;
   store.player.skillPoints--;
-
-  if (skill.id === 'iron_will') {
-    const bonus = 5 * store.player.level;
-    store.player.maxHp += bonus;
-    store.player.hp += bonus;
-  } else if (skill.id === 'heavy_blows') {
-    store.player.attack += 2;
-  } else if (skill.id === 'thick_skin') {
-    store.player.defense += 2;
-  } else if (skill.id === 'titan') {
-    store.player.maxHp += 15;
-    store.player.hp += 15;
-    store.player.attack += 1;
-    store.player.defense += 1;
-  }
+  applySkillEffects(store.player, skill.id);
 
   addLine(store, `Learned ${skill.name}! ${skill.description}`, C.ITEM_COLOR);
   emit('levelUp');
