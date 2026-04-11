@@ -35,6 +35,13 @@ describe('warp module', () => {
       loadRegion(world, manorJson as RegionData);
       expect(bfsDistance(world, 'manor_entry', 'wilds_forest_entrance')).toBeNull();
     });
+
+    it('traverses _dynamic_exits', () => {
+      const world = makeWorld();
+      // Inject a dynamic exit shortcut: entry -> main_hall directly
+      world.rooms['manor_entry']._dynamic_exits = { secret: 'manor_main_hall' };
+      expect(bfsDistance(world, 'manor_entry', 'manor_main_hall')).toBe(1);
+    });
   });
 
   describe('warpCost', () => {
