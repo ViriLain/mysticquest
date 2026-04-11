@@ -4,7 +4,8 @@ import { handleDrop } from '../handlers/drop';
 import { handleExamine } from '../handlers/examine';
 import { handleHelp } from '../handlers/help';
 import { handleLook } from '../handlers/look';
-import { showAchievements, showInventory, showJournal, showSkills, showStats } from '../handlers/info';
+import { showAchievements, showInventory, showJournal, showStats } from '../handlers/info';
+import { displaySkillTree } from './skill-tree';
 import { handleLearn } from '../handlers/meta';
 import { handleSearch } from '../handlers/search';
 import { handleWarp } from '../handlers/warp';
@@ -104,7 +105,10 @@ export function handleExploringCommand(
   } else if (verb === 'examine') {
     handleExamine(store, target, deps.enemyData, deps.itemData, deps.weaponData);
   } else if (verb === 'skills') {
-    showSkills(store);
+    store.state = 'skill_tree';
+    store.skillTreePrevState = 'exploring';
+    store.skillTreeSelected = { tier: 1, index: 0 };
+    displaySkillTree(store);
   } else if (verb === 'learn') {
     handleLearn(store, target, deps.refreshHeader, deps.emit, deps.checkScholar);
   } else if (verb === 'warp') {

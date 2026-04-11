@@ -29,7 +29,7 @@ export function handleHelp(store: GameStore): void {
   addLine(store, '  journal         - View your adventure journal', C.HELP_COLOR);
   addLine(store, '  map             - Open the area map', C.HELP_COLOR);
   addLine(store, '  talk <npc>      - Talk to someone in the room', C.HELP_COLOR);
-  addLine(store, '  skills          - View the skill tree', C.HELP_COLOR);
+  addLine(store, '  skills          - Open the skill tree', C.HELP_COLOR);
   addLine(store, '  learn <skill>   - Learn a new skill', C.HELP_COLOR);
   addLine(store, '  achievements    - View achievements', C.HELP_COLOR);
   addLine(store, '  save / load     - Save or load your game', C.HELP_COLOR);
