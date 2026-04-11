@@ -112,7 +112,7 @@ export default function Game() {
 
       // Pre-compute per-line glitch/jitter offsets (avoids Math.random in render)
       const fx = updated.effects;
-      if (fx.glitch > 0 || fx.jitter > 0) {
+      if ((fx.glitch > 0 || fx.jitter > 0) && !frameSettings.reduceMotion) {
         shouldRender = true;
         lineEffectsRef.current = updated.lines.map(() => {
           let offsetX = 0;
@@ -302,7 +302,7 @@ export default function Game() {
 
       <div
         className="terminal"
-        style={{ transform: `translate(${store.effects.shake.x}px, ${store.effects.shake.y}px)`, ...terminalStyle }}
+        style={{ transform: settings.reduceMotion ? undefined : `translate(${store.effects.shake.x}px, ${store.effects.shake.y}px)`, ...terminalStyle }}
       >
         <input
           ref={inputRef}
@@ -484,6 +484,7 @@ export default function Game() {
             { label: 'Sound Effects', value: s.sfxEnabled ? 'ON' : 'OFF' },
             { label: 'Ambient Music', value: s.ambientEnabled ? 'ON' : 'OFF' },
             { label: 'Typewriter Clicks', value: s.typewriterSound ? 'ON' : 'OFF' },
+            { label: 'Reduce Motion', value: s.reduceMotion ? 'ON' : 'OFF' },
           ];
           return (
             <div className="menu-overlay">

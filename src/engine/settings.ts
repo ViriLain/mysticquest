@@ -14,6 +14,7 @@ export interface GameSettings {
   sfxEnabled: boolean;
   ambientEnabled: boolean;
   typewriterSound: boolean;
+  reduceMotion: boolean;
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
@@ -24,6 +25,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   sfxEnabled: true,
   ambientEnabled: true,
   typewriterSound: true,
+  reduceMotion: false,
 };
 
 export function loadSettings(): GameSettings {
