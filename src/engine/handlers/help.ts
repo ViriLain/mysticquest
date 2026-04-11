@@ -11,6 +11,7 @@ export function handleHelp(store: GameStore): void {
   addLine(store, '  go <direction>  - Move (north/south/east/west/up/down)', C.HELP_COLOR);
   addLine(store, '  look (l)        - Look around the current room', C.HELP_COLOR);
   addLine(store, '  search          - Search for hidden items', C.HELP_COLOR);
+  addLine(store, "  warp <place>    - Teleport to a visited location", C.HELP_COLOR);
   addLine(store, '');
   addLine(store, ' ITEMS', C.ITEM_COLOR);
   addLine(store, '  take <item>     - Pick up an item or weapon', C.HELP_COLOR);
