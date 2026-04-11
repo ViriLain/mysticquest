@@ -232,20 +232,10 @@ export interface SaveManifest {
   slots: SaveSlotMeta[];
 }
 
-export type SkillId =
-  | 'iron_will' | 'heavy_blows' | 'thick_skin' | 'berserker' | 'titan'
-  | 'sharp_eyes' | 'quick_feet' | 'precision' | 'lucky' | 'assassin'
-  | 'herbalism' | 'arcane_shield' | 'buff_mastery' | 'meditation' | 'enlightened';
-
-export type SkillBranch = 'warrior' | 'rogue' | 'mage';
-
-export interface SkillDef {
-  id: SkillId;
-  name: string;
-  branch: SkillBranch;
-  description: string;
-  tier: number;
-}
+// SkillId, SkillBranch, and SkillDef are derived from the SKILL_TREE array
+// in skills.ts — that file is the single source of truth. Re-exported here
+// so existing imports from types.ts continue to work.
+export type { SkillId, SkillBranch, SkillDef } from './skills';
 
 export type GameStateKind = 'boot' | 'menu' | 'exploring' | 'combat' | 'dialogue' | 'ending' | 'gameover' | 'slot_picker' | 'minimap' | 'settings' | 'shop' | 'quit';
 
