@@ -305,6 +305,38 @@ describe('weapon effect application', () => {
   });
 });
 
+describe('weapon class passives', () => {
+  it('blade class adds 10% crit chance', () => {
+    const bladeWeaponData: Record<string, WeaponDef> = {
+      test_blade: { name: 'Test Blade', attack_bonus: 5, region: 'manor', weapon_class: 'blade', description: 'test' },
+    };
+
+    let bladeCrits = 0;
+    let normalCrits = 0;
+    const noClassWeaponData: Record<string, WeaponDef> = {
+      test_heavy: { name: 'Test Heavy', attack_bonus: 5, region: 'manor', weapon_class: 'heavy', description: 'test' },
+    };
+
+    for (let seed = 0; seed < 200; seed++) {
+      const p1 = createPlayer();
+      addWeapon(p1, 'test_blade');
+      equipWeapon(p1, 'test_blade');
+      const combat1 = createCombat(p1, 'shadow_rat', enemyData);
+      const msgs1 = playerAttack(combat1, p1, bladeWeaponData, itemData, seededRng(seed));
+      if (msgs1.some(m => m.text.includes('CRITICAL HIT') || m.text.includes('blade finds a weak point'))) bladeCrits++;
+
+      const p2 = createPlayer();
+      addWeapon(p2, 'test_heavy');
+      equipWeapon(p2, 'test_heavy');
+      const combat2 = createCombat(p2, 'shadow_rat', enemyData);
+      const msgs2 = playerAttack(combat2, p2, noClassWeaponData, itemData, seededRng(seed));
+      if (msgs2.some(m => m.text === 'CRITICAL HIT!')) normalCrits++;
+    }
+
+    expect(bladeCrits).toBeGreaterThan(normalCrits);
+  });
+});
+
 describe('enemy effect application', () => {
   const poisonEnemyData = {
     spider: {

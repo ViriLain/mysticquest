@@ -169,6 +169,8 @@ export function playerAttack(
   let critMult = 2;
   if (hasSkill(player, 'sharp_eyes')) critChance = 18;
   if (hasSkill(player, 'assassin')) critMult = 3;
+  const equippedWeapon = player.equippedWeapon ? weaponData[player.equippedWeapon] : null;
+  if (equippedWeapon?.weapon_class === 'blade') critChance += 10;
   let effectiveDef = combat.enemy.defense;
   if (hasSkill(player, 'precision')) { atk += 3; effectiveDef = Math.max(0, effectiveDef - 2); }
   const [damage, crit] = calcDamage(atk, effectiveDef, rng, critChance, critMult);
@@ -178,7 +180,11 @@ export function playerAttack(
   }
 
   if (crit) {
-    messages.push({ text: 'CRITICAL HIT!', color: [1, 1, 0.2, 1] });
+    if (equippedWeapon?.weapon_class === 'blade') {
+      messages.push({ text: 'Your blade finds a weak point!', color: [1, 1, 0.2, 1] });
+    } else {
+      messages.push({ text: 'CRITICAL HIT!', color: [1, 1, 0.2, 1] });
+    }
   }
   combat.enemy.hp -= finalDamage;
   messages.push({ text: `You deal ${finalDamage} damage to ${combat.enemy.name}.`, color: [0.8, 1, 0.8, 1] });
