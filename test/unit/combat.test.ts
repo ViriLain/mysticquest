@@ -335,6 +335,67 @@ describe('weapon class passives', () => {
 
     expect(bladeCrits).toBeGreaterThan(normalCrits);
   });
+
+  it('heavy class ignores 2 enemy DEF', () => {
+    const heavyWeaponData: Record<string, WeaponDef> = {
+      test_heavy: { name: 'Test Heavy', attack_bonus: 5, region: 'manor', weapon_class: 'heavy', description: 'test' },
+    };
+    const bladeWeaponData: Record<string, WeaponDef> = {
+      test_blade: { name: 'Test Blade', attack_bonus: 5, region: 'manor', weapon_class: 'blade', description: 'test' },
+    };
+
+    const highDefEnemy = {
+      tank: {
+        name: 'Tank',
+        hp: 1000,
+        attack: 1,
+        defense: 10,
+        xp: 1,
+        loot: [] as string[],
+        region: 'test',
+        description: 'tanky',
+        is_boss: false,
+      },
+    };
+
+    let heavyTotal = 0;
+    let bladeTotal = 0;
+
+    for (let seed = 0; seed < 100; seed++) {
+      const p1 = createPlayer();
+      p1.attack = 10;
+      addWeapon(p1, 'test_heavy');
+      equipWeapon(p1, 'test_heavy');
+      const c1 = createCombat(p1, 'tank', highDefEnemy);
+      playerAttack(c1, p1, heavyWeaponData, itemData, seededRng(seed));
+      heavyTotal += (1000 - c1.enemy.hp);
+
+      const p2 = createPlayer();
+      p2.attack = 10;
+      addWeapon(p2, 'test_blade');
+      equipWeapon(p2, 'test_blade');
+      const c2 = createCombat(p2, 'tank', highDefEnemy);
+      playerAttack(c2, p2, bladeWeaponData, itemData, seededRng(seed));
+      bladeTotal += (1000 - c2.enemy.hp);
+    }
+
+    // Heavy should deal more total damage due to -2 DEF
+    expect(heavyTotal).toBeGreaterThan(bladeTotal);
+  });
+
+  it('heavy class shows armor pierce message', () => {
+    const heavyWeaponData: Record<string, WeaponDef> = {
+      test_heavy: { name: 'Test Heavy', attack_bonus: 5, region: 'manor', weapon_class: 'heavy', description: 'test' },
+    };
+    const player = createPlayer();
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'shadow_rat', enemyData);
+
+    const messages = playerAttack(combat, player, heavyWeaponData, itemData, seededRng(1));
+
+    expect(messages.some(m => m.text.includes('smashes through armor'))).toBe(true);
+  });
 });
 
 describe('enemy effect application', () => {

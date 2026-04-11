@@ -173,6 +173,7 @@ export function playerAttack(
   if (equippedWeapon?.weapon_class === 'blade') critChance += 10;
   let effectiveDef = combat.enemy.defense;
   if (hasSkill(player, 'precision')) { atk += 3; effectiveDef = Math.max(0, effectiveDef - 2); }
+  if (equippedWeapon?.weapon_class === 'heavy') effectiveDef = Math.max(0, effectiveDef - 2);
   const [damage, crit] = calcDamage(atk, effectiveDef, rng, critChance, critMult);
   let finalDamage = damage;
   if (hasSkill(player, 'berserker') && player.hp < player.maxHp * 0.3) {
@@ -185,6 +186,9 @@ export function playerAttack(
     } else {
       messages.push({ text: 'CRITICAL HIT!', color: [1, 1, 0.2, 1] });
     }
+  }
+  if (equippedWeapon?.weapon_class === 'heavy') {
+    messages.push({ text: 'Heavy blow smashes through armor!', color: [1, 0.8, 0.2, 1] });
   }
   combat.enemy.hp -= finalDamage;
   messages.push({ text: `You deal ${finalDamage} damage to ${combat.enemy.name}.`, color: [0.8, 1, 0.8, 1] });
