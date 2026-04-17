@@ -87,7 +87,7 @@ export interface StatusEffect {
   baseDamage: number; // original damage (for bleed escalation reset)
 }
 
-export type WeaponClass = 'blade' | 'heavy' | 'pierce';
+export type WeaponClass = 'blade' | 'heavy' | 'pierce' | 'magic';
 
 export interface WeaponDef {
   name: string;
