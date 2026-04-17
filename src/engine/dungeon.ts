@@ -5,7 +5,7 @@
  * chain of rooms with optional branch rooms, scaled enemies, and loot.
  */
 
-import type { RoomDef, EnemyDef, WeaponClass, WeaponDef } from './types';
+import type { RoomDef, EnemyDef, StatusEffectType, WeaponClass, WeaponDef } from './types';
 import { createRng, rngPick } from './rng';
 
 // ---------------------------------------------------------------------------
@@ -47,8 +47,10 @@ const SUFFIX_CLASS: Record<string, WeaponClass> = {
   Axe: 'heavy',
   Mace: 'heavy',
   Spear: 'pierce',
-  Staff: 'blade',
+  Staff: 'magic',
 };
+
+const MAGIC_DUNGEON_ELEMENTS: StatusEffectType[] = ['burn', 'poison'];
 
 // ---------------------------------------------------------------------------
 // Procedural weapon generator
@@ -61,14 +63,38 @@ const SUFFIX_CLASS: Record<string, WeaponClass> = {
 export function generateDungeonWeapon(
   floor: number,
   rng: () => number,
-): { id: string; name: string; attack_bonus: number; weapon_class: WeaponClass } {
+): {
+  id: string;
+  name: string;
+  attack_bonus: number;
+  weapon_class: WeaponClass;
+  status_effect?: { type: StatusEffectType; damage: number; duration: number; chance: number };
+} {
   const prefix = rngPick(rng, WEAPON_PREFIXES);
   const suffix = rngPick(rng, WEAPON_SUFFIXES);
   const name = `${prefix} ${suffix}`;
   const id = `dng_weapon_f${floor}_${prefix.toLowerCase()}_${suffix.toLowerCase()}`;
   const attack_bonus = 2 + floor * 2;
   const weapon_class = SUFFIX_CLASS[suffix] ?? 'blade';
-  return { id, name, attack_bonus, weapon_class };
+
+  const result: {
+    id: string;
+    name: string;
+    attack_bonus: number;
+    weapon_class: WeaponClass;
+    status_effect?: { type: StatusEffectType; damage: number; duration: number; chance: number };
+  } = { id, name, attack_bonus, weapon_class };
+
+  if (weapon_class === 'magic') {
+    result.status_effect = {
+      type: rngPick(rng, MAGIC_DUNGEON_ELEMENTS),
+      damage: 1 + Math.floor(floor / 2),
+      duration: 3,
+      chance: 30,
+    };
+  }
+
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -214,6 +240,7 @@ export function generateFloor(floor: number, seed: number): FloorResult {
         weapon_class: weapon.weapon_class,
         region: 'dungeon',
         description: `A dungeon weapon found on floor ${floor}.`,
+        ...(weapon.status_effect ? { status_effect: weapon.status_effect } : {}),
       };
     } else if (isMiniBoss) {
       loot = ['potion'];
