@@ -300,6 +300,7 @@ export interface CombatState {
   playerWon: boolean;
   playerEffects: StatusEffect[];
   enemyEffects: StatusEffect[];
+  magicHitCounter: number;
 }
 
 export interface EffectsState {
