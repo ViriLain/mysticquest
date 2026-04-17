@@ -11,7 +11,7 @@ describe('generateDungeonWeapon', () => {
     expect(weapon.id).toMatch(/^dng_weapon_f10_/);
     expect(weapon.name).toBeTruthy();
     expect(weapon.attack_bonus).toBe(22); // 2 + 10 * 2
-    expect(['blade', 'heavy', 'pierce']).toContain(weapon.weapon_class);
+    expect(['blade', 'heavy', 'pierce', 'magic']).toContain(weapon.weapon_class);
   });
 
   it('maps all suffix types to valid weapon classes', () => {
@@ -64,7 +64,7 @@ describe('generateFloor', () => {
     expect(weaponDef).toBeDefined();
     expect(weaponDef.name).toBeTruthy();
     expect(weaponDef.attack_bonus).toBe(22); // 2 + 10 * 2
-    expect(['blade', 'heavy', 'pierce']).toContain(weaponDef.weapon_class);
+    expect(['blade', 'heavy', 'pierce', 'magic']).toContain(weaponDef.weapon_class);
     expect(weaponDef.region).toBe('dungeon');
   });
 
