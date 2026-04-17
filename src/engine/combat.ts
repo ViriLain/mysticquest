@@ -35,6 +35,15 @@ function getPlayerDefense(player: PlayerState, itemData: Record<string, ItemDef>
   return totalDefense(player, itemData);
 }
 
+function procMessageFor(type: StatusEffect['type']): string {
+  switch (type) {
+    case 'burn': return 'Flame surges through your strike!';
+    case 'poison': return 'Venom coils around the blade!';
+    case 'stun': return 'Arcane force locks your foe in place!';
+    case 'bleed': return 'Magic opens the wound!';
+  }
+}
+
 function tickBuffs(player: PlayerState, messages: CombatMessage[]): void {
   if (player.buffRounds > 0) {
     player.buffRounds--;
@@ -151,6 +160,10 @@ export function playerAttack(
   combat.round++;
   const equippedWeapon = player.equippedWeapon ? weaponData[player.equippedWeapon] : null;
 
+  if (equippedWeapon?.weapon_class === 'magic') {
+    combat.magicHitCounter++;
+  }
+
   // Pierce first strike message on round 1
   if (equippedWeapon?.weapon_class === 'pierce' && combat.round === 1) {
     messages.push({ text: 'You strike first with your spear!', color: [0.4, 1, 0.8, 1] });
@@ -239,6 +252,24 @@ export function playerAttack(
       const label = se.type.toUpperCase();
       messages.push({ text: `The enemy is now ${label}ED!`, color: [1, 0.6, 0.2, 1] });
     }
+  }
+
+  // Magic class: forced proc every 3 swings, bypasses chance roll, applied in
+  // addition to any roll above. Does not fire if the hit killed the enemy
+  // (this block is unreachable when combat.finished is true due to the earlier
+  // return on enemy death).
+  if (equippedWeapon?.weapon_class === 'magic'
+      && combat.magicHitCounter >= 3
+      && equippedWeapon.status_effect) {
+    const mse = equippedWeapon.status_effect;
+    applyStatusEffect(combat.enemyEffects, {
+      type: mse.type,
+      damage: mse.damage,
+      remaining: mse.duration,
+      baseDamage: mse.damage,
+    });
+    messages.push({ text: procMessageFor(mse.type), color: [0.6, 0.8, 1, 1] });
+    combat.magicHitCounter = 0;
   }
 
   if (equippedWeapon?.weapon_class === 'pierce' && combat.round === 1) {

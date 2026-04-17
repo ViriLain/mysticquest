@@ -421,6 +421,36 @@ describe('weapon class passives', () => {
       expect(player.hp).toBeLessThan(hpBeforeRound2);
     }
   });
+
+  it('magic class: forced proc fires on hit 3, not on hits 1 or 2', () => {
+    const magicWeaponData: Record<string, WeaponDef> = {
+      test_staff: {
+        name: 'Test Staff',
+        attack_bonus: 5,
+        region: 'manor',
+        weapon_class: 'magic',
+        description: 'test',
+        status_effect: { type: 'burn', damage: 2, duration: 3, chance: 0 },
+      },
+    };
+    const player = createPlayer();
+    addWeapon(player, 'test_staff');
+    equipWeapon(player, 'test_staff');
+    const combat = createCombat(player, 'cellar_shade', enemyData);
+    combat.enemy.hp = 100; // Ensure the enemy survives 3 hits regardless of crits.
+
+    playerAttack(combat, player, magicWeaponData, itemData, seededRng(1));
+    expect(combat.enemyEffects.find(e => e.type === 'burn')).toBeUndefined();
+    expect(combat.magicHitCounter).toBe(1);
+
+    playerAttack(combat, player, magicWeaponData, itemData, seededRng(2));
+    expect(combat.enemyEffects.find(e => e.type === 'burn')).toBeUndefined();
+    expect(combat.magicHitCounter).toBe(2);
+
+    playerAttack(combat, player, magicWeaponData, itemData, seededRng(3));
+    expect(combat.enemyEffects.find(e => e.type === 'burn')).toBeDefined();
+    expect(combat.magicHitCounter).toBe(0);
+  });
 });
 
 describe('enemy effect application', () => {
