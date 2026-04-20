@@ -18,7 +18,7 @@ const VERB_ALIASES: Record<string, string> = {
 const KNOWN_VERBS = new Set([
   'go', 'look', 'take', 'use', 'drop', 'search', 'attack', 'defend', 'flee',
   'inventory', 'weapons', 'stats', 'save', 'load', 'help', 'quit', 'talk', 'ask', 'journal',
-  'map', 'score', 'again', 'examine', 'skills', 'learn', 'achievements', 'settings',
+  'map', 'score', 'again', 'examine', 'skills', 'learn', 'achievements', 'settings', 'warp',
 ]);
 
 function levenshtein(a: string, b: string): number {
