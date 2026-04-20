@@ -421,6 +421,182 @@ describe('weapon class passives', () => {
       expect(player.hp).toBeLessThan(hpBeforeRound2);
     }
   });
+
+  it('magic class: forced proc fires on hit 3, not on hits 1 or 2', () => {
+    const magicWeaponData: Record<string, WeaponDef> = {
+      test_staff: {
+        name: 'Test Staff',
+        attack_bonus: 5,
+        region: 'manor',
+        weapon_class: 'magic',
+        description: 'test',
+        status_effect: { type: 'burn', damage: 2, duration: 3, chance: 0 },
+      },
+    };
+    const player = createPlayer();
+    addWeapon(player, 'test_staff');
+    equipWeapon(player, 'test_staff');
+    const combat = createCombat(player, 'cellar_shade', enemyData);
+    combat.enemy.hp = 100; // Ensure the enemy survives 3 hits regardless of crits.
+
+    playerAttack(combat, player, magicWeaponData, itemData, seededRng(1));
+    expect(combat.enemyEffects.find(e => e.type === 'burn')).toBeUndefined();
+    expect(combat.magicHitCounter).toBe(1);
+
+    playerAttack(combat, player, magicWeaponData, itemData, seededRng(2));
+    expect(combat.enemyEffects.find(e => e.type === 'burn')).toBeUndefined();
+    expect(combat.magicHitCounter).toBe(2);
+
+    playerAttack(combat, player, magicWeaponData, itemData, seededRng(3));
+    expect(combat.enemyEffects.find(e => e.type === 'burn')).toBeDefined();
+    expect(combat.magicHitCounter).toBe(0);
+  });
+
+  it('magic class: counter resets after proc, fires again on hit 6', () => {
+    const magicWeaponData: Record<string, WeaponDef> = {
+      test_staff: {
+        name: 'Test Staff',
+        attack_bonus: 5,
+        region: 'manor',
+        weapon_class: 'magic',
+        description: 'test',
+        status_effect: { type: 'burn', damage: 2, duration: 3, chance: 0 },
+      },
+    };
+    const player = createPlayer();
+    player.maxHp = 9999;
+    player.hp = 9999;
+    addWeapon(player, 'test_staff');
+    equipWeapon(player, 'test_staff');
+    // Use a high-HP enemy so it survives 6 hits
+    const tankEnemy = {
+      tank: {
+        name: 'Tank',
+        hp: 9999,
+        attack: 1,
+        defense: 0,
+        xp: 1,
+        loot: [] as string[],
+        region: 'test',
+        description: 'tanky',
+        is_boss: false,
+      },
+    };
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    let procCount = 0;
+    for (let i = 1; i <= 6; i++) {
+      const msgs = playerAttack(combat, player, magicWeaponData, itemData, seededRng(i));
+      if (msgs.some(m => m.text === 'Flame surges through your strike!')) {
+        procCount++;
+      }
+    }
+    expect(procCount).toBe(2);
+    expect(combat.magicHitCounter).toBe(0);
+  });
+
+  it('magic class: forced proc applies even when status_effect.chance is 0', () => {
+    const magicWeaponData: Record<string, WeaponDef> = {
+      test_staff: {
+        name: 'Test Staff',
+        attack_bonus: 5,
+        region: 'manor',
+        weapon_class: 'magic',
+        description: 'test',
+        status_effect: { type: 'poison', damage: 3, duration: 3, chance: 0 },
+      },
+    };
+    const player = createPlayer();
+    addWeapon(player, 'test_staff');
+    equipWeapon(player, 'test_staff');
+    const combat = createCombat(player, 'cellar_shade', enemyData);
+    combat.enemy.hp = 100;
+
+    // Three attacks — chance-roll path cannot fire (chance: 0). Only the
+    // forced proc can apply poison.
+    playerAttack(combat, player, magicWeaponData, itemData, seededRng(1));
+    playerAttack(combat, player, magicWeaponData, itemData, seededRng(2));
+    playerAttack(combat, player, magicWeaponData, itemData, seededRng(3));
+
+    expect(combat.enemyEffects.find(e => e.type === 'poison')).toBeDefined();
+  });
+
+  it('magic class: re-applying on an afflicted target refreshes duration', () => {
+    const magicWeaponData: Record<string, WeaponDef> = {
+      test_staff: {
+        name: 'Test Staff',
+        attack_bonus: 5,
+        region: 'manor',
+        weapon_class: 'magic',
+        description: 'test',
+        status_effect: { type: 'burn', damage: 2, duration: 3, chance: 0 },
+      },
+    };
+    const player = createPlayer();
+    player.maxHp = 9999;
+    player.hp = 9999;
+    addWeapon(player, 'test_staff');
+    equipWeapon(player, 'test_staff');
+    const tankEnemy = {
+      tank: {
+        name: 'Tank',
+        hp: 9999,
+        attack: 1,
+        defense: 0,
+        xp: 1,
+        loot: [] as string[],
+        region: 'test',
+        description: 'tanky',
+        is_boss: false,
+      },
+    };
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    // 6 attacks: proc fires on hit 3 (duration 3), ticks, then refreshes on hit 6
+    for (let i = 1; i <= 6; i++) {
+      playerAttack(combat, player, magicWeaponData, itemData, seededRng(i));
+    }
+
+    const burn = combat.enemyEffects.find(e => e.type === 'burn');
+    expect(burn).toBeDefined();
+    // Duration was refreshed to 3 on hit 6, then did not tick again in same
+    // playerAttack call. Assert remaining equals the declared duration exactly
+    // (refresh semantic), not 1 or 0 (stack semantic would have decayed).
+    expect(burn!.remaining).toBe(3);
+  });
+
+  it('magic class: each weapon applies its own declared element', () => {
+    const magicWeaponData: Record<string, WeaponDef> = {
+      burn_staff: {
+        name: 'Burn Staff', attack_bonus: 5, region: 'manor', weapon_class: 'magic',
+        description: 'burns', status_effect: { type: 'burn', damage: 2, duration: 3, chance: 0 },
+      },
+      poison_staff: {
+        name: 'Poison Staff', attack_bonus: 5, region: 'manor', weapon_class: 'magic',
+        description: 'poisons', status_effect: { type: 'poison', damage: 2, duration: 3, chance: 0 },
+      },
+    };
+
+    const player1 = createPlayer();
+    addWeapon(player1, 'burn_staff');
+    equipWeapon(player1, 'burn_staff');
+    const combat1 = createCombat(player1, 'cellar_shade', enemyData);
+    combat1.enemy.hp = 100;
+    playerAttack(combat1, player1, magicWeaponData, itemData, seededRng(1));
+    playerAttack(combat1, player1, magicWeaponData, itemData, seededRng(2));
+    playerAttack(combat1, player1, magicWeaponData, itemData, seededRng(3));
+    expect(combat1.enemyEffects.find(e => e.type === 'burn')).toBeDefined();
+
+    const player2 = createPlayer();
+    addWeapon(player2, 'poison_staff');
+    equipWeapon(player2, 'poison_staff');
+    const combat2 = createCombat(player2, 'cellar_shade', enemyData);
+    combat2.enemy.hp = 100;
+    playerAttack(combat2, player2, magicWeaponData, itemData, seededRng(1));
+    playerAttack(combat2, player2, magicWeaponData, itemData, seededRng(2));
+    playerAttack(combat2, player2, magicWeaponData, itemData, seededRng(3));
+    expect(combat2.enemyEffects.find(e => e.type === 'poison')).toBeDefined();
+  });
 });
 
 describe('enemy effect application', () => {

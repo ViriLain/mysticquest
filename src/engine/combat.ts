@@ -35,6 +35,13 @@ function getPlayerDefense(player: PlayerState, itemData: Record<string, ItemDef>
   return totalDefense(player, itemData);
 }
 
+const MAGIC_PROC_MESSAGES: Record<StatusEffect['type'], string> = {
+  burn: 'Flame surges through your strike!',
+  poison: 'Venom coils around the blade!',
+  stun: 'Arcane force locks your foe in place!',
+  bleed: 'Magic opens the wound!',
+};
+
 function tickBuffs(player: PlayerState, messages: CombatMessage[]): void {
   if (player.buffRounds > 0) {
     player.buffRounds--;
@@ -136,6 +143,7 @@ export function createCombat(_player: PlayerState, enemyId: string, enemyData: R
     playerWon: false,
     playerEffects: [],
     enemyEffects: [],
+    magicHitCounter: 0,
   };
 }
 
@@ -149,6 +157,10 @@ export function playerAttack(
   const messages: CombatMessage[] = [];
   combat.round++;
   const equippedWeapon = player.equippedWeapon ? weaponData[player.equippedWeapon] : null;
+
+  if (equippedWeapon?.weapon_class === 'magic') {
+    combat.magicHitCounter++;
+  }
 
   // Pierce first strike message on round 1
   if (equippedWeapon?.weapon_class === 'pierce' && combat.round === 1) {
@@ -238,6 +250,23 @@ export function playerAttack(
       const label = se.type.toUpperCase();
       messages.push({ text: `The enemy is now ${label}ED!`, color: [1, 0.6, 0.2, 1] });
     }
+  }
+
+  // Magic class: forced proc every 3 swings. Fires in addition to the
+  // chance-roll above; killing-blow hits return early so no proc is wasted
+  // on a corpse.
+  if (equippedWeapon?.weapon_class === 'magic'
+      && combat.magicHitCounter >= 3
+      && equippedWeapon.status_effect) {
+    const mse = equippedWeapon.status_effect;
+    applyStatusEffect(combat.enemyEffects, {
+      type: mse.type,
+      damage: mse.damage,
+      remaining: mse.duration,
+      baseDamage: mse.damage,
+    });
+    messages.push({ text: MAGIC_PROC_MESSAGES[mse.type], color: [0.6, 0.8, 1, 1] });
+    combat.magicHitCounter = 0;
   }
 
   if (equippedWeapon?.weapon_class === 'pierce' && combat.round === 1) {

@@ -65,10 +65,16 @@ export function startContinue(store: GameStore, slot: number): void {
       floorWeapons: {},
       dungeonPerks: result.dungeon.dungeon_perks || [],
     };
+    // Reconstruct weapon definitions from prior boss floors (every 10th)
+    // so carried weapons from earlier floors resolve after load.
+    for (let f = 10; f < store.dungeon.floor; f += 10) {
+      const prior = generateFloor(f, store.dungeon.seed);
+      Object.assign(store.dungeon.floorWeapons, prior.weapons);
+    }
     // Re-generate the current floor enemies and weapons
     const floorResult = generateFloor(store.dungeon.floor, store.dungeon.seed);
     store.dungeon.floorEnemies = floorResult.enemies;
-    store.dungeon.floorWeapons = floorResult.weapons;
+    Object.assign(store.dungeon.floorWeapons, floorResult.weapons);
     for (const [id, room] of Object.entries(floorResult.rooms)) {
       store.world.rooms[id] = room;
     }
@@ -120,7 +126,7 @@ export function loadDungeonFloor(store: GameStore, floor: number): void {
   if (!store.dungeon || !store.world || !store.player) return;
   const result = generateFloor(floor, store.dungeon.seed);
   store.dungeon.floorEnemies = result.enemies;
-  store.dungeon.floorWeapons = result.weapons;
+  store.dungeon.floorWeapons = { ...store.dungeon.floorWeapons, ...result.weapons };
   for (const [id, room] of Object.entries(result.rooms)) {
     store.world.rooms[id] = room;
   }

@@ -302,4 +302,15 @@ describe('action handlers', () => {
 
     expect(lines.some(l => l.includes('[Blade]'))).toBe(true);
   });
+
+  it('examine weapon shows [Magic] tag and magic class blurb', () => {
+    const store = makeStoryStore();
+    store.player!.weapons = ['hrunting'];
+
+    handleExamine(store, 'hrunting', enemyData, itemData, weaponData);
+    const lines = store.typewriterQueue.map(line => line.text);
+
+    expect(lines.some(l => l.includes('[Magic]'))).toBe(true);
+    expect(lines.some(l => l.includes('Magic:') && l.includes('every third strike'))).toBe(true);
+  });
 });

@@ -11,7 +11,7 @@ describe('generateDungeonWeapon', () => {
     expect(weapon.id).toMatch(/^dng_weapon_f10_/);
     expect(weapon.name).toBeTruthy();
     expect(weapon.attack_bonus).toBe(22); // 2 + 10 * 2
-    expect(['blade', 'heavy', 'pierce']).toContain(weapon.weapon_class);
+    expect(['blade', 'heavy', 'pierce', 'magic']).toContain(weapon.weapon_class);
   });
 
   it('maps all suffix types to valid weapon classes', () => {
@@ -24,6 +24,24 @@ describe('generateDungeonWeapon', () => {
     expect(seen.has('blade')).toBe(true);
     expect(seen.has('heavy')).toBe(true);
     expect(seen.has('pierce')).toBe(true);
+  });
+
+  it('Staff-suffix dungeon weapons are magic class with a status_effect', () => {
+    // Search many seeds to find one that generates a Staff weapon, then
+    // assert its shape. Use a small floor number for stable behavior.
+    let foundStaff = false;
+    for (let seed = 0; seed < 200 && !foundStaff; seed++) {
+      const rng = createRng(seed);
+      const weapon = generateDungeonWeapon(3, rng);
+      if (weapon.name.endsWith('Staff')) {
+        foundStaff = true;
+        expect(weapon.weapon_class).toBe('magic');
+        expect(weapon.status_effect).toBeDefined();
+        expect(weapon.status_effect!.type).not.toBe('stun');
+        expect(['burn', 'poison']).toContain(weapon.status_effect!.type);
+      }
+    }
+    expect(foundStaff).toBe(true);
   });
 });
 
@@ -46,7 +64,7 @@ describe('generateFloor', () => {
     expect(weaponDef).toBeDefined();
     expect(weaponDef.name).toBeTruthy();
     expect(weaponDef.attack_bonus).toBe(22); // 2 + 10 * 2
-    expect(['blade', 'heavy', 'pierce']).toContain(weaponDef.weapon_class);
+    expect(['blade', 'heavy', 'pierce', 'magic']).toContain(weaponDef.weapon_class);
     expect(weaponDef.region).toBe('dungeon');
   });
 

@@ -13,6 +13,7 @@ const CLASS_BLURB: Record<string, string> = {
   blade: 'Blade: +10% critical hit chance',
   heavy: 'Heavy: Ignores 2 points of enemy armor',
   pierce: 'Pierce: Strike first on round 1',
+  magic: 'Magic: every third strike weaves its element into the target, guaranteed',
 };
 
 export function handleExamine(

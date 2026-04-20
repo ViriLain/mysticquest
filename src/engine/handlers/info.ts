@@ -10,8 +10,12 @@ import type { GameStore, ItemDef, ObjectiveDef, WeaponDef } from '../types';
 import itemsJson from '../../data/items.json';
 import weaponsJson from '../../data/weapons.json';
 
-const weaponData = weaponsJson as Record<string, WeaponDef>;
+const staticWeaponData = weaponsJson as Record<string, WeaponDef>;
 const itemData = itemsJson as Record<string, ItemDef>;
+
+function weaponLookup(store: GameStore, id: string): WeaponDef | undefined {
+  return staticWeaponData[id] ?? store.dungeon?.floorWeapons[id];
+}
 
 export function showSkills(store: GameStore): void {
   if (!store.player) return;
@@ -59,11 +63,11 @@ export function showInventory(store: GameStore): void {
   addLine(store, '');
   addLine(store, '=== Inventory ===', C.STAT_COLOR);
 
-  if (store.player.equippedWeapon && weaponData[store.player.equippedWeapon]) {
-    const weapon = weaponData[store.player.equippedWeapon];
+  const equippedDef = store.player.equippedWeapon ? weaponLookup(store, store.player.equippedWeapon) : undefined;
+  if (equippedDef) {
     let sell = '';
-    if (inShop && weapon.price) sell = ` (sells for ${Math.floor(weapon.price / 2)}g)`;
-    addLine(store, iconLine(ICON.weapon, `Weapon: ${weapon.name} (+${weapon.attack_bonus} ATK)${sell}`), C.ITEM_COLOR);
+    if (inShop && equippedDef.price) sell = ` (sells for ${Math.floor(equippedDef.price / 2)}g)`;
+    addLine(store, iconLine(ICON.weapon, `Weapon: ${equippedDef.name} (+${equippedDef.attack_bonus} ATK)${sell}`), C.ITEM_COLOR);
   } else {
     addLine(store, iconLine(ICON.weapon, 'Weapon: Fists'), C.ITEM_COLOR);
   }
@@ -77,7 +81,7 @@ export function showInventory(store: GameStore): void {
 
   const otherWeapons = store.player.weapons.filter(weaponId => weaponId !== store.player!.equippedWeapon);
   for (const weaponId of otherWeapons) {
-    const weapon = weaponData[weaponId];
+    const weapon = weaponLookup(store, weaponId);
     if (!weapon) continue;
     let sell = '';
     if (inShop && weapon.price) sell = ` (sells for ${Math.floor(weapon.price / 2)}g)`;
@@ -119,8 +123,9 @@ export function showStats(store: GameStore): void {
   addLine(store, `HP: ${store.player.hp}/${store.player.maxHp}`, C.STAT_COLOR);
 
   let totalAtk = totalAttack(store.player);
-  if (store.player.equippedWeapon && weaponData[store.player.equippedWeapon]) {
-    totalAtk += weaponData[store.player.equippedWeapon].attack_bonus;
+  const statWeapon = store.player.equippedWeapon ? weaponLookup(store, store.player.equippedWeapon) : undefined;
+  if (statWeapon) {
+    totalAtk += statWeapon.attack_bonus;
   }
   addLine(store, `Attack: ${totalAtk}`, C.STAT_COLOR);
   addLine(store, `Defense: ${totalDefense(store.player, itemData)}`, C.STAT_COLOR);
