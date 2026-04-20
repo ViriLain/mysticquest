@@ -26,6 +26,8 @@ interface SaveData {
     weapons: string[];
     equipped_weapon: string | null;
     equipped_shield: string | null;
+    equipped_armor?: string | null;
+    equipped_accessory?: string | null;
     key_items: Record<string, boolean>;
     visited_rooms: Record<string, boolean>;
     searched_rooms: Record<string, boolean>;
@@ -114,6 +116,8 @@ function serialize(
       weapons: player.weapons,
       equipped_weapon: player.equippedWeapon,
       equipped_shield: player.equippedShield,
+      equipped_armor: player.equippedArmor,
+      equipped_accessory: player.equippedAccessory,
       key_items: player.keyItems,
       visited_rooms: player.visitedRooms,
       searched_rooms: player.searchedRooms,
@@ -171,6 +175,8 @@ function deserialize(
     player.weapons = p.weapons || [];
     player.equippedWeapon = p.equipped_weapon;
     player.equippedShield = p.equipped_shield;
+    player.equippedArmor = p.equipped_armor ?? null;
+    player.equippedAccessory = p.equipped_accessory ?? null;
     player.keyItems = p.key_items || {};
     player.visitedRooms = p.visited_rooms || {};
     player.searchedRooms = p.searched_rooms || {};
