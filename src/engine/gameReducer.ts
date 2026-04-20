@@ -1,6 +1,7 @@
 import type {
   EndingCheckContext, GameStore, EndingDef,
   WeaponDef, ItemDef, EnemyDef, NpcDef,
+  ArmorDef, AccessoryDef,
 } from './types';
 import * as C from './constants';
 import { parseCommand } from './commands';
@@ -37,12 +38,16 @@ import weaponsJson from '../data/weapons.json';
 import itemsJson from '../data/items.json';
 import enemiesJson from '../data/enemies.json';
 import endingsJson from '../data/endings.json';
+import armorJson from '../data/armor.json';
+import accessoriesJson from '../data/accessories.json';
 
 const weaponData = weaponsJson as Record<string, WeaponDef>;
 const itemData = itemsJson as Record<string, ItemDef>;
 const enemyData = enemiesJson as Record<string, EnemyDef>;
 const endingsData = endingsJson as Record<string, EndingDef>;
 const shopData = shopsJson as Record<string, ShopDef>;
+const armorData = armorJson as Record<string, ArmorDef>;
+const accessoryData = accessoriesJson as Record<string, AccessoryDef>;
 
 function effectiveWeaponData(store: GameStore): Record<string, WeaponDef> {
   if (store.gameMode === 'dungeon' && store.dungeon?.floorWeapons) {
@@ -228,7 +233,7 @@ function startCombat(store: GameStore, enemyId: string): void {
   if (edata.description) addLine(store, edata.description, C.HELP_COLOR);
   addLine(store, `HP: ${edata.hp}  ATK: ${edata.attack}  DEF: ${edata.defense}`, C.HELP_COLOR);
   addLine(store, '');
-  addLine(store, 'Commands: attack, defend, flee, use <item>', C.COMBAT_COLOR);
+  addLine(store, 'Commands: attack, defend, flee, use <item>, skill <name>', C.COMBAT_COLOR);
 }
 
 function buildCombatDeps(store: GameStore): CombatDeps {
@@ -271,6 +276,8 @@ function buildExploringDeps(store: GameStore): ExploringDeps {
     itemData,
     weaponData: effectiveWeaponData(store),
     npcData,
+    armorData,
+    accessoryData,
     refreshHeader: () => updateHeader(store),
     enterRoom: roomId => enterRoom(store, roomId),
     emit: sound => emitSound(store, sound),

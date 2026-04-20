@@ -1,7 +1,7 @@
 import type { CombatMessage, EnemyDef, GameStore, ItemDef, RoomDef, StatusEffect, WeaponDef } from '../types';
 import * as C from '../constants';
 import { notifyObjectiveEvent } from '../objectives';
-import { playerAttack, playerDefend, playerFlee, playerUseItem, enemyDefeated } from '../combat';
+import { playerAttack, playerDefend, playerFlee, playerUseItem, playerSkillAttack, enemyDefeated } from '../combat';
 import { awardGold } from '../economy';
 import { showInventory, showSkills, showStats } from '../handlers/info';
 import { ICON, iconLine } from '../icons';
@@ -9,6 +9,7 @@ import { findAllMatches, resolveOrDisambiguate } from '../matching';
 import { addLine, emitSound } from '../output';
 import { pushEffect } from '../effects';
 import { markEnemyDead } from '../world';
+import { ACTIVE_SKILLS, getSkill, findSkillByName } from '../skills';
 
 export interface CombatDeps {
   itemData: Record<string, ItemDef>;
@@ -116,8 +117,29 @@ export function handleCombatCommand(
   } else if (verb === 'skills') {
     showSkills(store);
     return;
+  } else if (verb === 'skill') {
+    if (!target) {
+      addLine(store, '=== Active Skills ===', C.STAT_COLOR);
+      let hasAny = false;
+      for (const skillId of ACTIVE_SKILLS) {
+        if (!store.player.skills[skillId]) continue;
+        hasAny = true;
+        const cd = store.combat.skillCooldowns[skillId];
+        const status = cd ? ` (cooldown: ${cd} rounds)` : ' (ready)';
+        const skill = getSkill(skillId);
+        addLine(store, `  ${skill?.name || skillId}${status}`, cd ? C.HELP_COLOR : C.CHOICE_COLOR);
+      }
+      if (!hasAny) addLine(store, '  (no active skills learned)', C.HELP_COLOR);
+      return;
+    }
+    const skill = findSkillByName(target);
+    if (!skill || !ACTIVE_SKILLS.has(skill.id)) {
+      addLine(store, "You don't know that skill.", C.ERROR_COLOR);
+      return;
+    }
+    msgs = playerSkillAttack(store.combat, store.player, skill.id, deps.weaponData, deps.itemData);
   } else {
-    addLine(store, 'In combat: attack, defend, flee, use <item>', C.COMBAT_COLOR);
+    addLine(store, 'In combat: attack, defend, flee, use <item>, skill <name>', C.COMBAT_COLOR);
     return;
   }
 

@@ -1,4 +1,4 @@
-import type { EnemyDef, GameStore, ItemDef, NpcDef, WeaponDef } from '../types';
+import type { AccessoryDef, ArmorDef, EnemyDef, GameStore, ItemDef, NpcDef, WeaponDef } from '../types';
 import { handleAttack } from '../handlers/attack';
 import { handleAsk } from '../handlers/ask';
 import { handleDrop } from '../handlers/drop';
@@ -21,6 +21,8 @@ export interface ExploringDeps {
   itemData: Record<string, ItemDef>;
   weaponData: Record<string, WeaponDef>;
   npcData: Record<string, NpcDef>;
+  armorData?: Record<string, ArmorDef>;
+  accessoryData?: Record<string, AccessoryDef>;
   refreshHeader: () => void;
   emit: (sound: string) => void;
   startCombat: (enemyId: string) => void;
@@ -44,7 +46,7 @@ const HANDLED_BY_INFO_VERBS = new Set(['help', 'inventory', 'weapons', 'stats', 
 const ALL_VERBS = [
   'go', 'look', 'take', 'use', 'drop', 'search', 'attack', 'defend', 'flee',
   'inventory', 'weapons', 'stats', 'save', 'load', 'help', 'quit', 'talk', 'ask', 'journal',
-  'map', 'score', 'again', 'examine', 'skills', 'learn', 'achievements', 'settings', 'warp',
+  'map', 'score', 'again', 'examine', 'skill', 'skills', 'learn', 'achievements', 'settings', 'warp',
   'north', 'south', 'east', 'west', 'up', 'down',
 ];
 
@@ -74,6 +76,8 @@ export function handleExploringCommand(
       deps.weaponData,
       deps.checkItemAchievements,
       deps.refreshHeader,
+      deps.armorData,
+      deps.accessoryData,
     );
   } else if (verb === 'use') {
     const [itemName, count] = parseBatchCount(target);
@@ -85,12 +89,14 @@ export function handleExploringCommand(
         deps.weaponData,
         deps.refreshHeader,
         deps.checkEndingsForItem,
+        deps.armorData,
+        deps.accessoryData,
       );
     }
   } else if (verb === 'drop') {
-    handleDrop(store, target, deps.itemData, deps.weaponData, deps.refreshHeader);
+    handleDrop(store, target, deps.itemData, deps.weaponData, deps.refreshHeader, deps.armorData, deps.accessoryData);
   } else if (verb === 'search') {
-    handleSearch(store, deps.itemData, deps.weaponData);
+    handleSearch(store, deps.itemData, deps.weaponData, deps.armorData, deps.accessoryData);
   } else if (verb === 'attack') {
     handleAttack(store, target, deps.enemyData, deps.startCombat);
   } else if (verb === 'talk') {
@@ -108,7 +114,7 @@ export function handleExploringCommand(
   } else if (verb === 'score') {
     deps.doScore();
   } else if (verb === 'examine') {
-    handleExamine(store, target, deps.enemyData, deps.itemData, deps.weaponData);
+    handleExamine(store, target, deps.enemyData, deps.itemData, deps.weaponData, deps.armorData, deps.accessoryData);
   } else if (verb === 'skills') {
     store.state = 'skill_tree';
     store.skillTreePrevState = 'exploring';
