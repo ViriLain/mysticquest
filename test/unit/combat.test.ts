@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createCombat, enemyDefeated, playerAttack, playerDefend, playerFlee, playerUseItem, tickStatusEffects, applyStatusEffect } from '../../src/engine/combat';
+import { createCombat, enemyDefeated, playerAttack, playerDefend, playerFlee, playerUseItem, playerSkillAttack, tickStatusEffects, applyStatusEffect } from '../../src/engine/combat';
 import { addItem, addWeapon, createPlayer, equipWeapon } from '../../src/engine/player';
 import { createRng } from '../../src/engine/rng';
 import type { ItemDef, StatusEffect, WeaponDef } from '../../src/engine/types';
@@ -915,5 +915,276 @@ describe('Iron Will stun resistance', () => {
     }
     // Without Iron Will, 100% chance should always apply
     expect(stunCount).toBe(10);
+  });
+});
+
+describe('active combat skills', () => {
+  const tankEnemy = {
+    tank: {
+      name: 'Tank',
+      hp: 9999,
+      attack: 1,
+      defense: 10,
+      xp: 1,
+      loot: [] as string[],
+      region: 'test',
+      description: 'tanky',
+      is_boss: false,
+    },
+  };
+
+  const heavyWeaponData: Record<string, WeaponDef> = {
+    test_heavy: { name: 'Test Heavy', attack_bonus: 5, region: 'manor', weapon_class: 'heavy', description: 'test' },
+  };
+
+  const magicWeaponWithEffect: Record<string, WeaponDef> = {
+    burn_staff: {
+      name: 'Burn Staff', attack_bonus: 5, region: 'manor', weapon_class: 'magic',
+      description: 'burns', status_effect: { type: 'burn', damage: 2, duration: 3, chance: 100 },
+    },
+  };
+
+  const plainWeaponData: Record<string, WeaponDef> = {
+    club: { name: 'Club', attack_bonus: 3, region: 'manor', weapon_class: 'heavy', description: 'plain' },
+  };
+
+  it('power_strike deals more damage than normal attack against high-DEF enemy', () => {
+    // Normal attack
+    const p1 = createPlayer();
+    p1.attack = 10;
+    p1.maxHp = 9999;
+    p1.hp = 9999;
+    addWeapon(p1, 'test_heavy');
+    equipWeapon(p1, 'test_heavy');
+    const c1 = createCombat(p1, 'tank', tankEnemy);
+    playerAttack(c1, p1, heavyWeaponData, itemData, seededRng(42));
+    const normalDmg = 9999 - c1.enemy.hp;
+
+    // Skill attack
+    const p2 = createPlayer();
+    p2.attack = 10;
+    p2.maxHp = 9999;
+    p2.hp = 9999;
+    p2.skills.power_strike = true;
+    addWeapon(p2, 'test_heavy');
+    equipWeapon(p2, 'test_heavy');
+    const c2 = createCombat(p2, 'tank', tankEnemy);
+    playerSkillAttack(c2, p2, 'power_strike', heavyWeaponData, itemData, seededRng(42));
+    const skillDmg = 9999 - c2.enemy.hp;
+
+    expect(skillDmg).toBeGreaterThan(normalDmg);
+  });
+
+  it('ambush guarantees a 3x crit', () => {
+    const player = createPlayer();
+    player.attack = 10;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    player.skills.ambush = true;
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    const msgs = playerSkillAttack(combat, player, 'ambush', heavyWeaponData, itemData, seededRng(42));
+
+    expect(msgs.some(m => m.text.includes('strike from the shadows'))).toBe(true);
+    expect(msgs.some(m => m.text.includes('CRITICAL HIT') || m.text.includes('weak point'))).toBe(true);
+    expect(combat.skillCooldowns['ambush']).toBeGreaterThan(0);
+  });
+
+  it('arcane_surge applies double-duration status effect', () => {
+    const player = createPlayer();
+    player.attack = 10;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    player.skills.arcane_surge = true;
+    addWeapon(player, 'burn_staff');
+    equipWeapon(player, 'burn_staff');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    const msgs = playerSkillAttack(combat, player, 'arcane_surge', magicWeaponWithEffect, itemData, seededRng(42));
+
+    expect(msgs.some(m => m.text.includes('amplifies your weapon'))).toBe(true);
+    // Applied at double duration (3 * 2 = 6), but one tick fires in the
+    // same round during playerAttack's enemy-effect-tick phase, so remaining
+    // is 5 after the skill round completes. Total ticks = 6 as intended.
+    const burn = combat.enemyEffects.find(e => e.type === 'burn');
+    expect(burn).toBeDefined();
+    expect(burn!.remaining).toBe(5);
+  });
+
+  it('arcane_surge deals level-scaled burst when weapon has no status effect', () => {
+    const player = createPlayer();
+    player.attack = 10;
+    player.level = 3;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    player.skills.arcane_surge = true;
+    addWeapon(player, 'club');
+    equipWeapon(player, 'club');
+    const combat = createCombat(player, 'tank', tankEnemy);
+    const startHp = combat.enemy.hp;
+
+    const msgs = playerSkillAttack(combat, player, 'arcane_surge', plainWeaponData, itemData, seededRng(42));
+
+    expect(msgs.some(m => m.text.includes('burst of arcane energy'))).toBe(true);
+    // Burst damage = 5 + level = 8, plus the normal attack damage
+    const totalDmg = startHp - combat.enemy.hp;
+    expect(totalDmg).toBeGreaterThanOrEqual(5 + player.level);
+  });
+
+  it('cooldown prevents reuse and decrements each round', () => {
+    const player = createPlayer();
+    player.attack = 10;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    player.skills.power_strike = true;
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    // Use the skill
+    playerSkillAttack(combat, player, 'power_strike', heavyWeaponData, itemData, seededRng(42));
+    const cdAfterUse = combat.skillCooldowns['power_strike'];
+    expect(cdAfterUse).toBe(5);
+
+    // Normal attack decrements cooldown
+    playerAttack(combat, player, heavyWeaponData, itemData, seededRng(43));
+    expect(combat.skillCooldowns['power_strike']).toBe(cdAfterUse - 1);
+
+    // Another normal attack
+    playerAttack(combat, player, heavyWeaponData, itemData, seededRng(44));
+    expect(combat.skillCooldowns['power_strike']).toBe(cdAfterUse - 2);
+  });
+
+  it('using skill on cooldown does not advance round', () => {
+    const player = createPlayer();
+    player.attack = 10;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    player.skills.power_strike = true;
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    // Use the skill
+    playerSkillAttack(combat, player, 'power_strike', heavyWeaponData, itemData, seededRng(42));
+    const roundAfterUse = combat.round;
+
+    // Try again immediately — should fail
+    const msgs = playerSkillAttack(combat, player, 'power_strike', heavyWeaponData, itemData, seededRng(43));
+    expect(combat.round).toBe(roundAfterUse);
+    expect(msgs.some(m => m.text.includes('cooldown'))).toBe(true);
+  });
+
+  it('using unknown skill returns error', () => {
+    const player = createPlayer();
+    player.maxHp = 9999;
+    player.hp = 9999;
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    const msgs = playerSkillAttack(combat, player, 'power_strike', heavyWeaponData, itemData, seededRng(42));
+    expect(combat.round).toBe(0);
+    expect(msgs.some(m => m.text.includes("haven't learned"))).toBe(true);
+  });
+
+  it('cooldowns tick during defend and flee', () => {
+    const player = createPlayer();
+    player.attack = 10;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    player.skills.ambush = true;
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    // Use the skill
+    playerSkillAttack(combat, player, 'ambush', heavyWeaponData, itemData, seededRng(42));
+    const cdAfterUse = combat.skillCooldowns['ambush'];
+    expect(cdAfterUse).toBe(4);
+
+    // Defend decrements cooldown
+    playerDefend(combat, player, itemData, seededRng(43));
+    expect(combat.skillCooldowns['ambush']).toBe(cdAfterUse - 1);
+
+    // Flee (may or may not succeed, but cooldown still ticks)
+    playerFlee(combat, player, itemData, seededRng(44));
+    expect(combat.skillCooldowns['ambush']).toBe(cdAfterUse - 2);
+  });
+
+  it('cooldowns tick during useItem', () => {
+    const player = createPlayer();
+    player.attack = 10;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    player.skills.power_strike = true;
+    addItem(player, 'potion', itemData);
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    playerSkillAttack(combat, player, 'power_strike', heavyWeaponData, itemData, seededRng(42));
+    const cdAfterUse = combat.skillCooldowns['power_strike'];
+
+    player.hp = 10; // damage so potion is useful
+    playerUseItem(combat, player, 'potion', itemData, seededRng(43));
+    expect(combat.skillCooldowns['power_strike']).toBe(cdAfterUse - 1);
+  });
+
+  it('cooldown is removed when it reaches zero', () => {
+    const player = createPlayer();
+    player.attack = 10;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    player.skills.ambush = true;
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    // Use ambush (cooldown 4)
+    playerSkillAttack(combat, player, 'ambush', heavyWeaponData, itemData, seededRng(42));
+    expect(combat.skillCooldowns['ambush']).toBe(4);
+
+    // 4 normal attacks to tick it down to 0
+    for (let i = 0; i < 4; i++) {
+      playerAttack(combat, player, heavyWeaponData, itemData, seededRng(43 + i));
+    }
+    // Should be deleted, not just 0
+    expect(combat.skillCooldowns['ambush']).toBeUndefined();
+  });
+
+  it('ambush does not double-dip with assassin passive crit multiplier', () => {
+    // Ambush forces 3x crit. With assassin also giving 3x, we should NOT
+    // see 3*3 = 9x. The forced crit mult should override, not multiply.
+    const player = createPlayer();
+    player.attack = 10;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    player.skills.ambush = true;
+    player.skills.assassin = true;
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    playerSkillAttack(combat, player, 'ambush', heavyWeaponData, itemData, seededRng(42));
+    const ambushDmg = 9999 - combat.enemy.hp;
+
+    // Compare: same setup without assassin
+    const p2 = createPlayer();
+    p2.attack = 10;
+    p2.maxHp = 9999;
+    p2.hp = 9999;
+    p2.skills.ambush = true;
+    addWeapon(p2, 'test_heavy');
+    equipWeapon(p2, 'test_heavy');
+    const c2 = createCombat(p2, 'tank', tankEnemy);
+
+    playerSkillAttack(c2, p2, 'ambush', heavyWeaponData, itemData, seededRng(42));
+    const ambushNoAssassinDmg = 9999 - c2.enemy.hp;
+
+    // Both should deal the same since ambush overrides the crit mult
+    expect(ambushDmg).toBe(ambushNoAssassinDmg);
   });
 });

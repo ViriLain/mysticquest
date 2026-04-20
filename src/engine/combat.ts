@@ -1,5 +1,6 @@
 import type { CombatMessage, CombatResults, CombatState, EnemyDef, ItemDef, PlayerState, StatusEffect, WeaponDef } from './types';
 import { totalAttack, totalDefense, addXp, hasItem, removeItem, heal, takeDamage, isDead, hasSkill } from './player';
+import { ACTIVE_SKILLS } from './skills';
 
 type Rng = () => number;
 
@@ -41,6 +42,21 @@ const MAGIC_PROC_MESSAGES: Record<StatusEffect['type'], string> = {
   stun: 'Arcane force locks your foe in place!',
   bleed: 'Magic opens the wound!',
 };
+
+interface AttackOverrides {
+  damageMultiplier?: number;
+  extraDefIgnore?: number;
+  forcedCrit?: boolean;
+  forcedCritMult?: number;
+  skipWeaponEffect?: boolean;
+}
+
+function tickCooldowns(combat: CombatState): void {
+  for (const id of Object.keys(combat.skillCooldowns)) {
+    combat.skillCooldowns[id]--;
+    if (combat.skillCooldowns[id] <= 0) delete combat.skillCooldowns[id];
+  }
+}
 
 function tickBuffs(player: PlayerState, messages: CombatMessage[]): void {
   if (player.buffRounds > 0) {
@@ -154,9 +170,11 @@ export function playerAttack(
   weaponData: Record<string, WeaponDef>,
   itemData: Record<string, ItemDef>,
   rng: Rng = defaultRng,
+  overrides?: AttackOverrides,
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
+  tickCooldowns(combat);
   const equippedWeapon = player.equippedWeapon ? weaponData[player.equippedWeapon] : null;
 
   if (equippedWeapon?.weapon_class === 'magic') {
@@ -192,10 +210,18 @@ export function playerAttack(
   let effectiveDef = combat.enemy.defense;
   if (hasSkill(player, 'precision')) { atk += 3; effectiveDef = Math.max(0, effectiveDef - 2); }
   if (equippedWeapon?.weapon_class === 'heavy') effectiveDef = Math.max(0, effectiveDef - 2);
+
+  // Apply skill overrides
+  if (overrides?.extraDefIgnore) effectiveDef = Math.max(0, effectiveDef - overrides.extraDefIgnore);
+  if (overrides?.forcedCrit) { critChance = 100; critMult = overrides.forcedCritMult ?? critMult; }
+
   const [damage, crit] = calcDamage(atk, effectiveDef, rng, critChance, critMult);
   let finalDamage = damage;
+  if (overrides?.damageMultiplier) {
+    finalDamage = Math.floor(finalDamage * overrides.damageMultiplier);
+  }
   if (hasSkill(player, 'berserker') && player.hp < player.maxHp * 0.3) {
-    finalDamage = Math.floor(damage * 1.15);
+    finalDamage = Math.floor(finalDamage * 1.15);
   }
 
   if (crit) {
@@ -238,7 +264,7 @@ export function playerAttack(
   }
 
   // Roll weapon status effect (applied after tick so it takes effect next round)
-  if (player.equippedWeapon && weaponData[player.equippedWeapon]?.status_effect) {
+  if (!overrides?.skipWeaponEffect && player.equippedWeapon && weaponData[player.equippedWeapon]?.status_effect) {
     const se = weaponData[player.equippedWeapon].status_effect!;
     if (rng() * 100 < se.chance) {
       const effect: StatusEffect = {
@@ -256,7 +282,8 @@ export function playerAttack(
   // Magic class: forced proc every 3 swings. Fires in addition to the
   // chance-roll above; killing-blow hits return early so no proc is wasted
   // on a corpse.
-  if (equippedWeapon?.weapon_class === 'magic'
+  if (!overrides?.skipWeaponEffect
+      && equippedWeapon?.weapon_class === 'magic'
       && combat.magicHitCounter >= 3
       && equippedWeapon.status_effect) {
     const mse = equippedWeapon.status_effect;
@@ -288,6 +315,7 @@ export function playerDefend(
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
+  tickCooldowns(combat);
 
   // Tick player effects (DoT)
   const playerTick = tickStatusEffects(combat.playerEffects);
@@ -337,6 +365,7 @@ export function playerFlee(
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
+  tickCooldowns(combat);
 
   // Tick player effects (DoT)
   const playerTick = tickStatusEffects(combat.playerEffects);
@@ -394,6 +423,7 @@ export function playerUseItem(
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
+  tickCooldowns(combat);
 
   const item = itemData[itemId];
   if (!item) {
@@ -529,6 +559,100 @@ export function applyStatusEffect(effects: StatusEffect[], effect: StatusEffect)
   } else {
     effects.push({ ...effect });
   }
+}
+
+// ---- Skill cooldown constants ----
+
+const SKILL_COOLDOWNS: Record<string, number> = {
+  power_strike: 5,
+  ambush: 4,
+  arcane_surge: 5,
+};
+
+export function playerSkillAttack(
+  combat: CombatState,
+  player: PlayerState,
+  skillId: string,
+  weaponData: Record<string, WeaponDef>,
+  itemData: Record<string, ItemDef>,
+  rng: Rng = defaultRng,
+  cooldownReduction = 0,
+): CombatMessage[] {
+  const messages: CombatMessage[] = [];
+
+  // Validate skill is learned
+  if (!player.skills[skillId] || !ACTIVE_SKILLS.has(skillId)) {
+    messages.push({ text: "You haven't learned that skill.", color: [1, 0.4, 0.4, 1] });
+    return messages;
+  }
+
+  // Check cooldown
+  if (combat.skillCooldowns[skillId] > 0) {
+    messages.push({ text: `${skillId.replace(/_/g, ' ')} is on cooldown (${combat.skillCooldowns[skillId]} rounds).`, color: [1, 0.6, 0.2, 1] });
+    return messages;
+  }
+
+  const baseCooldown = SKILL_COOLDOWNS[skillId] ?? 5;
+  const effectiveCooldown = Math.max(1, baseCooldown - cooldownReduction);
+
+  if (skillId === 'power_strike') {
+    messages.push({ text: 'You unleash a devastating strike!', color: [1, 0.6, 0.2, 1] });
+    const attackMsgs = playerAttack(combat, player, weaponData, itemData, rng, {
+      damageMultiplier: 1.5,
+      extraDefIgnore: 3,
+    });
+    messages.push(...attackMsgs);
+  } else if (skillId === 'ambush') {
+    messages.push({ text: 'You strike from the shadows!', color: [1, 1, 0.2, 1] });
+    const attackMsgs = playerAttack(combat, player, weaponData, itemData, rng, {
+      forcedCrit: true,
+      forcedCritMult: 3,
+    });
+    messages.push(...attackMsgs);
+  } else if (skillId === 'arcane_surge') {
+    // Bonus action BEFORE normal attack
+    const equippedWeapon = player.equippedWeapon ? weaponData[player.equippedWeapon] : null;
+    if (equippedWeapon?.status_effect) {
+      messages.push({ text: "Arcane energy amplifies your weapon's power!", color: [0.6, 0.8, 1, 1] });
+      const se = equippedWeapon.status_effect;
+      const effect: StatusEffect = {
+        type: se.type,
+        damage: se.damage,
+        remaining: se.duration * 2,
+        baseDamage: se.damage,
+      };
+      applyStatusEffect(combat.enemyEffects, effect);
+    } else {
+      const burstDamage = 5 + player.level;
+      combat.enemy.hp -= burstDamage;
+      messages.push({ text: 'You release a burst of arcane energy!', color: [0.6, 0.8, 1, 1] });
+      messages.push({ text: `Arcane burst deals ${burstDamage} damage.`, color: [0.6, 0.8, 1, 1] });
+    }
+
+    if (combat.enemy.hp <= 0) {
+      combat.enemy.hp = 0;
+      combat.finished = true;
+      combat.playerWon = true;
+      messages.push({ text: `${combat.enemy.name} is defeated!`, color: [1, 1, 0.4, 1] });
+    } else {
+      // Normal attack follows the arcane surge pre-effect.
+      // Skip weapon effect roll — arcane surge already handled status application.
+      const attackMsgs = playerAttack(combat, player, weaponData, itemData, rng, {
+        skipWeaponEffect: true,
+      });
+      messages.push(...attackMsgs);
+    }
+  }
+
+  // Set cooldown AFTER playerAttack (which ticks cooldowns on round advance),
+  // so the skill's own round doesn't consume a cooldown tick.
+  combat.skillCooldowns[skillId] = effectiveCooldown;
+
+  if (!combat.finished) {
+    messages.push({ text: `(${skillId.replace(/_/g, ' ')} on cooldown: ${effectiveCooldown} rounds)`, color: [0.5, 0.5, 0.5, 1] });
+  }
+
+  return messages;
 }
 
 export function enemyDefeated(
