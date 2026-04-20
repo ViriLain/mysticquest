@@ -15,6 +15,9 @@ const _SKILLS = [
   { id: 'thick_skin', name: 'Thick Skin', description: '+2 base defense', tier: 3 },
   { id: 'precision', name: 'Precision', description: '+3 ATK, ignore 2 enemy DEF', tier: 3 },
   { id: 'buff_mastery', name: 'Buff Mastery', description: 'Buffs last 5 rounds (not 3)', tier: 3 },
+  { id: 'power_strike', name: 'Power Strike', description: 'Active: 1.5x damage, ignore 3 DEF. 5-round cooldown.', tier: 3 },
+  { id: 'ambush', name: 'Ambush', description: 'Active: Guaranteed 3x critical hit. 4-round cooldown.', tier: 3 },
+  { id: 'arcane_surge', name: 'Arcane Surge', description: 'Active: Double-duration status proc or magic burst. 5-round cooldown.', tier: 3 },
   // Tier 4 — Specialized
   { id: 'berserker', name: 'Berserker', description: '+15% damage when HP below 30%', tier: 4 },
   { id: 'lucky', name: 'Lucky', description: '15% chance to dodge attacks', tier: 4 },
@@ -36,6 +39,12 @@ export interface SkillDef {
 }
 
 export const SKILL_TREE: readonly SkillDef[] = _SKILLS;
+
+export const ACTIVE_SKILLS = new Set<string>(['power_strike', 'ambush', 'arcane_surge']);
+
+export function isActiveSkill(id: string): boolean {
+  return ACTIVE_SKILLS.has(id);
+}
 
 export function getSkillsByTier(tier: number): SkillDef[] {
   return SKILL_TREE.filter(s => s.tier === tier);

@@ -144,6 +144,7 @@ export function createCombat(_player: PlayerState, enemyId: string, enemyData: R
     playerEffects: [],
     enemyEffects: [],
     magicHitCounter: 0,
+    skillCooldowns: {},
   };
 }
 

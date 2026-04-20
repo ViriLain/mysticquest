@@ -342,6 +342,7 @@ export interface CombatState {
   playerEffects: StatusEffect[];
   enemyEffects: StatusEffect[];
   magicHitCounter: number;
+  skillCooldowns: Record<string, number>;
 }
 
 export interface EffectsState {
