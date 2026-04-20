@@ -441,7 +441,7 @@ export interface GameStore {
   shopMenuMode: 'buy' | 'sell' | 'sell_confirm' | null;
   shopMenuItems: Array<{ label: string; id: string; index: number }>;
   shopMenuSelected: number;
-  shopSellConfirm: { id: string; type: 'item' | 'weapon' } | null;
+  shopSellConfirm: { id: string; type: 'item' | 'weapon' | 'armor' } | null;
 
   // Minimap
   minimapOpen: boolean;

@@ -1,6 +1,6 @@
 import * as C from '../constants';
 import { ICON, iconLine } from '../icons';
-import { totalAttack, totalDefense } from '../player';
+import { collectModifiers, totalModifier } from '../modifiers';
 import { addLine } from '../output';
 import type { AccessoryDef, ArmorDef, EnemyDef, GameStore, ItemDef, WeaponClass, WeaponDef } from '../types';
 import { getLivingEnemies, getRoom } from '../world';
@@ -15,6 +15,12 @@ function weaponColor(weapon: WeaponDef) {
 
 function classBlurbColor(weapon: WeaponDef) {
   return weapon.weapon_class === 'magic' ? C.MAGIC_COLOR : C.CHOICE_COLOR;
+}
+
+function equippedShieldDefense(store: GameStore, itemData: Record<string, ItemDef>): number {
+  const shieldId = store.player?.equippedShield;
+  if (!shieldId) return 0;
+  return itemData[shieldId]?.value ?? 0;
 }
 
 const CLASS_BLURB: Record<WeaponClass, string> = {
@@ -49,12 +55,17 @@ export function handleExamine(
         addLine(store, enemy.description, C.HELP_COLOR);
         addLine(store, `HP: ${enemy.hp}  ATK: ${enemy.attack}  DEF: ${enemy.defense}  XP: ${enemy.xp}`, C.STAT_COLOR);
         if (enemy.is_boss) addLine(store, 'This is a boss enemy. Special attack every 3 rounds.', C.COMBAT_COLOR);
-        let playerAtk = totalAttack(store.player);
+        const mods = collectModifiers(store.player, weaponData, armorData ?? {}, accessoryData ?? {});
+        let playerAtk = store.player.attack + totalModifier(mods, 'attack');
         if (store.player.equippedWeapon && weaponData[store.player.equippedWeapon]) {
           playerAtk += weaponData[store.player.equippedWeapon].attack_bonus;
         }
-        const estDmg = Math.max(1, playerAtk - enemy.defense);
-        const estTaken = Math.max(1, enemy.attack - totalDefense(store.player, itemData));
+        const enemyDefense = Math.max(0, enemy.defense - totalModifier(mods, 'def_ignore'));
+        const playerDefense = store.player.defense
+          + equippedShieldDefense(store, itemData)
+          + totalModifier(mods, 'defense');
+        const estDmg = Math.max(1, playerAtk - enemyDefense);
+        const estTaken = Math.max(1, enemy.attack - playerDefense - totalModifier(mods, 'damage_reduction'));
         addLine(store, `Est. damage you deal: ~${estDmg}/hit`, [0.8, 1, 0.8, 1]);
         addLine(store, `Est. damage you take: ~${estTaken}/hit`, [1, 0.5, 0.5, 1]);
         return;

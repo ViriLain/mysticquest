@@ -204,10 +204,14 @@ export function handleShopCommand(
       const items: typeof store.shopMenuItems = [];
       for (const [itemId, count] of Object.entries(store.player.inventory)) {
         const item = itemData[itemId];
-        if (!item || item.type === 'key') continue;
-        const sv = item.price ? Math.floor(item.price / 2) : 0;
+        const armor = allArmor[itemId];
+        if (!item && !armor) continue;
+        if (item?.type === 'key') continue;
+        const sv = item?.price ? Math.floor(item.price / 2) : armor?.price ? Math.floor(armor.price / 2) : 0;
         if (sv <= 0) continue;
-        const label = count > 1 ? `${item.name} x${count} (${sv}g each)` : `${item.name} (${sv}g)`;
+        const name = item?.name ?? armor!.name;
+        const eq = store.player.equippedArmor === itemId ? ' [equipped]' : '';
+        const label = count > 1 ? `${name} x${count} (${sv}g each)${eq}` : `${name} (${sv}g)${eq}`;
         items.push({ label, id: itemId, index: 0 });
       }
       for (const weaponId of store.player.weapons) {
@@ -277,6 +281,29 @@ export function handleShopCommand(
     }
     if (weaponMatches.length > 1) return;
 
+    const armorIds = Object.keys(store.player.inventory).filter(id => allArmor[id]);
+    const armorMatches = findAllMatches(target, armorIds, allArmor);
+    const matchedArmorId = resolveOrDisambiguate(store, armorMatches, allArmor, 'armor do you want to sell');
+    if (matchedArmorId) {
+      if (store.player.equippedArmor === matchedArmorId) {
+        const name = allArmor[matchedArmorId]?.name ?? matchedArmorId;
+        addLine(store, `${name} is your equipped armor. Are you sure?`, C.COMBAT_COLOR);
+        store.shopMenuMode = 'sell_confirm';
+        store.shopMenuItems = [
+          { label: 'Yes, sell it', id: matchedArmorId, index: 0 },
+          { label: 'No, keep it', id: '', index: 0 },
+        ];
+        store.shopMenuSelected = 1;
+        store.shopSellConfirm = { id: matchedArmorId, type: 'armor' };
+        return;
+      }
+      const result = sellItem(store.player, shop, matchedArmorId, 'armor', itemData, weaponData, allArmor);
+      handleSellResult(store, result, allArmor[matchedArmorId]?.name ?? matchedArmorId);
+      refreshHeader();
+      return;
+    }
+    if (armorMatches.length > 1) return;
+
     addLine(store, "You don't have that.", C.ERROR_COLOR);
     return;
   }
@@ -333,6 +360,14 @@ export function handleShopCommand(
 
     for (const itemId of Object.keys(store.player.inventory)) {
       const item = itemData[itemId];
+      const armor = allArmor[itemId];
+      if (armor && armor.name.toLowerCase().includes(target.toLowerCase())) {
+        addLine(store, '');
+        addLine(store, iconLine(ICON.shield, `=== ${armor.name} ===`), C.ITEM_COLOR);
+        addLine(store, armor.description, C.HELP_COLOR);
+        if (armor.price) addLine(store, `Sell value: ${Math.floor(armor.price / 2)}g`, C.STAT_COLOR);
+        return;
+      }
       if (item && item.name.toLowerCase().includes(target.toLowerCase())) {
         addLine(store, '');
         addLine(store, iconLine(ICON.item, `=== ${item.name} ===`), C.ITEM_COLOR);

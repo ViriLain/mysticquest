@@ -2,8 +2,9 @@ import { getAll as getAllAchievements } from '../achievements';
 import * as C from '../constants';
 import { ICON, iconLine } from '../icons';
 import { OBJECTIVES } from '../objectives';
+import { collectModifiers, totalModifier } from '../modifiers';
 import { addLine } from '../output';
-import { totalAttack, totalDefense, visitedCount, xpToNextLevel } from '../player';
+import { visitedCount, xpToNextLevel } from '../player';
 import { SKILL_TREE, canLearnSkill, getSkillsByTier } from '../skills';
 import type { AccessoryDef, ArmorDef, GameStore, ItemDef, ObjectiveDef, RGBA, WeaponDef } from '../types';
 
@@ -23,6 +24,14 @@ function weaponLookup(store: GameStore, id: string): WeaponDef | undefined {
 
 function armorLookup(store: GameStore, id: string): ArmorDef | undefined {
   return staticArmorData[id] ?? store.dungeon?.floorArmor[id];
+}
+
+function allWeaponData(store: GameStore): Record<string, WeaponDef> {
+  return store.dungeon?.floorWeapons ? { ...staticWeaponData, ...store.dungeon.floorWeapons } : staticWeaponData;
+}
+
+function allArmorData(store: GameStore): Record<string, ArmorDef> {
+  return store.dungeon?.floorArmor ? { ...staticArmorData, ...store.dungeon.floorArmor } : staticArmorData;
 }
 
 function accessoryLookup(_store: GameStore, id: string): AccessoryDef | undefined {
@@ -196,13 +205,15 @@ export function showStats(store: GameStore): void {
   addLine(store, '=== Stats ===', C.STAT_COLOR);
   addLine(store, `HP: ${store.player.hp}/${store.player.maxHp}`, C.STAT_COLOR);
 
-  let totalAtk = totalAttack(store.player);
+  const mods = collectModifiers(store.player, allWeaponData(store), allArmorData(store), staticAccessoryData);
+  let totalAtk = store.player.attack + totalModifier(mods, 'attack');
   const statWeapon = store.player.equippedWeapon ? weaponLookup(store, store.player.equippedWeapon) : undefined;
   if (statWeapon) {
     totalAtk += statWeapon.attack_bonus;
   }
   addLine(store, `Attack: ${totalAtk}`, C.STAT_COLOR);
-  addLine(store, `Defense: ${totalDefense(store.player, itemData, staticArmorData)}`, C.STAT_COLOR);
+  const shieldDef = store.player.equippedShield ? itemData[store.player.equippedShield]?.value ?? 0 : 0;
+  addLine(store, `Defense: ${store.player.defense + shieldDef + totalModifier(mods, 'defense')}`, C.STAT_COLOR);
   addLine(store, `Level: ${store.player.level}`, C.STAT_COLOR);
   addLine(store, `Gold: ${store.player.gold}`, C.STAT_COLOR);
   addLine(store, `XP: ${store.player.xp}/${xpToNextLevel(store.player)}`, C.STAT_COLOR);

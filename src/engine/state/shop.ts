@@ -59,7 +59,11 @@ export function getShopAutocompleteSuggestions(
   if (verb === 'buy' || verb === 'examine') {
     const stock = getEffectiveStock(shop, runtime).filter(entry => entry.remaining > 0);
     for (const entry of stock) {
-      const def = entry.entry.type === 'weapon' ? deps.weaponData[entry.entry.id] : deps.itemData[entry.entry.id];
+      const def = entry.entry.type === 'weapon'
+        ? deps.weaponData[entry.entry.id]
+        : entry.entry.type === 'armor'
+          ? deps.armorData?.[entry.entry.id]
+          : deps.itemData[entry.entry.id];
       if (def) candidates.push(def.name);
     }
   }
@@ -67,6 +71,8 @@ export function getShopAutocompleteSuggestions(
     for (const id of Object.keys(store.player.inventory)) {
       const item = deps.itemData[id];
       if (item) candidates.push(item.name);
+      const armor = deps.armorData?.[id];
+      if (armor) candidates.push(armor.name);
     }
     for (const id of Object.keys(store.player.keyItems)) {
       const item = deps.itemData[id];

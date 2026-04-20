@@ -121,6 +121,34 @@ describe('armor defense', () => {
 
     expect(dmgWithArmor).toBeLessThan(dmgWithout);
   });
+
+  it('accessory defense modifiers affect incoming damage', () => {
+    const accessoryData: Record<string, AccessoryDef> = {
+      brittle_charm: {
+        name: 'Brittle Charm',
+        description: 'less protection',
+        region: 'test',
+        modifiers: [{ type: 'defense', value: -1 }],
+      },
+    };
+
+    const p1 = createPlayer();
+    p1.equippedAccessory = 'brittle_charm';
+    p1.hp = 200;
+    p1.maxHp = 200;
+    const c1 = createCombat(p1, 'shadow_rat', enemyData);
+    playerDefend(c1, p1, itemData, seededRng(1), undefined, accessoryData);
+    const dmgWithPenalty = 200 - p1.hp;
+
+    const p2 = createPlayer();
+    p2.hp = 200;
+    p2.maxHp = 200;
+    const c2 = createCombat(p2, 'shadow_rat', enemyData);
+    playerDefend(c2, p2, itemData, seededRng(1));
+    const dmgWithoutPenalty = 200 - p2.hp;
+
+    expect(dmgWithPenalty).toBeGreaterThan(dmgWithoutPenalty);
+  });
 });
 
 describe('playerFlee', () => {

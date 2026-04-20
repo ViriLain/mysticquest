@@ -97,6 +97,19 @@ describe('info handlers', () => {
     expect(store.typewriterQueue.map(line => line.text)).toContain('=== Weapons ===');
   });
 
+  it('includes accessory modifiers in visible stats', () => {
+    const store = createInitialStore();
+    const player = createPlayer();
+    player.equippedAccessory = 'berserker_tooth';
+    store.player = player;
+
+    showStats(store);
+
+    const lines = store.typewriterQueue.map(line => line.text);
+    expect(lines).toContain('Attack: 8');
+    expect(lines).toContain('Defense: 1');
+  });
+
   describe('showJournal', () => {
     it('renders empty state when no objectives are active', () => {
       const store = createInitialStore();

@@ -242,6 +242,36 @@ describe('armor and accessory equipment', () => {
       expect(lines.some(l => l.includes('Shadow Plate'))).toBe(true);
       expect(lines).toContain('Defense: +6');
     });
+
+    it('includes equipped armor and accessory modifiers in enemy estimates', () => {
+      const store = makeStore({ enemies: ['training_dummy'] });
+      const testEnemies: Record<string, EnemyDef> = {
+        training_dummy: {
+          name: 'Training Dummy',
+          hp: 20,
+          attack: 10,
+          defense: 4,
+          xp: 0,
+          gold: 0,
+          loot: [],
+          region: 'test',
+          description: 'A calibrated enemy for damage estimates.',
+          is_boss: false,
+        },
+      };
+      store.player!.weapons = ['iron_sword'];
+      store.player!.equippedWeapon = 'iron_sword';
+      store.player!.equippedArmor = 'chainmail';
+      store.player!.equippedAccessory = 'berserker_tooth';
+
+      handleExamine(
+        store, 'dummy', testEnemies, itemData, weaponData, armorData, accessoryData,
+      );
+
+      const lines = store.typewriterQueue.map(l => l.text);
+      expect(lines).toContain('Est. damage you deal: ~9/hit');
+      expect(lines).toContain('Est. damage you take: ~5/hit');
+    });
   });
 
   describe('totalDefense', () => {

@@ -63,7 +63,7 @@ export function handleExploringCommand(
   if (verb === 'go') {
     deps.goDirection(target);
   } else if (verb === 'look') {
-    handleLook(store, target, deps.itemData, deps.weaponData);
+    handleLook(store, target, deps.itemData, deps.weaponData, deps.armorData, deps.accessoryData);
   } else if (verb === 'inventory') {
     showInventory(store);
   } else if (verb === 'weapons') {

@@ -874,7 +874,7 @@ function handleKeyPressed(s: GameStore, key: string): void {
           if (mode === 'buy') {
             handleShopInput(s, 'buy', item.label, buildShopDeps(s));
           } else {
-            handleShopInput(s, 'sell', item.label, buildShopDeps(s));
+            handleShopInput(s, 'sell', item.id, buildShopDeps(s));
           }
         }
       }

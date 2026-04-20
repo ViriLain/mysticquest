@@ -1,22 +1,12 @@
 import type { AccessoryDef, ArmorDef, CombatMessage, CombatResults, CombatState, EnemyDef, ItemDef, PlayerState, StatusEffect, WeaponDef } from './types';
-import { totalAttack, totalDefense, addXp, hasItem, removeItem, heal, takeDamage, isDead, hasSkill } from './player';
+import { addXp, hasItem, removeItem, heal, takeDamage, isDead, hasSkill } from './player';
+import { collectModifiers, totalModifier } from './modifiers';
 import { ACTIVE_SKILLS } from './skills';
 
 type Rng = () => number;
 
 function defaultRng(): number {
   return Math.random();
-}
-
-function getAccessoryModifier(player: PlayerState, accessoryData: Record<string, AccessoryDef> | undefined, type: string): number {
-  if (!accessoryData || !player.equippedAccessory) return 0;
-  const acc = accessoryData[player.equippedAccessory];
-  if (!acc) return 0;
-  let total = 0;
-  for (const mod of acc.modifiers) {
-    if (mod.type === type) total += mod.value;
-  }
-  return total;
 }
 
 function randInt(min: number, max: number, rng: Rng): number {
@@ -35,16 +25,30 @@ function calcDamage(atk: number, def: number, rng: Rng, critChance = 10, critMul
   return [damage, crit];
 }
 
-function getPlayerAttack(player: PlayerState, weaponData: Record<string, WeaponDef>): number {
-  let atk = totalAttack(player);
+function combatModifiers(
+  player: PlayerState,
+  weaponData: Record<string, WeaponDef>,
+  armorData?: Record<string, ArmorDef>,
+  accessoryData?: Record<string, AccessoryDef>,
+) {
+  return collectModifiers(player, weaponData, armorData ?? {}, accessoryData ?? {});
+}
+
+function getPlayerAttack(player: PlayerState, weaponData: Record<string, WeaponDef>, mods = combatModifiers(player, weaponData)): number {
+  let atk = player.attack + totalModifier(mods, 'attack');
   if (player.equippedWeapon && weaponData[player.equippedWeapon]) {
     atk += weaponData[player.equippedWeapon].attack_bonus;
   }
   return atk;
 }
 
-function getPlayerDefense(player: PlayerState, itemData: Record<string, ItemDef>, armorData?: Record<string, ArmorDef>): number {
-  return totalDefense(player, itemData, armorData);
+function getPlayerDefense(player: PlayerState, itemData: Record<string, ItemDef>, mods = combatModifiers(player, {})): number {
+  let defense = player.defense + totalModifier(mods, 'defense');
+  const shield = player.equippedShield ? itemData[player.equippedShield] : undefined;
+  if (shield?.value) {
+    defense += shield.value;
+  }
+  return defense;
 }
 
 const MAGIC_PROC_MESSAGES: Record<StatusEffect['type'], string> = {
@@ -107,15 +111,15 @@ function enemyTurn(
     return;
   }
 
-  const [rawDamage, crit] = calcDamage(atk, getPlayerDefense(player, itemData, armorData), rng);
+  const mods = combatModifiers(player, {}, armorData, accessoryData);
+  const [rawDamage, crit] = calcDamage(atk, getPlayerDefense(player, itemData, mods), rng);
   if (crit) {
     messages.push({ text: 'The enemy lands a CRITICAL HIT!', color: [1, 0.2, 0.2, 1] });
   }
 
   let reduction = 0;
-  if (hasSkill(player, 'arcane_shield')) reduction += 1;
+  reduction += totalModifier(mods, 'damage_reduction');
   if (player.firedEvents.keepers_ward) reduction += 3;
-  reduction += getAccessoryModifier(player, accessoryData, 'damage_reduction');
   const actual = takeDamage(player, rawDamage, reduction);
   messages.push({ text: `${combat.enemy.name} deals ${actual} damage to you.`, color: [1, 0.5, 0.5, 1] });
 
@@ -219,20 +223,12 @@ export function playerAttack(
     }
   }
 
-  let atk = getPlayerAttack(player, weaponData);
-  atk += getAccessoryModifier(player, accessoryData, 'attack');
-  let critChance = 10;
-  let critMult = 2;
-  if (hasSkill(player, 'sharp_eyes')) critChance = 18;
-  if (hasSkill(player, 'assassin')) critMult = 3;
-  if (equippedWeapon?.weapon_class === 'blade') critChance += 10;
-  critChance += getAccessoryModifier(player, accessoryData, 'crit_chance');
-  critMult += getAccessoryModifier(player, accessoryData, 'crit_mult');
+  const mods = combatModifiers(player, weaponData, armorData, accessoryData);
+  const atk = getPlayerAttack(player, weaponData, mods);
+  let critChance = 10 + totalModifier(mods, 'crit_chance');
+  let critMult = 2 + totalModifier(mods, 'crit_mult');
   let effectiveDef = combat.enemy.defense;
-  if (hasSkill(player, 'precision')) { atk += 3; effectiveDef = Math.max(0, effectiveDef - 2); }
-  if (equippedWeapon?.weapon_class === 'heavy') effectiveDef = Math.max(0, effectiveDef - 2);
-  const accDefIgnore = getAccessoryModifier(player, accessoryData, 'def_ignore');
-  if (accDefIgnore) effectiveDef = Math.max(0, effectiveDef - accDefIgnore);
+  effectiveDef = Math.max(0, effectiveDef - totalModifier(mods, 'def_ignore'));
 
   // Apply skill overrides
   if (overrides?.extraDefIgnore) effectiveDef = Math.max(0, effectiveDef - overrides.extraDefIgnore);
@@ -290,7 +286,7 @@ export function playerAttack(
   if (!overrides?.skipWeaponEffect && player.equippedWeapon && weaponData[player.equippedWeapon]?.status_effect) {
     const se = weaponData[player.equippedWeapon].status_effect!;
     if (rng() * 100 < se.chance) {
-      const durationBonus = getAccessoryModifier(player, accessoryData, 'status_duration');
+      const durationBonus = totalModifier(mods, 'status_duration');
       const effect: StatusEffect = {
         type: se.type,
         damage: se.damage,
@@ -306,13 +302,13 @@ export function playerAttack(
   // Magic class: forced proc every N swings (default 3, modified by accessories).
   // Fires in addition to the chance-roll above; killing-blow hits return early
   // so no proc is wasted on a corpse.
-  const magicThreshold = Math.max(2, 3 + getAccessoryModifier(player, accessoryData, 'magic_counter_threshold'));
+  const magicThreshold = Math.max(2, 3 + totalModifier(mods, 'magic_counter_threshold'));
   if (!overrides?.skipWeaponEffect
       && equippedWeapon?.weapon_class === 'magic'
       && combat.magicHitCounter >= magicThreshold
       && equippedWeapon.status_effect) {
     const mse = equippedWeapon.status_effect;
-    const magicDurationBonus = getAccessoryModifier(player, accessoryData, 'status_duration');
+    const magicDurationBonus = totalModifier(mods, 'status_duration');
     applyStatusEffect(combat.enemyEffects, {
       type: mse.type,
       damage: mse.damage,
