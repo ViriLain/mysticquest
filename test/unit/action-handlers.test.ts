@@ -366,6 +366,17 @@ describe('action handlers', () => {
     expect(started).toEqual(['shadow_rat']);
   });
 
+  it('drop uses magic color for magic weapons', () => {
+    const store = makeStoryStore();
+    store.player!.weapons = ['hrunting'];
+    store.player!.equippedWeapon = 'hrunting';
+
+    handleDrop(store, 'hrunting', itemData, weaponData, () => {});
+
+    const line = store.typewriterQueue.find(entry => entry.text.includes('Hrunting'));
+    expect(line?.color).toBe(C.MAGIC_COLOR);
+  });
+
   it('examine weapon shows class tag', () => {
     const store = makeStoryStore();
     store.player!.weapons = ['iron_sword'];

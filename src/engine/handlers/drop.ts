@@ -53,7 +53,9 @@ export function handleDrop(
       store.player.equippedWeapon = null;
       refreshHeader();
     }
-    addLine(store, `You drop the ${weaponData[weaponId]?.name || weaponId}.`, C.HELP_COLOR);
+    const weapon = weaponData[weaponId];
+    const dropColor = weapon?.weapon_class === 'magic' ? C.MAGIC_COLOR : C.HELP_COLOR;
+    addLine(store, `You drop the ${weapon?.name || weaponId}.`, dropColor);
     return;
   }
 
