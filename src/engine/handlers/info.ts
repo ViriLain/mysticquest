@@ -5,16 +5,28 @@ import { OBJECTIVES } from '../objectives';
 import { addLine } from '../output';
 import { totalAttack, totalDefense, visitedCount, xpToNextLevel } from '../player';
 import { SKILL_TREE, canLearnSkill, getSkillsByTier } from '../skills';
-import type { GameStore, ItemDef, ObjectiveDef, RGBA, WeaponDef } from '../types';
+import type { AccessoryDef, ArmorDef, GameStore, ItemDef, ObjectiveDef, RGBA, WeaponDef } from '../types';
 
 import itemsJson from '../../data/items.json';
 import weaponsJson from '../../data/weapons.json';
+import armorJson from '../../data/armor.json';
+import accessoriesJson from '../../data/accessories.json';
 
 const staticWeaponData = weaponsJson as Record<string, WeaponDef>;
 const itemData = itemsJson as Record<string, ItemDef>;
+const staticArmorData = armorJson as Record<string, ArmorDef>;
+const staticAccessoryData = accessoriesJson as Record<string, AccessoryDef>;
 
 function weaponLookup(store: GameStore, id: string): WeaponDef | undefined {
   return staticWeaponData[id] ?? store.dungeon?.floorWeapons[id];
+}
+
+function armorLookup(_store: GameStore, id: string): ArmorDef | undefined {
+  return staticArmorData[id];
+}
+
+function accessoryLookup(_store: GameStore, id: string): AccessoryDef | undefined {
+  return staticAccessoryData[id];
 }
 
 function weaponClassTag(weapon: WeaponDef): string {
@@ -110,6 +122,21 @@ export function showInventory(store: GameStore): void {
     addLine(store, iconLine(ICON.shield, `Shield: ${shield.name} (+${shield.value} DEF)${sell}`), C.ITEM_COLOR);
   }
 
+  if (store.player.equippedArmor) {
+    const armor = armorLookup(store, store.player.equippedArmor);
+    if (armor) {
+      addLine(store, iconLine(ICON.shield, `Armor: ${armor.name} (+${armor.defense} DEF)`), C.ITEM_COLOR);
+    }
+  }
+
+  if (store.player.equippedAccessory) {
+    const acc = accessoryLookup(store, store.player.equippedAccessory);
+    if (acc) {
+      const effectText = acc.modifiers.map(m => `${m.type} ${m.value > 0 ? '+' : ''}${m.value}`).join(', ');
+      addLine(store, iconLine(ICON.item, `Accessory: ${acc.name} (${effectText})`), C.ITEM_COLOR);
+    }
+  }
+
   for (const weaponId of sortedWeaponIds(store).filter(weaponId => weaponId !== store.player!.equippedWeapon)) {
     const line = weaponLine(store, weaponId, { equippedPrefix: false, inShop });
     if (line) addLine(store, line.text, line.color);
@@ -175,7 +202,7 @@ export function showStats(store: GameStore): void {
     totalAtk += statWeapon.attack_bonus;
   }
   addLine(store, `Attack: ${totalAtk}`, C.STAT_COLOR);
-  addLine(store, `Defense: ${totalDefense(store.player, itemData)}`, C.STAT_COLOR);
+  addLine(store, `Defense: ${totalDefense(store.player, itemData, staticArmorData)}`, C.STAT_COLOR);
   addLine(store, `Level: ${store.player.level}`, C.STAT_COLOR);
   addLine(store, `Gold: ${store.player.gold}`, C.STAT_COLOR);
   addLine(store, `XP: ${store.player.xp}/${xpToNextLevel(store.player)}`, C.STAT_COLOR);

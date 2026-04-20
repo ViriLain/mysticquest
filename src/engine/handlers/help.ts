@@ -22,6 +22,7 @@ export function handleHelp(store: GameStore): void {
   addLine(store, '');
   addLine(store, ' COMBAT', C.COMBAT_COLOR);
   addLine(store, '  attack <enemy>  - Attack an enemy in the room', C.HELP_COLOR);
+  addLine(store, '  skill <name>    - Use a combat skill (cooldown-based)', C.HELP_COLOR);
   addLine(store, '');
   addLine(store, ' INFO', C.STAT_COLOR);
   addLine(store, '  inventory (i)   - Show your inventory', C.HELP_COLOR);
