@@ -2,7 +2,7 @@ import * as C from '../constants';
 import { addLine } from '../output';
 import { notifyObjectiveEvent } from '../objectives';
 import { addDynamicExit, getRoom } from '../world';
-import type { GameStore, ItemDef, WeaponDef } from '../types';
+import type { AccessoryDef, ArmorDef, GameStore, ItemDef, WeaponDef } from '../types';
 
 interface RevealOptions {
   announceSearch?: boolean;
@@ -15,6 +15,8 @@ export function revealSearchables(
   itemData: Record<string, ItemDef>,
   weaponData: Record<string, WeaponDef>,
   options: RevealOptions = {},
+  armorData?: Record<string, ArmorDef>,
+  accessoryData?: Record<string, AccessoryDef>,
 ): void {
   if (!store.player || !store.world) return;
   const room = getRoom(store.world, store.player.currentRoom);
@@ -47,6 +49,16 @@ export function revealSearchables(
         if (!room._ground_weapons.includes(id)) room._ground_weapons.push(id);
         const color = weaponData[id].weapon_class === 'magic' ? C.MAGIC_COLOR : C.LOOT_COLOR;
         addLine(store, `You find a ${weaponData[id].name}.`, color);
+        foundSomething = true;
+      } else if (armorData && armorData[id]) {
+        if (!room._ground_loot) room._ground_loot = [];
+        if (!room._ground_loot.includes(id)) room._ground_loot.push(id);
+        addLine(store, `You find a ${armorData[id].name}.`, C.LOOT_COLOR);
+        foundSomething = true;
+      } else if (accessoryData && accessoryData[id]) {
+        if (!room._ground_loot) room._ground_loot = [];
+        if (!room._ground_loot.includes(id)) room._ground_loot.push(id);
+        addLine(store, `You find a ${accessoryData[id].name}.`, C.LOOT_COLOR);
         foundSomething = true;
       } else if (itemData[id]) {
         if (!room._ground_loot) room._ground_loot = [];
@@ -82,10 +94,12 @@ export function handleSearch(
   store: GameStore,
   itemData: Record<string, ItemDef>,
   weaponData: Record<string, WeaponDef>,
+  armorData?: Record<string, ArmorDef>,
+  accessoryData?: Record<string, AccessoryDef>,
 ): void {
   revealSearchables(store, itemData, weaponData, {
     announceSearch: true,
     alreadySearchedMessage: true,
     notSearchableMessage: true,
-  });
+  }, armorData, accessoryData);
 }

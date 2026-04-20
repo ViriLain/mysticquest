@@ -2,7 +2,7 @@ import * as C from '../constants';
 import { ICON, iconLine } from '../icons';
 import { totalAttack, totalDefense } from '../player';
 import { addLine } from '../output';
-import type { EnemyDef, GameStore, ItemDef, WeaponClass, WeaponDef } from '../types';
+import type { AccessoryDef, ArmorDef, EnemyDef, GameStore, ItemDef, WeaponClass, WeaponDef } from '../types';
 import { getLivingEnemies, getRoom } from '../world';
 
 function classTag(weapon: WeaponDef): string {
@@ -30,6 +30,8 @@ export function handleExamine(
   enemyData: Record<string, EnemyDef>,
   itemData: Record<string, ItemDef>,
   weaponData: Record<string, WeaponDef>,
+  armorData?: Record<string, ArmorDef>,
+  accessoryData?: Record<string, AccessoryDef>,
 ): void {
   if (!store.player || !store.world) return;
   if (!target) { addLine(store, 'Examine what?', C.ERROR_COLOR); return; }
@@ -99,6 +101,53 @@ export function handleExamine(
       const count = store.player.inventory[itemId];
       if (count) addLine(store, `You have: ${count}`, C.HELP_COLOR);
       return;
+    }
+  }
+
+  // Check armor in inventory and on the ground
+  if (armorData) {
+    const armorSources = [
+      ...Object.keys(store.player.inventory).filter(id => armorData[id]),
+      ...(room ? [...(room.armor || []), ...(room._ground_loot || [])].filter(id => armorData[id]) : []),
+    ];
+    for (const armorId of armorSources) {
+      const armor = armorData[armorId];
+      if (!armor) continue;
+      if (armor.name.toLowerCase().includes(target.toLowerCase()) || armorId.toLowerCase().includes(target.toLowerCase())) {
+        addLine(store, '');
+        addLine(store, iconLine(ICON.shield, `=== ${armor.name} ===`), C.ITEM_COLOR);
+        addLine(store, armor.description, C.HELP_COLOR);
+        addLine(store, `Defense: +${armor.defense}`, C.STAT_COLOR);
+        if (store.player.equippedArmor === armorId) {
+          addLine(store, '(currently equipped)', C.ITEM_COLOR);
+        }
+        return;
+      }
+    }
+  }
+
+  // Check accessories in inventory and on the ground
+  if (accessoryData) {
+    const accSources = [
+      ...Object.keys(store.player.inventory).filter(id => accessoryData[id]),
+      ...(room ? (room._ground_loot || []).filter(id => accessoryData[id]) : []),
+    ];
+    for (const accId of accSources) {
+      const acc = accessoryData[accId];
+      if (!acc) continue;
+      if (acc.name.toLowerCase().includes(target.toLowerCase()) || accId.toLowerCase().includes(target.toLowerCase())) {
+        addLine(store, '');
+        addLine(store, iconLine(ICON.item, `=== ${acc.name} ===`), C.ITEM_COLOR);
+        addLine(store, acc.description, C.HELP_COLOR);
+        for (const mod of acc.modifiers) {
+          const sign = mod.value > 0 ? '+' : '';
+          addLine(store, `${sign}${mod.value} ${mod.type}`, C.STAT_COLOR);
+        }
+        if (store.player.equippedAccessory === accId) {
+          addLine(store, '(currently equipped)', C.ITEM_COLOR);
+        }
+        return;
+      }
     }
   }
 
