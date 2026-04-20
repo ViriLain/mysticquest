@@ -56,6 +56,13 @@ function effectiveWeaponData(store: GameStore): Record<string, WeaponDef> {
   return weaponData;
 }
 
+function effectiveArmorData(store: GameStore): Record<string, ArmorDef> {
+  if (store.gameMode === 'dungeon' && store.dungeon?.floorArmor) {
+    return { ...armorData, ...store.dungeon.floorArmor };
+  }
+  return armorData;
+}
+
 // ---- Helpers ----
 
 function enterRoom(store: GameStore, roomId: string): boolean {
@@ -241,6 +248,8 @@ function buildCombatDeps(store: GameStore): CombatDeps {
     itemData,
     weaponData: effectiveWeaponData(store),
     enemyData,
+    armorData: effectiveArmorData(store),
+    accessoryData,
     refreshHeader: () => updateHeader(store),
     checkEndingsForBoss: enemyId => {
       checkEndingsContext(store, { bossJustDefeated: enemyId });

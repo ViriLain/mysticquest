@@ -149,6 +149,8 @@ export function createCombat(_player: PlayerState, enemyId: string, enemyData: R
       gold: edata.gold ?? 0,
       loot: edata.loot || [],
       lootWeapon: edata.loot_weapon,
+      lootArmor: edata.loot_armor,
+      lootAccessory: edata.loot_accessory,
       isBoss: edata.is_boss,
       description: edata.description,
       statusEffect: edata.status_effect ?? null,
@@ -659,7 +661,7 @@ export function enemyDefeated(
   combat: CombatState,
   player: PlayerState,
 ): CombatResults {
-  const results: CombatResults = { leveled: false, loot: [], weapon: null, messages: [] };
+  const results: CombatResults = { leveled: false, loot: [], weapon: null, armor: null, accessory: null, messages: [] };
 
   const leveled = addXp(player, combat.enemy.xp);
   results.leveled = leveled;
@@ -674,6 +676,12 @@ export function enemyDefeated(
   }
   if (combat.enemy.lootWeapon) {
     results.weapon = combat.enemy.lootWeapon;
+  }
+  if (combat.enemy.lootArmor) {
+    results.armor = combat.enemy.lootArmor;
+  }
+  if (combat.enemy.lootAccessory) {
+    results.accessory = combat.enemy.lootAccessory;
   }
 
   return results;

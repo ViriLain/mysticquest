@@ -1,4 +1,4 @@
-import type { CombatMessage, EnemyDef, GameStore, ItemDef, RoomDef, StatusEffect, WeaponDef } from '../types';
+import type { AccessoryDef, ArmorDef, CombatMessage, EnemyDef, GameStore, ItemDef, RoomDef, StatusEffect, WeaponDef } from '../types';
 import * as C from '../constants';
 import { notifyObjectiveEvent } from '../objectives';
 import { playerAttack, playerDefend, playerFlee, playerUseItem, playerSkillAttack, enemyDefeated } from '../combat';
@@ -15,6 +15,8 @@ export interface CombatDeps {
   itemData: Record<string, ItemDef>;
   weaponData: Record<string, WeaponDef>;
   enemyData: Record<string, EnemyDef>;
+  armorData?: Record<string, ArmorDef>;
+  accessoryData?: Record<string, AccessoryDef>;
   refreshHeader: () => void;
   checkEndingsForBoss: (enemyId: string) => void;
   checkAchievement: (id: string) => void;
@@ -193,6 +195,18 @@ export function handleCombatCommand(
             const color = weapon.weapon_class === 'magic' ? C.MAGIC_COLOR : C.LOOT_COLOR;
             addLine(store, iconLine(ICON.loot, `The enemy drops a ${weapon.name}!`), color);
           }
+        }
+        if (results.armor) {
+          if (!room._ground_loot) room._ground_loot = [];
+          room._ground_loot.push(results.armor);
+          const armorDef = deps.armorData?.[results.armor];
+          if (armorDef) addLine(store, iconLine(ICON.loot, `The enemy drops ${armorDef.name}!`), C.LOOT_COLOR);
+        }
+        if (results.accessory) {
+          if (!room._ground_loot) room._ground_loot = [];
+          room._ground_loot.push(results.accessory);
+          const accDef = deps.accessoryData?.[results.accessory];
+          if (accDef) addLine(store, iconLine(ICON.loot, `The enemy drops a ${accDef.name}!`), C.LOOT_COLOR);
         }
       }
 

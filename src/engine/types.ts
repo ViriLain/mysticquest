@@ -328,6 +328,8 @@ export interface EnemyInstance {
   gold: number;
   loot: string[];
   lootWeapon?: string;
+  lootArmor?: string;
+  lootAccessory?: string;
   isBoss: boolean;
   description: string;
   statusEffect: EnemyDef['status_effect'] | null;
@@ -477,6 +479,7 @@ export interface DungeonState {
   score: DungeonScore;
   floorEnemies: Record<string, EnemyDef>;
   floorWeapons: Record<string, WeaponDef>;
+  floorArmor: Record<string, ArmorDef>;
   dungeonPerks: string[];
 }
 
@@ -495,5 +498,7 @@ export interface CombatResults {
   leveled: boolean;
   loot: string[];
   weapon: string | null;
+  armor: string | null;
+  accessory: string | null;
   messages: CombatMessage[];
 }
