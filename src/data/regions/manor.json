@@ -35,7 +35,7 @@
       "items": [],
       "enemies": ["shadow_rat"],
       "searchable": true,
-      "search_items": ["small_potion"],
+      "search_items": ["small_potion", "keen_eye_ring"],
       "dev_note": "// I want to add a piano puzzle here eventually"
     },
     {

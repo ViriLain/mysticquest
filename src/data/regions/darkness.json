@@ -56,7 +56,7 @@
       "weapons": [],
       "enemies": ["shadow_knight"],
       "searchable": true,
-      "search_items": ["anduril"]
+      "search_items": ["anduril", "berserker_tooth"]
     },
     {
       "id": "darkness_oblivion_gate",
@@ -80,7 +80,7 @@
       "weapons": [],
       "enemies": [],
       "searchable": true,
-      "search_items": ["peacemaker"],
+      "search_items": ["peacemaker", "iron_band"],
       "dev_note": "// the evil dimension is getting bigger every time I open the file"
     },
     {

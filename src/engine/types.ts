@@ -159,6 +159,8 @@ export interface EnemyDef {
   gold?: number;
   loot: string[];
   loot_weapon?: string;
+  loot_armor?: string;
+  loot_accessory?: string;
   region: string;
   description: string;
   is_boss: boolean;
@@ -187,6 +189,7 @@ export interface RoomDef {
   secret_exits?: Record<string, string>;
   items?: string[];
   weapons?: string[];
+  armor?: string[];
   enemies?: string[];
   searchable?: boolean;
   search_items?: string[];

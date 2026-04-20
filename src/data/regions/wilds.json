@@ -31,6 +31,7 @@
       "description": "Your right in the middle of the forest now. The canopy is so thick you can barely see the sky. Vines hang down from the branches and the air is warm and humid. Animal tracks crisscross the ground going in every direction.",
       "exits": {"east": "wilds_forest_entrance", "north": "wilds_clearing", "south": "wastes_path"},
       "items": ["potion"],
+      "armor": ["chainmail"],
       "enemies": ["forest_wolf"],
       "searchable": false,
       "dev_note": "// the clearing is based on the field behind school"
