@@ -3,13 +3,13 @@ import { SKILL_TREE, getSkillsByTier, canLearnSkill, findSkillByName, applySkill
 import { createPlayer } from '../../src/engine/player';
 
 describe('skill tree structure', () => {
-  it('has 18 skills across 5 tiers', () => {
-    expect(SKILL_TREE.length).toBe(18);
-    // Tiers 1, 2, 4, 5 have 3 skills each; tier 3 has 6 (3 passive + 3 active)
-    for (const tier of [1, 2, 4, 5]) {
-      expect(getSkillsByTier(tier).length).toBe(3);
-    }
-    expect(getSkillsByTier(3).length).toBe(6);
+  it('has 21 skills across 5 tiers', () => {
+    expect(SKILL_TREE.length).toBe(21);
+    expect(getSkillsByTier(1).length).toBe(3);
+    expect(getSkillsByTier(2).length).toBe(3);
+    expect(getSkillsByTier(3).length).toBe(7); // 3 passive + 3 active + spellweaver
+    expect(getSkillsByTier(4).length).toBe(4); // 3 + lingering_magic
+    expect(getSkillsByTier(5).length).toBe(4); // 3 + arcane_mastery
   });
 
   it('has no branch field on skills', () => {

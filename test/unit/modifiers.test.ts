@@ -103,4 +103,55 @@ describe('collectModifiers', () => {
     expect(mods.some(m => m.type === 'attack' && m.value === 3)).toBe(true);
     expect(mods.some(m => m.type === 'defense' && m.value === -1)).toBe(true);
   });
+
+  it('bridges spellweaver skill to magic_counter_threshold modifier', () => {
+    const player = createPlayer();
+    player.skills.spellweaver = true;
+    const mods = collectModifiers(player, weaponData, armorData, accessoryData);
+    expect(totalModifier(mods, 'magic_counter_threshold')).toBe(-1);
+  });
+
+  it('bridges lingering_magic skill to status_duration modifier', () => {
+    const player = createPlayer();
+    player.skills.lingering_magic = true;
+    const mods = collectModifiers(player, weaponData, armorData, accessoryData);
+    expect(totalModifier(mods, 'status_duration')).toBe(1);
+  });
+
+  it('bridges arcane_mastery to both status_duration and magic_counter_threshold', () => {
+    const player = createPlayer();
+    player.skills.arcane_mastery = true;
+    const mods = collectModifiers(player, weaponData, armorData, accessoryData);
+    expect(totalModifier(mods, 'status_duration')).toBe(1);
+    expect(totalModifier(mods, 'magic_counter_threshold')).toBe(-1);
+  });
+
+  it('stacks spellweaver + mystic_lens + arcane_mastery for magic threshold -3', () => {
+    const player = createPlayer();
+    player.skills.spellweaver = true;
+    player.skills.arcane_mastery = true;
+    player.equippedAccessory = 'keen_eye_ring'; // no threshold mod
+    // Use an accessory with threshold -1
+    const lensData: Record<string, import('../../src/engine/types').AccessoryDef> = {
+      ...accessoryData,
+      mystic_lens: {
+        name: 'Mystic Lens', description: 't', region: 'hidden',
+        modifiers: [{ type: 'magic_counter_threshold', value: -1 }],
+      },
+    };
+    player.equippedAccessory = 'mystic_lens';
+    const mods = collectModifiers(player, weaponData, armorData, lensData);
+    // spellweaver (-1) + arcane_mastery (-1) + mystic_lens (-1) = -3
+    // But magic threshold floors at 2, so max(-3 + 3 = 0... wait, the floor is in combat.ts)
+    // The modifier system just sums; combat applies the floor
+    expect(totalModifier(mods, 'magic_counter_threshold')).toBe(-3);
+  });
+
+  it('stacks lingering_magic + arcane_mastery for +2 status_duration', () => {
+    const player = createPlayer();
+    player.skills.lingering_magic = true;
+    player.skills.arcane_mastery = true;
+    const mods = collectModifiers(player, weaponData, armorData, accessoryData);
+    expect(totalModifier(mods, 'status_duration')).toBe(2);
+  });
 });

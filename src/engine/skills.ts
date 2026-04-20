@@ -18,14 +18,17 @@ const _SKILLS = [
   { id: 'power_strike', name: 'Power Strike', description: 'Active: 1.5x damage, ignore 3 DEF. 5-round cooldown.', tier: 3 },
   { id: 'ambush', name: 'Ambush', description: 'Active: Guaranteed 3x critical hit. 4-round cooldown.', tier: 3 },
   { id: 'arcane_surge', name: 'Arcane Surge', description: 'Active: Double-duration status proc or magic burst. 5-round cooldown.', tier: 3 },
+  { id: 'spellweaver', name: 'Spellweaver', description: 'Magic weapons proc every 2 hits (not 3)', tier: 3 },
   // Tier 4 — Specialized
   { id: 'berserker', name: 'Berserker', description: '+15% damage when HP below 30%', tier: 4 },
   { id: 'lucky', name: 'Lucky', description: '15% chance to dodge attacks', tier: 4 },
   { id: 'meditation', name: 'Meditation', description: 'Regenerate 2 HP per combat round', tier: 4 },
+  { id: 'lingering_magic', name: 'Lingering Magic', description: 'Status effects you inflict last 1 extra round', tier: 4 },
   // Tier 5 — Capstone
   { id: 'titan', name: 'Titan', description: '+15 max HP, +1 ATK, +1 DEF', tier: 5 },
   { id: 'assassin', name: 'Assassin', description: 'Crits deal 3x damage (instead of 2x)', tier: 5 },
   { id: 'enlightened', name: 'Enlightened', description: '+50% XP from all sources', tier: 5 },
+  { id: 'arcane_mastery', name: 'Arcane Mastery', description: 'Status effects +1 round, magic proc threshold -1', tier: 5 },
 ] as const;
 
 /** All valid skill IDs — derived from the SKILL_TREE array. */

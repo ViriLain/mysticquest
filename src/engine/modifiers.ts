@@ -18,6 +18,12 @@ const SKILL_MODIFIERS: Record<string, Modifier[]> = {
     { type: 'def_ignore', value: 2, source: 'skill', sourceId: 'precision' },
   ],
   assassin: [{ type: 'crit_mult', value: 1, source: 'skill', sourceId: 'assassin' }],
+  spellweaver: [{ type: 'magic_counter_threshold', value: -1, source: 'skill', sourceId: 'spellweaver' }],
+  lingering_magic: [{ type: 'status_duration', value: 1, source: 'skill', sourceId: 'lingering_magic' }],
+  arcane_mastery: [
+    { type: 'status_duration', value: 1, source: 'skill', sourceId: 'arcane_mastery' },
+    { type: 'magic_counter_threshold', value: -1, source: 'skill', sourceId: 'arcane_mastery' },
+  ],
 };
 
 function bridgeSkills(player: PlayerState): Modifier[] {
