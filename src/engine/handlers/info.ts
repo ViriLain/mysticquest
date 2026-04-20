@@ -21,8 +21,8 @@ function weaponLookup(store: GameStore, id: string): WeaponDef | undefined {
   return staticWeaponData[id] ?? store.dungeon?.floorWeapons[id];
 }
 
-function armorLookup(_store: GameStore, id: string): ArmorDef | undefined {
-  return staticArmorData[id];
+function armorLookup(store: GameStore, id: string): ArmorDef | undefined {
+  return staticArmorData[id] ?? store.dungeon?.floorArmor[id];
 }
 
 function accessoryLookup(_store: GameStore, id: string): AccessoryDef | undefined {

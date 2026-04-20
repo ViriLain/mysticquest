@@ -10,6 +10,7 @@ interface RoomState {
   dynamic_exits?: Record<string, string>;
   items?: string[];
   weapons?: string[];
+  armor?: string[];
   ground_loot?: string[];
   ground_weapons?: string[];
 }
@@ -91,6 +92,10 @@ function serialize(
     }
     if (room.weapons) {
       rs.weapons = [...room.weapons];
+      hasData = true;
+    }
+    if (room.armor && room.armor.length > 0) {
+      rs.armor = [...room.armor];
       hasData = true;
     }
     if (room._ground_loot && room._ground_loot.length > 0) {
@@ -200,6 +205,7 @@ function deserialize(
         if (rs.dynamic_exits) room._dynamic_exits = rs.dynamic_exits;
         if (rs.items) room.items = rs.items;
         if (rs.weapons) room.weapons = rs.weapons;
+        if (rs.armor) room.armor = rs.armor;
         if (rs.ground_loot) room._ground_loot = rs.ground_loot;
         if (rs.ground_weapons) room._ground_weapons = rs.ground_weapons;
       }

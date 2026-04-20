@@ -1,4 +1,6 @@
 import type { AccessoryDef, ArmorDef, EnemyDef, GameStore, ItemDef, NpcDef, WeaponDef } from '../types';
+import * as C from '../constants';
+import { addLine } from '../output';
 import { handleAttack } from '../handlers/attack';
 import { handleAsk } from '../handlers/ask';
 import { handleDrop } from '../handlers/drop';
@@ -122,6 +124,8 @@ export function handleExploringCommand(
     displaySkillTree(store);
   } else if (verb === 'learn') {
     handleLearn(store, target, deps.refreshHeader, deps.emit, deps.checkScholar);
+  } else if (verb === 'skill') {
+    addLine(store, 'Skills can only be used in combat.', C.HELP_COLOR);
   } else if (verb === 'warp') {
     handleWarp(store, target, {
       enterRoom: deps.enterRoom,

@@ -57,7 +57,7 @@ export function displayRoom(store: GameStore, roomId: string): void {
   if (room.armor) {
     for (const armorId of room.armor) {
       const a = armorData[armorId];
-      if (a) addLine(store, iconLine(ICON.item, `You see ${a.name} here.`), C.ITEM_COLOR);
+      if (a) addLine(store, iconLine(ICON.item, `You see a ${a.name} here.`), C.ITEM_COLOR);
     }
   }
   if (room._ground_loot) {
@@ -66,7 +66,7 @@ export function displayRoom(store: GameStore, roomId: string): void {
       const armor = armorData[itemId];
       const acc = accessoryData[itemId];
       if (item) addLine(store, iconLine(ICON.loot, `You see a ${item.name} on the ground.`), C.LOOT_COLOR);
-      else if (armor) addLine(store, iconLine(ICON.loot, `You see ${armor.name} on the ground.`), C.LOOT_COLOR);
+      else if (armor) addLine(store, iconLine(ICON.loot, `You see a ${armor.name} on the ground.`), C.LOOT_COLOR);
       else if (acc) addLine(store, iconLine(ICON.loot, `You see a ${acc.name} on the ground.`), C.LOOT_COLOR);
     }
   }

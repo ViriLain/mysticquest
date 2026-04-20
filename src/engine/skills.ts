@@ -42,10 +42,6 @@ export const SKILL_TREE: readonly SkillDef[] = _SKILLS;
 
 export const ACTIVE_SKILLS = new Set<string>(['power_strike', 'ambush', 'arcane_surge']);
 
-export function isActiveSkill(id: string): boolean {
-  return ACTIVE_SKILLS.has(id);
-}
-
 export function getSkillsByTier(tier: number): SkillDef[] {
   return SKILL_TREE.filter(s => s.tier === tier);
 }

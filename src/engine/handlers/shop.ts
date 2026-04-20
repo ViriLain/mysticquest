@@ -5,11 +5,14 @@ import { findAllMatches, resolveOrDisambiguate, singularize, type Matchable } fr
 import { addLine, emitSound } from '../output';
 import { parseBatchCount } from '../state/exploring';
 import { displayDialogueNode } from './talk';
-import type { GameStore, ItemDef, NpcDef, WeaponDef } from '../types';
+import type { ArmorDef, GameStore, ItemDef, NpcDef, WeaponDef } from '../types';
+
+import armorJson from '../../data/armor.json';
+const staticArmorData = armorJson as Record<string, ArmorDef>;
 
 interface ShopBuyMatchable extends Matchable {
   __entryIndex: number;
-  __type: 'item' | 'weapon';
+  __type: 'item' | 'weapon' | 'armor';
 }
 
 export function displayShop(
@@ -17,10 +20,12 @@ export function displayShop(
   shop: ShopDef,
   itemData: Record<string, ItemDef>,
   weaponData: Record<string, WeaponDef>,
+  armorData?: Record<string, ArmorDef>,
 ): void {
   if (!store.player) return;
   const runtime = store.shopState.runtime[store.shopState.activeShopId!];
   if (!runtime) return;
+  const allArmor = armorData ?? staticArmorData;
 
   addLine(store, '');
   addLine(store, `========== ${shop.name.toUpperCase()} ==========`, C.STAT_COLOR);
@@ -33,15 +38,18 @@ export function displayShop(
   } else {
     addLine(store, '-- FOR SALE --', C.STAT_COLOR);
     for (const entry of stock) {
-      const isWeapon = entry.entry.type === 'weapon';
-      const def = isWeapon ? weaponData[entry.entry.id] : itemData[entry.entry.id];
+      const entryType = entry.entry.type ?? 'item';
+      let def: { name: string; price?: number } | undefined;
+      if (entryType === 'weapon') def = weaponData[entry.entry.id];
+      else if (entryType === 'armor') def = allArmor[entry.entry.id];
+      else def = itemData[entry.entry.id];
       if (!def) continue;
-      const price = isWeapon
-        ? (weaponData[entry.entry.id]?.price ?? 0)
-        : (itemData[entry.entry.id]?.price ?? 0);
+      const price = def.price ?? 0;
       let label = def.name;
-      if (isWeapon) {
+      if (entryType === 'weapon') {
         label += ` (+${(def as WeaponDef).attack_bonus} ATK)`;
+      } else if (entryType === 'armor') {
+        label += ` (+${(def as ArmorDef).defense} DEF)`;
       } else {
         const item = def as ItemDef;
         if (item.effect === 'heal' && item.value) label += ` (+${item.value} HP)`;
@@ -72,7 +80,9 @@ export function handleShopCommand(
   weaponData: Record<string, WeaponDef>,
   npcData: Record<string, NpcDef>,
   refreshHeader: () => void,
+  armorData?: Record<string, ArmorDef>,
 ): void {
+  const allArmor = armorData ?? staticArmorData;
   if (!store.player || !store.shopState.activeShopId) return;
   const shopId = store.shopState.activeShopId;
   const shop = shops[shopId];
@@ -96,7 +106,7 @@ export function handleShopCommand(
   }
 
   if (verb === 'look') {
-    displayShop(store, shop, itemData, weaponData);
+    displayShop(store, shop, itemData, weaponData, allArmor);
     return;
   }
 
@@ -106,12 +116,13 @@ export function handleShopCommand(
       const stock = getEffectiveStock(shop, runtime).filter(entry => entry.remaining > 0);
       const items: typeof store.shopMenuItems = [];
       for (const entry of stock) {
-        const isWeapon = entry.entry.type === 'weapon';
-        const def = isWeapon ? weaponData[entry.entry.id] : itemData[entry.entry.id];
+        const entryType = entry.entry.type ?? 'item';
+        let def: { name: string; price?: number } | undefined;
+        if (entryType === 'weapon') def = weaponData[entry.entry.id];
+        else if (entryType === 'armor') def = allArmor[entry.entry.id];
+        else def = itemData[entry.entry.id];
         if (!def) continue;
-        const price = isWeapon ? (weaponData[entry.entry.id]?.price ?? 0) : (itemData[entry.entry.id]?.price ?? 0);
         items.push({ label: def.name, id: entry.entry.id, index: entry.index });
-        void price; // price shown in the menu render
       }
       if (items.length === 0) {
         addLine(store, '-- SOLD OUT --', C.HELP_COLOR);
@@ -129,15 +140,18 @@ export function handleShopCommand(
     const candidates: Record<string, ShopBuyMatchable> = {};
     const candidateIds: string[] = [];
     for (const entry of stock) {
-      const isWeapon = entry.entry.type === 'weapon';
-      const def = isWeapon ? weaponData[entry.entry.id] : itemData[entry.entry.id];
+      const entryType = (entry.entry.type ?? 'item') as 'item' | 'weapon' | 'armor';
+      let def: { name: string; match_words?: string[] } | undefined;
+      if (entryType === 'weapon') def = weaponData[entry.entry.id];
+      else if (entryType === 'armor') def = allArmor[entry.entry.id];
+      else def = itemData[entry.entry.id];
       if (!def) continue;
       const key = `__${entry.index}`;
       candidates[key] = {
         name: def.name,
         match_words: def.match_words,
         __entryIndex: entry.index,
-        __type: isWeapon ? 'weapon' : 'item',
+        __type: entryType,
       };
       candidateIds.push(key);
     }
@@ -157,7 +171,7 @@ export function handleShopCommand(
 
     const matched = candidates[matchedId];
     for (let i = 0; i < count; i++) {
-      const result = buyItem(store.player, shop, runtime, matched.__entryIndex, itemData, weaponData);
+      const result = buyItem(store.player, shop, runtime, matched.__entryIndex, itemData, weaponData, allArmor);
       if (!result.ok) {
         if (i > 0) break; // partial buy succeeded, stop silently
         if (result.reason === 'insufficient_gold') {
@@ -171,7 +185,10 @@ export function handleShopCommand(
         return;
       }
 
-      const def = result.type === 'weapon' ? weaponData[result.itemId] : itemData[result.itemId];
+      let def: { name: string } | undefined;
+      if (result.type === 'weapon') def = weaponData[result.itemId];
+      else if (result.type === 'armor') def = allArmor[result.itemId];
+      else def = itemData[result.itemId];
       const name = def?.name ?? result.itemId;
       addLine(store, iconLine(ICON.loot, `Bought ${name} for ${result.price}g.`), C.ITEM_COLOR);
       emitSound(store, 'pickup');
@@ -272,25 +289,33 @@ export function handleShopCommand(
 
     const stock = getEffectiveStock(shop, runtime);
     for (const entry of stock) {
-      const isWeapon = entry.entry.type === 'weapon';
-      const def = isWeapon ? weaponData[entry.entry.id] : itemData[entry.entry.id];
+      const entryType = entry.entry.type ?? 'item';
+      let def: { name: string; description: string; price?: number } | undefined;
+      if (entryType === 'weapon') def = weaponData[entry.entry.id];
+      else if (entryType === 'armor') def = allArmor[entry.entry.id];
+      else def = itemData[entry.entry.id];
       if (!def) continue;
       if (def.name.toLowerCase().includes(target.toLowerCase()) || entry.entry.id.toLowerCase().includes(target.toLowerCase())) {
         addLine(store, '');
-        addLine(store, iconLine(isWeapon ? ICON.weapon : ICON.item, `=== ${def.name} ===`), C.ITEM_COLOR);
+        const icon = entryType === 'weapon' ? ICON.weapon : ICON.item;
+        addLine(store, iconLine(icon, `=== ${def.name} ===`), C.ITEM_COLOR);
         addLine(store, def.description, C.HELP_COLOR);
-        const price = isWeapon
-          ? (weaponData[entry.entry.id]?.price ?? 0)
-          : (itemData[entry.entry.id]?.price ?? 0);
+        const price = def.price ?? 0;
         addLine(store, `Price: ${price}g`, C.STAT_COLOR);
 
         // Comparison to equipped gear
-        if (isWeapon) {
+        if (entryType === 'weapon') {
           const bonus = (def as WeaponDef).attack_bonus;
           const eqId = store.player!.equippedWeapon;
           const eq = eqId ? weaponData[eqId] : null;
           const eqLabel = eq ? `${eq.name} (+${eq.attack_bonus} ATK)` : 'Fists';
           addLine(store, `  Your weapon: ${eqLabel} → This: +${bonus} ATK`, C.STAT_COLOR);
+        } else if (entryType === 'armor') {
+          const armorDef = def as ArmorDef;
+          const eqId = store.player!.equippedArmor;
+          const eq = eqId ? allArmor[eqId] : null;
+          const eqLabel = eq ? `${eq.name} (+${eq.defense} DEF)` : '(none)';
+          addLine(store, `  Your armor: ${eqLabel} → This: +${armorDef.defense} DEF`, C.STAT_COLOR);
         } else {
           const item = def as ItemDef;
           if (item.type === 'shield' && item.value) {

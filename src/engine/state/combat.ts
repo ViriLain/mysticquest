@@ -77,7 +77,7 @@ export function handleCombatCommand(
     addLine(store, 'You are stunned! You can only use items.', C.COMBAT_COLOR);
     emitSound(store, 'error');
     // Run a lost turn so the stun decrements and the enemy gets to act
-    const stunMsgs = playerDefend(store.combat, store.player, deps.itemData);
+    const stunMsgs = playerDefend(store.combat, store.player, deps.itemData, undefined, deps.armorData);
     processCombatMessages(store, stunMsgs);
     deps.refreshHeader();
     if (store.combat && store.combat.playerEffects.length > 0) {
@@ -89,11 +89,11 @@ export function handleCombatCommand(
   let msgs: CombatMessage[] = [];
 
   if (verb === 'attack') {
-    msgs = playerAttack(store.combat, store.player, deps.weaponData, deps.itemData);
+    msgs = playerAttack(store.combat, store.player, deps.weaponData, deps.itemData, undefined, undefined, deps.armorData);
   } else if (verb === 'defend') {
-    msgs = playerDefend(store.combat, store.player, deps.itemData);
+    msgs = playerDefend(store.combat, store.player, deps.itemData, undefined, deps.armorData);
   } else if (verb === 'flee') {
-    msgs = playerFlee(store.combat, store.player, deps.itemData);
+    msgs = playerFlee(store.combat, store.player, deps.itemData, undefined, deps.armorData);
   } else if (verb === 'use') {
     if (!target) {
       addLine(store, 'Use what?', C.ERROR_COLOR);
@@ -109,7 +109,7 @@ export function handleCombatCommand(
       addLine(store, "You don't have that.", C.ERROR_COLOR);
       return;
     }
-    msgs = playerUseItem(store.combat, store.player, matches[0], deps.itemData);
+    msgs = playerUseItem(store.combat, store.player, matches[0], deps.itemData, undefined, deps.armorData);
   } else if (verb === 'inventory') {
     showInventory(store);
     return;
@@ -139,7 +139,17 @@ export function handleCombatCommand(
       addLine(store, "You don't know that skill.", C.ERROR_COLOR);
       return;
     }
-    msgs = playerSkillAttack(store.combat, store.player, skill.id, deps.weaponData, deps.itemData);
+    // Compute cooldown reduction from accessories
+    let cooldownReduction = 0;
+    if (deps.accessoryData && store.player.equippedAccessory) {
+      const acc = deps.accessoryData[store.player.equippedAccessory];
+      if (acc) {
+        for (const mod of acc.modifiers) {
+          if (mod.type === 'cooldown_reduction') cooldownReduction += mod.value;
+        }
+      }
+    }
+    msgs = playerSkillAttack(store.combat, store.player, skill.id, deps.weaponData, deps.itemData, undefined, cooldownReduction, deps.armorData);
   } else {
     addLine(store, 'In combat: attack, defend, flee, use <item>, skill <name>', C.COMBAT_COLOR);
     return;

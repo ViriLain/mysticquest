@@ -1,4 +1,4 @@
-import type { CombatMessage, CombatResults, CombatState, EnemyDef, ItemDef, PlayerState, StatusEffect, WeaponDef } from './types';
+import type { ArmorDef, CombatMessage, CombatResults, CombatState, EnemyDef, ItemDef, PlayerState, StatusEffect, WeaponDef } from './types';
 import { totalAttack, totalDefense, addXp, hasItem, removeItem, heal, takeDamage, isDead, hasSkill } from './player';
 import { ACTIVE_SKILLS } from './skills';
 
@@ -32,8 +32,8 @@ function getPlayerAttack(player: PlayerState, weaponData: Record<string, WeaponD
   return atk;
 }
 
-function getPlayerDefense(player: PlayerState, itemData: Record<string, ItemDef>): number {
-  return totalDefense(player, itemData);
+function getPlayerDefense(player: PlayerState, itemData: Record<string, ItemDef>, armorData?: Record<string, ArmorDef>): number {
+  return totalDefense(player, itemData, armorData);
 }
 
 const MAGIC_PROC_MESSAGES: Record<StatusEffect['type'], string> = {
@@ -74,6 +74,7 @@ function enemyTurn(
   itemData: Record<string, ItemDef>,
   messages: CombatMessage[],
   rng: Rng,
+  armorData?: Record<string, ArmorDef>,
 ): void {
   if (combat.finished) return;
 
@@ -94,7 +95,7 @@ function enemyTurn(
     return;
   }
 
-  const [rawDamage, crit] = calcDamage(atk, getPlayerDefense(player, itemData), rng);
+  const [rawDamage, crit] = calcDamage(atk, getPlayerDefense(player, itemData, armorData), rng);
   if (crit) {
     messages.push({ text: 'The enemy lands a CRITICAL HIT!', color: [1, 0.2, 0.2, 1] });
   }
@@ -173,6 +174,7 @@ export function playerAttack(
   itemData: Record<string, ItemDef>,
   rng: Rng = defaultRng,
   overrides?: AttackOverrides,
+  armorData?: Record<string, ArmorDef>,
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
@@ -302,7 +304,7 @@ export function playerAttack(
   if (equippedWeapon?.weapon_class === 'pierce' && combat.round === 1) {
     // Pierce first strike: enemy skips round 1
   } else {
-    enemyTurn(combat, player, itemData, messages, rng);
+    enemyTurn(combat, player, itemData, messages, rng, armorData);
   }
   tickBuffs(player, messages);
   applyMeditation(player, messages);
@@ -314,6 +316,7 @@ export function playerDefend(
   player: PlayerState,
   itemData: Record<string, ItemDef>,
   rng: Rng = defaultRng,
+  armorData?: Record<string, ArmorDef>,
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
@@ -353,7 +356,7 @@ export function playerDefend(
     }
   }
 
-  enemyTurn(combat, player, itemData, messages, rng);
+  enemyTurn(combat, player, itemData, messages, rng, armorData);
   tickBuffs(player, messages);
   applyMeditation(player, messages);
   return messages;
@@ -364,6 +367,7 @@ export function playerFlee(
   player: PlayerState,
   itemData: Record<string, ItemDef>,
   rng: Rng = defaultRng,
+  armorData?: Record<string, ArmorDef>,
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
@@ -409,7 +413,7 @@ export function playerFlee(
       }
     }
 
-    enemyTurn(combat, player, itemData, messages, rng);
+    enemyTurn(combat, player, itemData, messages, rng, armorData);
   }
   tickBuffs(player, messages);
   applyMeditation(player, messages);
@@ -422,6 +426,7 @@ export function playerUseItem(
   itemId: string,
   itemData: Record<string, ItemDef>,
   rng: Rng = defaultRng,
+  armorData?: Record<string, ArmorDef>,
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
@@ -500,7 +505,7 @@ export function playerUseItem(
     }
   }
 
-  enemyTurn(combat, player, itemData, messages, rng);
+  enemyTurn(combat, player, itemData, messages, rng, armorData);
   tickBuffs(player, messages);
   applyMeditation(player, messages);
   return messages;
@@ -579,6 +584,7 @@ export function playerSkillAttack(
   itemData: Record<string, ItemDef>,
   rng: Rng = defaultRng,
   cooldownReduction = 0,
+  armorData?: Record<string, ArmorDef>,
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
 
@@ -602,14 +608,14 @@ export function playerSkillAttack(
     const attackMsgs = playerAttack(combat, player, weaponData, itemData, rng, {
       damageMultiplier: 1.5,
       extraDefIgnore: 3,
-    });
+    }, armorData);
     messages.push(...attackMsgs);
   } else if (skillId === 'ambush') {
     messages.push({ text: 'You strike from the shadows!', color: [1, 1, 0.2, 1] });
     const attackMsgs = playerAttack(combat, player, weaponData, itemData, rng, {
       forcedCrit: true,
       forcedCritMult: 3,
-    });
+    }, armorData);
     messages.push(...attackMsgs);
   } else if (skillId === 'arcane_surge') {
     // Bonus action BEFORE normal attack
@@ -641,7 +647,7 @@ export function playerSkillAttack(
       // Skip weapon effect roll — arcane surge already handled status application.
       const attackMsgs = playerAttack(combat, player, weaponData, itemData, rng, {
         skipWeaponEffect: true,
-      });
+      }, armorData);
       messages.push(...attackMsgs);
     }
   }

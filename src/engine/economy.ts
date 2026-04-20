@@ -1,10 +1,10 @@
 import { addItem, addWeapon, hasItem, removeItem } from './player';
-import type { ItemDef, PlayerState, ShopRuntimeState, WeaponDef } from './types';
+import type { ArmorDef, ItemDef, PlayerState, ShopRuntimeState, WeaponDef } from './types';
 
 export interface ShopStockEntry {
   id: string;
   qty: number;
-  type?: 'item' | 'weapon';
+  type?: 'item' | 'weapon' | 'armor';
 }
 
 export interface ShopDef {
@@ -15,7 +15,7 @@ export interface ShopDef {
 }
 
 export type BuyResult =
-  | { ok: true; itemId: string; type: 'item' | 'weapon'; price: number }
+  | { ok: true; itemId: string; type: 'item' | 'weapon' | 'armor'; price: number }
   | { ok: false; reason: 'insufficient_gold' | 'out_of_stock' | 'unknown_item'; needed?: number };
 
 export type SellResult =
@@ -36,14 +36,21 @@ export function awardGold(player: PlayerState, amount: number): void {
 
 export function priceOf(
   itemId: string,
-  type: 'item' | 'weapon',
+  type: 'item' | 'weapon' | 'armor',
   items: Record<string, ItemDef>,
   weapons: Record<string, WeaponDef>,
+  armorData?: Record<string, ArmorDef>,
 ): number | null {
   if (type === 'item') {
     const item = items[itemId];
     if (!item || item.type === 'key') return null;
     return item.price ?? null;
+  }
+
+  if (type === 'armor') {
+    const armor = armorData?.[itemId];
+    if (!armor) return null;
+    return armor.price ?? null;
   }
 
   const weapon = weapons[itemId];
@@ -53,11 +60,12 @@ export function priceOf(
 
 export function sellValueOf(
   itemId: string,
-  type: 'item' | 'weapon',
+  type: 'item' | 'weapon' | 'armor',
   items: Record<string, ItemDef>,
   weapons: Record<string, WeaponDef>,
+  armorData?: Record<string, ArmorDef>,
 ): number | null {
-  const price = priceOf(itemId, type, items, weapons);
+  const price = priceOf(itemId, type, items, weapons, armorData);
   if (price === null) return null;
   return Math.floor(price / 2);
 }
@@ -84,12 +92,13 @@ export function buyItem(
   entryIndex: number,
   items: Record<string, ItemDef>,
   weapons: Record<string, WeaponDef>,
+  armorData?: Record<string, ArmorDef>,
 ): BuyResult {
   const entry = shop.stock[entryIndex];
   if (!entry) return { ok: false, reason: 'unknown_item' };
 
   const type = entry.type ?? 'item';
-  const price = priceOf(entry.id, type, items, weapons);
+  const price = priceOf(entry.id, type, items, weapons, armorData);
   if (price === null) return { ok: false, reason: 'unknown_item' };
 
   const key = String(entryIndex);
@@ -105,6 +114,9 @@ export function buyItem(
 
   if (type === 'weapon') {
     addWeapon(player, entry.id);
+  } else if (type === 'armor') {
+    // Armor lives in inventory like items
+    player.inventory[entry.id] = (player.inventory[entry.id] || 0) + 1;
   } else {
     addItem(player, entry.id, items);
   }
@@ -116,15 +128,30 @@ export function sellItem(
   player: PlayerState,
   shop: ShopDef,
   itemId: string,
-  type: 'item' | 'weapon',
+  type: 'item' | 'weapon' | 'armor',
   items: Record<string, ItemDef>,
   weapons: Record<string, WeaponDef>,
+  armorData?: Record<string, ArmorDef>,
 ): SellResult {
   if (shop.buys === 'consumables' && type !== 'item') {
     return { ok: false, reason: 'shop_refuses' };
   }
   if (shop.buys === 'weapons' && type !== 'weapon') {
     return { ok: false, reason: 'shop_refuses' };
+  }
+
+  if (type === 'armor') {
+    const armor = armorData?.[itemId];
+    if (!armor) return { ok: false, reason: 'unknown_item' };
+    if (!hasItem(player, itemId)) return { ok: false, reason: 'not_owned' };
+
+    const price = sellValueOf(itemId, 'armor', items, weapons, armorData);
+    if (price === null) return { ok: false, reason: 'unknown_item' };
+
+    removeItem(player, itemId);
+    if (player.equippedArmor === itemId) player.equippedArmor = null;
+    awardGold(player, price);
+    return { ok: true, itemId, price };
   }
 
   if (type === 'item') {

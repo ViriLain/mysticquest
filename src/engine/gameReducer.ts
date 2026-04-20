@@ -387,6 +387,7 @@ function buildShopDeps(store: GameStore): ShopDeps {
     itemData,
     weaponData: effectiveWeaponData(store),
     npcData,
+    armorData: effectiveArmorData(store),
     refreshHeader: () => updateHeader(store),
   };
 }
