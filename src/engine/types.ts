@@ -89,6 +89,40 @@ export interface StatusEffect {
 
 export type WeaponClass = 'blade' | 'heavy' | 'pierce' | 'magic';
 
+export type ModifierSource = 'skill' | 'weapon_class' | 'accessory' | 'armor' | 'buff';
+
+export type ModifierType =
+  | 'attack' | 'defense' | 'max_hp'
+  | 'crit_chance' | 'crit_mult'
+  | 'def_ignore'
+  | 'cooldown_reduction'
+  | 'status_duration' | 'magic_counter_threshold'
+  | 'damage_reduction';
+
+export interface Modifier {
+  type: ModifierType;
+  value: number;
+  source: ModifierSource;
+  sourceId: string;
+}
+
+export interface ArmorDef {
+  name: string;
+  defense: number;
+  region: string;
+  description: string;
+  match_words?: string[];
+  price?: number;
+}
+
+export interface AccessoryDef {
+  name: string;
+  description: string;
+  region: string;
+  match_words?: string[];
+  modifiers: Array<{ type: ModifierType; value: number }>;
+}
+
 export interface WeaponDef {
   name: string;
   attack_bonus: number;
@@ -266,6 +300,8 @@ export interface PlayerState {
   weapons: string[];
   equippedWeapon: string | null;
   equippedShield: string | null;
+  equippedArmor: string | null;
+  equippedAccessory: string | null;
   keyItems: Record<string, boolean>;
   visitedRooms: Record<string, boolean>;
   searchedRooms: Record<string, boolean>;

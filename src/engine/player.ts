@@ -14,6 +14,8 @@ export function createPlayer(startRoom = 'manor_entry'): PlayerState {
     weapons: [],
     equippedWeapon: null,
     equippedShield: null,
+    equippedArmor: null,
+    equippedAccessory: null,
     keyItems: {},
     visitedRooms: {},
     searchedRooms: {},

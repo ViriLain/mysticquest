@@ -43,7 +43,7 @@ function makePlayer(currentRoom: string, visited: string[]): PlayerState {
   return {
     hp: 10, maxHp: 10, attack: 1, defense: 0, level: 1, xp: 0, gold: 0,
     currentRoom,
-    inventory: {}, weapons: [], equippedWeapon: null, equippedShield: null,
+    inventory: {}, weapons: [], equippedWeapon: null, equippedShield: null, equippedArmor: null, equippedAccessory: null,
     keyItems: {}, visitedRooms, searchedRooms: {}, firedEvents: {},
     usedItemsInRoom: {}, defending: false, buffAttack: 0, buffRounds: 0,
     routeHistory: [], objectives: {}, skillPoints: 0, skills: {},
