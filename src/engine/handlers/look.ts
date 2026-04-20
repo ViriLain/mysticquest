@@ -7,18 +7,16 @@ import { revealSearchables } from './search';
 
 export function handleLook(
   store: GameStore,
-  direction?: string,
-  itemData?: Record<string, ItemDef>,
-  weaponData?: Record<string, WeaponDef>,
+  direction: string | undefined,
+  itemData: Record<string, ItemDef>,
+  weaponData: Record<string, WeaponDef>,
 ): void {
   if (!store.player || !store.world) return;
 
   if (!direction) {
     addLine(store, '');
     displayRoom(store, store.player.currentRoom);
-    if (itemData && weaponData) {
-      revealSearchables(store, itemData, weaponData);
-    }
+    revealSearchables(store, itemData, weaponData);
     return;
   }
 

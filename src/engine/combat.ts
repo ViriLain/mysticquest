@@ -204,7 +204,7 @@ export function playerAttack(
       messages.push({ text: 'CRITICAL HIT!', color: [1, 1, 0.2, 1] });
     }
   }
-  if (equippedWeapon?.weapon_class === 'heavy') {
+  if (equippedWeapon?.weapon_class === 'heavy' && combat.round === 1) {
     messages.push({ text: 'Heavy blow smashes through armor!', color: [1, 0.8, 0.2, 1] });
   }
   combat.enemy.hp -= finalDamage;

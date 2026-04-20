@@ -56,6 +56,14 @@ const MAGIC_DUNGEON_ELEMENTS: StatusEffectType[] = ['burn', 'poison'];
 // Procedural weapon generator
 // ---------------------------------------------------------------------------
 
+export interface DungeonWeaponResult {
+  id: string;
+  name: string;
+  attack_bonus: number;
+  weapon_class: WeaponClass;
+  status_effect?: { type: StatusEffectType; damage: number; duration: number; chance: number };
+}
+
 /**
  * Generate a procedural weapon dropped by bosses.
  * Attack bonus scales with floor depth.
@@ -63,13 +71,7 @@ const MAGIC_DUNGEON_ELEMENTS: StatusEffectType[] = ['burn', 'poison'];
 export function generateDungeonWeapon(
   floor: number,
   rng: () => number,
-): {
-  id: string;
-  name: string;
-  attack_bonus: number;
-  weapon_class: WeaponClass;
-  status_effect?: { type: StatusEffectType; damage: number; duration: number; chance: number };
-} {
+): DungeonWeaponResult {
   const prefix = rngPick(rng, WEAPON_PREFIXES);
   const suffix = rngPick(rng, WEAPON_SUFFIXES);
   const name = `${prefix} ${suffix}`;
@@ -77,13 +79,7 @@ export function generateDungeonWeapon(
   const attack_bonus = 2 + floor * 2;
   const weapon_class = SUFFIX_CLASS[suffix] ?? 'blade';
 
-  const result: {
-    id: string;
-    name: string;
-    attack_bonus: number;
-    weapon_class: WeaponClass;
-    status_effect?: { type: StatusEffectType; damage: number; duration: number; chance: number };
-  } = { id, name, attack_bonus, weapon_class };
+  const result: DungeonWeaponResult = { id, name, attack_bonus, weapon_class };
 
   if (weapon_class === 'magic') {
     result.status_effect = {

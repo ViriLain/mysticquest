@@ -54,7 +54,9 @@ function matchesTopic(target: string, topicId: string, topicData: TopicData): bo
   const normalizedTarget = normalize(target);
   if (!normalizedTarget) return false;
   return topicCandidates(topicId, topicData).some(candidate =>
-    normalizedTarget === candidate || normalizedTarget.includes(candidate) || candidate.includes(normalizedTarget),
+    normalizedTarget === candidate
+    || (candidate.length >= 2 && normalizedTarget.includes(candidate))
+    || (normalizedTarget.length >= 2 && candidate.includes(normalizedTarget)),
   );
 }
 

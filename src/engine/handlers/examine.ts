@@ -2,7 +2,7 @@ import * as C from '../constants';
 import { ICON, iconLine } from '../icons';
 import { totalAttack, totalDefense } from '../player';
 import { addLine } from '../output';
-import type { EnemyDef, GameStore, ItemDef, WeaponDef } from '../types';
+import type { EnemyDef, GameStore, ItemDef, WeaponClass, WeaponDef } from '../types';
 import { getLivingEnemies, getRoom } from '../world';
 
 function classTag(weapon: WeaponDef): string {
@@ -17,7 +17,7 @@ function classBlurbColor(weapon: WeaponDef) {
   return weapon.weapon_class === 'magic' ? C.MAGIC_COLOR : C.CHOICE_COLOR;
 }
 
-const CLASS_BLURB: Record<string, string> = {
+const CLASS_BLURB: Record<WeaponClass, string> = {
   blade: 'Blade: +10% critical hit chance',
   heavy: 'Heavy: Ignores 2 points of enemy armor',
   pierce: 'Pierce: Strike first on round 1',

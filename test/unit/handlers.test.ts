@@ -20,7 +20,7 @@ describe('read-only handlers', () => {
     store.world = world;
     store.player = createPlayer();
 
-    handleLook(store);
+    handleLook(store, undefined, itemData, weaponData);
 
     expect(store.typewriterQueue.map(line => line.text).slice(0, 5)).toEqual([
       '',

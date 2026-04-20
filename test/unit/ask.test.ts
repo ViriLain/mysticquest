@@ -52,4 +52,31 @@ describe('ask handler', () => {
       'Wren narrows her eyes. "If it matters, the forest will leave tracks. I do not know that one."',
     );
   });
+
+  it('prints error when no NPC is present', () => {
+    const store = makeAskStore('wilds_clearing');
+    // Move player to a room with no NPCs
+    const world = createWorld();
+    loadRegion(world, {
+      rooms: [{ id: 'empty', name: 'Empty', region: 'test', description: 'empty', exits: {} }],
+    } as RegionData);
+    store.world = world;
+    store.player = createPlayer('empty');
+
+    handleAsk(store, 'about map', itemData, weaponData, npcData);
+
+    expect(store.typewriterQueue.map(line => line.text)).toContain(
+      "There's no one here to ask.",
+    );
+  });
+
+  it('prompts for topic when only bare ask is typed', () => {
+    const store = makeAskStore();
+
+    handleAsk(store, '', itemData, weaponData, npcData);
+
+    expect(store.typewriterQueue.map(line => line.text)).toContain(
+      'Ask whom about what?',
+    );
+  });
 });

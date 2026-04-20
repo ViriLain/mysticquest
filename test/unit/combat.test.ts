@@ -383,18 +383,35 @@ describe('weapon class passives', () => {
     expect(heavyTotal).toBeGreaterThan(bladeTotal);
   });
 
-  it('heavy class shows armor pierce message', () => {
+  it('heavy class shows armor pierce message on round 1 only', () => {
     const heavyWeaponData: Record<string, WeaponDef> = {
       test_heavy: { name: 'Test Heavy', attack_bonus: 5, region: 'manor', weapon_class: 'heavy', description: 'test' },
     };
     const player = createPlayer();
+    player.maxHp = 9999;
+    player.hp = 9999;
     addWeapon(player, 'test_heavy');
     equipWeapon(player, 'test_heavy');
-    const combat = createCombat(player, 'shadow_rat', enemyData);
+    const tankEnemy = {
+      tank: {
+        name: 'Tank',
+        hp: 9999,
+        attack: 1,
+        defense: 0,
+        xp: 1,
+        loot: [] as string[],
+        region: 'test',
+        description: 'tanky',
+        is_boss: false,
+      },
+    };
+    const combat = createCombat(player, 'tank', tankEnemy);
 
-    const messages = playerAttack(combat, player, heavyWeaponData, itemData, seededRng(1));
+    const round1 = playerAttack(combat, player, heavyWeaponData, itemData, seededRng(1));
+    expect(round1.some(m => m.text.includes('smashes through armor'))).toBe(true);
 
-    expect(messages.some(m => m.text.includes('smashes through armor'))).toBe(true);
+    const round2 = playerAttack(combat, player, heavyWeaponData, itemData, seededRng(2));
+    expect(round2.some(m => m.text.includes('smashes through armor'))).toBe(false);
   });
 
   it('pierce class skips enemy attack on round 1', () => {
