@@ -9,6 +9,14 @@ function classTag(weapon: WeaponDef): string {
   return `[${weapon.weapon_class.charAt(0).toUpperCase() + weapon.weapon_class.slice(1)}] `;
 }
 
+function weaponColor(weapon: WeaponDef) {
+  return weapon.weapon_class === 'magic' ? C.MAGIC_COLOR : C.ITEM_COLOR;
+}
+
+function classBlurbColor(weapon: WeaponDef) {
+  return weapon.weapon_class === 'magic' ? C.MAGIC_COLOR : C.CHOICE_COLOR;
+}
+
 const CLASS_BLURB: Record<string, string> = {
   blade: 'Blade: +10% critical hit chance',
   heavy: 'Heavy: Ignores 2 points of enemy armor',
@@ -57,10 +65,10 @@ export function handleExamine(
     if (!weapon) continue;
     if (weapon.name.toLowerCase().includes(target.toLowerCase()) || weaponId.toLowerCase().includes(target.toLowerCase())) {
       addLine(store, '');
-      addLine(store, iconLine(ICON.weapon, `=== ${classTag(weapon)}${weapon.name} ===`), C.ITEM_COLOR);
+      addLine(store, iconLine(ICON.weapon, `=== ${classTag(weapon)}${weapon.name} ===`), weaponColor(weapon));
       addLine(store, weapon.description, C.HELP_COLOR);
       addLine(store, `Attack bonus: +${weapon.attack_bonus}`, C.STAT_COLOR);
-      addLine(store, CLASS_BLURB[weapon.weapon_class], C.CHOICE_COLOR);
+      addLine(store, CLASS_BLURB[weapon.weapon_class], classBlurbColor(weapon));
       if (store.player.equippedWeapon === weaponId) {
         addLine(store, '(currently equipped)', C.ITEM_COLOR);
       } else if (store.player.equippedWeapon) {
@@ -108,10 +116,10 @@ export function handleExamine(
       const weapon = weaponData[id];
       if (weapon && (weapon.name.toLowerCase().includes(target.toLowerCase()) || id.toLowerCase().includes(target.toLowerCase()))) {
         addLine(store, '');
-        addLine(store, iconLine(ICON.weapon, `=== ${classTag(weapon)}${weapon.name} ===`), C.ITEM_COLOR);
+        addLine(store, iconLine(ICON.weapon, `=== ${classTag(weapon)}${weapon.name} ===`), weaponColor(weapon));
         addLine(store, weapon.description, C.HELP_COLOR);
         addLine(store, `Attack bonus: +${weapon.attack_bonus}`, C.STAT_COLOR);
-        addLine(store, CLASS_BLURB[weapon.weapon_class], C.CHOICE_COLOR);
+        addLine(store, CLASS_BLURB[weapon.weapon_class], classBlurbColor(weapon));
         return;
       }
     }

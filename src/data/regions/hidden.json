@@ -5,7 +5,7 @@
       "name": "Shroomy Forest",
       "region": "hidden",
       "description": "WOAH what is this place?? The mushrooms here are HUGE like taller than you huge. They glow all different colors and the air smells like pizza for some reason. Everything is bouncy. You bounce when you walk. The trees have smiley faces. This rules.",
-      "exits": {"north": "wilds_clearing", "east": "hidden_diner"},
+      "exits": {"up": "wilds_clearing", "east": "hidden_diner"},
       "items": ["red_mushroom", "grey_mushroom"],
       "enemies": [],
       "searchable": true,

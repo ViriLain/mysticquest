@@ -6,13 +6,17 @@ import * as C from './constants';
 import { pickDescription } from './descriptions';
 import { ICON, iconLine } from './icons';
 import { addLine } from './output';
-import type { EnemyDef, GameStore, ItemDef, NpcDef, WeaponDef } from './types';
+import type { EnemyDef, GameStore, ItemDef, NpcDef, RGBA, WeaponDef } from './types';
 import { getExits, getLivingEnemies, getRoom } from './world';
 
 const weaponData = weaponsJson as Record<string, WeaponDef>;
 const itemData = itemsJson as Record<string, ItemDef>;
 const enemyData = enemiesJson as Record<string, EnemyDef>;
 const npcData = npcsJson as Record<string, NpcDef>;
+
+function weaponColor(weapon: WeaponDef, fallback: RGBA = C.ITEM_COLOR): RGBA {
+  return weapon.weapon_class === 'magic' ? C.MAGIC_COLOR : fallback;
+}
 
 export function displayRoom(store: GameStore, roomId: string): void {
   if (!store.world) return;
@@ -43,7 +47,7 @@ export function displayRoom(store: GameStore, roomId: string): void {
   if (room.weapons) {
     for (const weaponId of room.weapons) {
       const weapon = weaponData[weaponId];
-      if (weapon) addLine(store, iconLine(ICON.weapon, `You see a ${weapon.name} here.`), C.ITEM_COLOR);
+      if (weapon) addLine(store, iconLine(ICON.weapon, `You see a ${weapon.name} here.`), weaponColor(weapon));
     }
   }
   if (room._ground_loot) {
@@ -55,7 +59,7 @@ export function displayRoom(store: GameStore, roomId: string): void {
   if (room._ground_weapons) {
     for (const weaponId of room._ground_weapons) {
       const weapon = weaponData[weaponId];
-      if (weapon) addLine(store, iconLine(ICON.loot, `You see a ${weapon.name} on the ground.`), C.LOOT_COLOR);
+      if (weapon) addLine(store, iconLine(ICON.loot, `You see a ${weapon.name} on the ground.`), weaponColor(weapon, C.LOOT_COLOR));
     }
   }
 

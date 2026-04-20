@@ -6,10 +6,10 @@ const DIR_SHORTCUTS: Record<string, string> = {
 const VERB_ALIASES: Record<string, string> = {
   move: 'go', get: 'take', 'pick up': 'take',
   fight: 'attack', hit: 'attack',
-  chat: 'talk', speak: 'talk',
+  chat: 'talk', speak: 'talk', question: 'ask', inquire: 'ask',
   block: 'defend',
   run: 'flee',
-  l: 'look', i: 'inventory',
+  l: 'look', i: 'inventory', gear: 'inventory', equipment: 'inventory', weapon: 'weapons',
   '?': 'help', q: 'quit',
   equip: 'use', status: 'stats', repeat: 'again', g: 'again', inspect: 'examine',
   teleport: 'warp',
@@ -17,7 +17,7 @@ const VERB_ALIASES: Record<string, string> = {
 
 const KNOWN_VERBS = new Set([
   'go', 'look', 'take', 'use', 'drop', 'search', 'attack', 'defend', 'flee',
-  'inventory', 'stats', 'save', 'load', 'help', 'quit', 'talk', 'journal',
+  'inventory', 'weapons', 'stats', 'save', 'load', 'help', 'quit', 'talk', 'ask', 'journal',
   'map', 'score', 'again', 'examine', 'skills', 'learn', 'achievements', 'settings',
 ]);
 

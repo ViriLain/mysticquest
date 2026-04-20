@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createInitialStore } from '../../src/engine/gameReducer';
 import { tryUnlock } from '../../src/engine/achievements';
-import { showAchievements, showInventory, showJournal, showSkills, showStats } from '../../src/engine/handlers/info';
+import * as C from '../../src/engine/constants';
+import { showAchievements, showInventory, showJournal, showSkills, showStats, showWeapons } from '../../src/engine/handlers/info';
 import { createPlayer } from '../../src/engine/player';
 
 describe('info handlers', () => {
@@ -29,7 +30,7 @@ describe('info handlers', () => {
 
     const lines = store.typewriterQueue.map(line => line.text);
     expect(lines).toContain('=== Inventory ===');
-    expect(lines).toContain('[+] Weapon: Rusty Dagger (+2 ATK)');
+    expect(lines).toContain('[+] Weapon: [Blade] Rusty Dagger (+2 ATK)');
     expect(lines).toContain('[=] Shield: Iron Shield (+3 DEF)');
     expect(lines).toContain('[*] Potion x2 (+25 HP)');
     expect(lines).toContain('[#] Rusty Key [key]');
@@ -58,6 +59,42 @@ describe('info handlers', () => {
     expect(lines.some(line => line.includes('Iron Will'))).toBe(true);
     expect(lines).toContain('=== Achievements ===');
     expect(lines.some(line => line.includes('First Blood'))).toBe(true);
+  });
+
+  it('renders equipped weapon first, then other weapons by attack descending', () => {
+    const store = createInitialStore();
+    const player = createPlayer();
+    player.weapons = ['rusty_dagger', 'hrunting', 'ragnarok', 'spear'];
+    player.equippedWeapon = 'hrunting';
+    store.player = player;
+
+    showInventory(store);
+
+    const lines = store.typewriterQueue.map(line => line.text);
+    const equippedIdx = lines.findIndex(line => line.includes('Weapon: [Magic] Hrunting (+12 ATK)'));
+    const ragnarokIdx = lines.findIndex(line => line.includes('[Magic] Ragnarok (+35 ATK)'));
+    const spearIdx = lines.findIndex(line => line.includes('[Pierce] Spear (+10 ATK)'));
+    const daggerIdx = lines.findIndex(line => line.includes('[Blade] Rusty Dagger (+2 ATK)'));
+    expect(equippedIdx).toBeGreaterThan(-1);
+    expect(ragnarokIdx).toBeGreaterThan(equippedIdx);
+    expect(spearIdx).toBeGreaterThan(ragnarokIdx);
+    expect(daggerIdx).toBeGreaterThan(spearIdx);
+  });
+
+  it('uses magic color for magic weapons in inventory and focused weapon list', () => {
+    const store = createInitialStore();
+    const player = createPlayer();
+    player.weapons = ['hrunting', 'spear'];
+    player.equippedWeapon = 'spear';
+    store.player = player;
+
+    showInventory(store);
+    showWeapons(store);
+
+    const magicLines = store.typewriterQueue.filter(line => line.text.includes('[Magic] Hrunting'));
+    expect(magicLines.length).toBeGreaterThan(0);
+    expect(magicLines.every(line => line.color === C.MAGIC_COLOR)).toBe(true);
+    expect(store.typewriterQueue.map(line => line.text)).toContain('=== Weapons ===');
   });
 
   describe('showJournal', () => {

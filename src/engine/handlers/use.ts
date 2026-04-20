@@ -25,8 +25,10 @@ export function handleUse(
   const singular = singularize(target);
 
   const applyWeapon = (weaponId: string): void => {
+    const weapon = weaponData[weaponId];
     equipWeapon(player, weaponId);
-    addLine(store, `You equip the ${weaponData[weaponId].name}.`, C.ITEM_COLOR);
+    const color = weapon.weapon_class === 'magic' ? C.MAGIC_COLOR : C.ITEM_COLOR;
+    addLine(store, `You equip the ${weapon.name}.`, color);
     emitSound(store, 'equip');
     refreshHeader();
   };

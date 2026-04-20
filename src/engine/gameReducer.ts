@@ -179,6 +179,25 @@ function startEnding(store: GameStore, ending: EndingDef): void {
   addLine(store, '');
 }
 
+function resumeAfterEnding(store: GameStore): void {
+  if (!store.player || !store.world) {
+    startMenu(store);
+    return;
+  }
+  store.endingData = null;
+  store.endingLineIndex = 0;
+  store.endingTimer = 0;
+  store.endingAllTyped = false;
+  store.endingPsychedelicTime = 0;
+  store.baseColor = [...C.BASE_COLOR];
+  store.state = 'exploring';
+  clearTerminal(store);
+  updateHeader(store);
+  displayRoom(store, store.player.currentRoom);
+  const room = getRoom(store.world, store.player.currentRoom);
+  applyRegionTint(store, room?.region);
+}
+
 function startCombat(store: GameStore, enemyId: string): void {
   if (!store.player) return;
   const combinedEnemies = store.gameMode === 'dungeon' && store.dungeon
@@ -574,7 +593,7 @@ function updateEnding(s: GameStore, dt: number): void {
         } else {
           s.endingAllTyped = true;
           addLine(s, '');
-          addLine(s, 'Press any key to return to menu.', C.HELP_COLOR);
+          addLine(s, 'Press any key to continue exploring.', C.HELP_COLOR);
         }
       }
     }
@@ -613,9 +632,7 @@ function handleKeyPressed(s: GameStore, key: string): void {
       return;
     }
     if (s.endingAllTyped) {
-      s.endingData = null;
-      s.baseColor = [...C.BASE_COLOR];
-      startMenu(s);
+      resumeAfterEnding(s);
     }
     return;
   }

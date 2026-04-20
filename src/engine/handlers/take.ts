@@ -42,14 +42,16 @@ export function handleTake(
   const singular = singularize(target);
 
   const takeWeapon = (weaponId: string): void => {
+    const weapon = weaponData[weaponId];
+    const color = weapon.weapon_class === 'magic' ? C.MAGIC_COLOR : C.ITEM_COLOR;
     removeFromRoom(room, weaponId);
     addWeapon(player, weaponId);
-    addLine(store, `You pick up the ${weaponData[weaponId].name}.`, C.ITEM_COLOR);
+    addLine(store, `You pick up the ${weapon.name}.`, color);
     notifyObjectiveEvent(store, { type: 'took_item', item: weaponId });
     emitSound(store, 'pickup');
     if (!player.equippedWeapon) {
       equipWeapon(player, weaponId);
-      addLine(store, `You equip the ${weaponData[weaponId].name}.`, C.ITEM_COLOR);
+      addLine(store, `You equip the ${weapon.name}.`, color);
       emitSound(store, 'equip');
       refreshHeader();
     }

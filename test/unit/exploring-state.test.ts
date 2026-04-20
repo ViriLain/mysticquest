@@ -72,4 +72,15 @@ describe('exploring state', () => {
     expect(store.player?.equippedWeapon).toBe('rusty_dagger');
     expect(store.lastCommand).toBe('take dagger');
   });
+
+  it('dispatches weapons as a focused inventory command', () => {
+    const store = makeExploringStore();
+    store.player!.weapons = ['rusty_dagger', 'hrunting'];
+    store.player!.equippedWeapon = 'rusty_dagger';
+
+    handleExploringCommand(store, 'weapons', '', makeDeps(store));
+
+    expect(store.typewriterQueue.map(line => line.text)).toContain('=== Weapons ===');
+    expect(store.lastCommand).toBeNull();
+  });
 });

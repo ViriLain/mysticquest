@@ -3,6 +3,7 @@ import enemiesJson from '../../src/data/enemies.json';
 import itemsJson from '../../src/data/items.json';
 import manorJson from '../../src/data/regions/manor.json';
 import weaponsJson from '../../src/data/weapons.json';
+import * as C from '../../src/engine/constants';
 import { createInitialStore } from '../../src/engine/gameReducer';
 import { handleAttack } from '../../src/engine/handlers/attack';
 import { handleDrop } from '../../src/engine/handlers/drop';
@@ -125,6 +126,18 @@ describe('action handlers', () => {
     expect(lines).toContain('HP: 10  ATK: 3  DEF: 1  XP: 8');
   });
 
+  it('examine uses magic color for magic weapons', () => {
+    const store = makeStoryStore();
+    store.player!.weapons = ['hrunting'];
+
+    handleExamine(store, 'hrunting', enemyData, itemData, weaponData);
+
+    const header = store.typewriterQueue.find(line => line.text.includes('[Magic] Hrunting'));
+    const blurb = store.typewriterQueue.find(line => line.text.includes('Magic:'));
+    expect(header?.color).toBe(C.MAGIC_COLOR);
+    expect(blurb?.color).toBe(C.MAGIC_COLOR);
+  });
+
   it('use equips a weapon and consumes a potion', () => {
     const store = makeStoryStore();
     store.player!.weapons = ['rusty_dagger'];
@@ -140,6 +153,16 @@ describe('action handlers', () => {
     expect(store.header.weapon).toBe('Rusty Dagger');
     expect(store.player?.hp).toBe(30);
     expect(store.player?.inventory.potion).toBeUndefined();
+  });
+
+  it('use uses magic color when equipping a magic weapon', () => {
+    const store = makeStoryStore();
+    store.player!.weapons = ['hrunting'];
+
+    handleUse(store, 'hrunting', itemData, weaponData, () => {}, () => {});
+
+    const line = store.typewriterQueue.find(entry => entry.text === 'You equip the Hrunting.');
+    expect(line?.color).toBe(C.MAGIC_COLOR);
   });
 
   it('use with a plural target uses every matching key item in the room', () => {
@@ -231,6 +254,31 @@ describe('action handlers', () => {
     expect(store.typewriterQueue.map(line => line.text)).toContain('You find a Tyrfing.');
   });
 
+  it('search uses magic color when it finds a magic weapon', () => {
+    const store = createInitialStore();
+    const world = createWorld();
+    loadRegion(world, {
+      rooms: [
+        {
+          id: 'peak',
+          name: 'Peak',
+          region: 'test',
+          description: '',
+          exits: {},
+          searchable: true,
+          search_items: ['tyrfing'],
+        },
+      ],
+    } as RegionData);
+    store.world = world;
+    store.player = createPlayer('peak');
+
+    handleSearch(store, itemData, weaponData);
+
+    const line = store.typewriterQueue.find(entry => entry.text === 'You find a Tyrfing.');
+    expect(line?.color).toBe(C.MAGIC_COLOR);
+  });
+
   it('a searched weapon can be picked up afterwards with take', () => {
     const store = createInitialStore();
     const world = createWorld();
@@ -255,6 +303,31 @@ describe('action handlers', () => {
 
     expect(store.player?.weapons).toContain('tyrfing');
     expect(world.rooms.peak._ground_weapons).not.toContain('tyrfing');
+  });
+
+  it('take uses magic color for magic weapon pickup and auto-equip lines', () => {
+    const store = createInitialStore();
+    const world = createWorld();
+    loadRegion(world, {
+      rooms: [
+        {
+          id: 'peak',
+          name: 'Peak',
+          region: 'test',
+          description: '',
+          exits: {},
+          weapons: ['hrunting'],
+        },
+      ],
+    } as RegionData);
+    store.world = world;
+    store.player = createPlayer('peak');
+
+    handleTake(store, 'hrunting', itemData, weaponData, () => {}, () => {});
+
+    const lines = store.typewriterQueue.filter(line => line.text.includes('Hrunting'));
+    expect(lines).toHaveLength(2);
+    expect(lines.every(line => line.color === C.MAGIC_COLOR)).toBe(true);
   });
 
   it('search reveals secret_exits as dynamic exits and announces them', () => {

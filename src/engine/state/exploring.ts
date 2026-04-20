@@ -1,10 +1,11 @@
 import type { EnemyDef, GameStore, ItemDef, NpcDef, WeaponDef } from '../types';
 import { handleAttack } from '../handlers/attack';
+import { handleAsk } from '../handlers/ask';
 import { handleDrop } from '../handlers/drop';
 import { handleExamine } from '../handlers/examine';
 import { handleHelp } from '../handlers/help';
 import { handleLook } from '../handlers/look';
-import { showAchievements, showInventory, showJournal, showStats } from '../handlers/info';
+import { showAchievements, showInventory, showJournal, showStats, showWeapons } from '../handlers/info';
 import { displaySkillTree } from './skill-tree';
 import { handleLearn } from '../handlers/meta';
 import { handleSearch } from '../handlers/search';
@@ -39,10 +40,10 @@ export interface ExploringDeps {
   printError: (msg: string) => void;
 }
 
-const HANDLED_BY_INFO_VERBS = new Set(['help', 'inventory', 'stats', 'journal', 'score']);
+const HANDLED_BY_INFO_VERBS = new Set(['help', 'inventory', 'weapons', 'stats', 'journal', 'score']);
 const ALL_VERBS = [
   'go', 'look', 'take', 'use', 'drop', 'search', 'attack', 'defend', 'flee',
-  'inventory', 'stats', 'save', 'load', 'help', 'quit', 'talk', 'journal',
+  'inventory', 'weapons', 'stats', 'save', 'load', 'help', 'quit', 'talk', 'ask', 'journal',
   'map', 'score', 'again', 'examine', 'skills', 'learn', 'achievements', 'settings', 'warp',
   'north', 'south', 'east', 'west', 'up', 'down',
 ];
@@ -58,9 +59,11 @@ export function handleExploringCommand(
   if (verb === 'go') {
     deps.goDirection(target);
   } else if (verb === 'look') {
-    handleLook(store, target);
+    handleLook(store, target, deps.itemData, deps.weaponData);
   } else if (verb === 'inventory') {
     showInventory(store);
+  } else if (verb === 'weapons') {
+    showWeapons(store);
   } else if (verb === 'stats') {
     showStats(store);
   } else if (verb === 'take') {
@@ -92,6 +95,8 @@ export function handleExploringCommand(
     handleAttack(store, target, deps.enemyData, deps.startCombat);
   } else if (verb === 'talk') {
     handleTalk(store, target, deps.npcData, deps.checkChatterbox);
+  } else if (verb === 'ask') {
+    handleAsk(store, target, deps.itemData, deps.weaponData, deps.npcData);
   } else if (verb === 'save') {
     deps.doSave();
   } else if (verb === 'load') {
@@ -204,7 +209,7 @@ export function getAutocompleteSuggestions(
       const enemy = enemyData[id];
       if (enemy) candidates.push(enemy.name);
     }
-  } else if (verb === 'talk' && room?.npcs) {
+  } else if ((verb === 'talk' || verb === 'ask') && room?.npcs) {
     for (const id of room.npcs) {
       const npc = npcData[id];
       if (npc) candidates.push(npc.name);

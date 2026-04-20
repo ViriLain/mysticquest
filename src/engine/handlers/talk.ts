@@ -137,7 +137,10 @@ export function handleNpcDialogueInput(
     if (eff.give_weapon) {
       addWeapon(store.player, eff.give_weapon);
       const weapon = weaponData[eff.give_weapon];
-      if (weapon) addLine(store, `Received: ${weapon.name}`, C.ITEM_COLOR);
+      if (weapon) {
+        const color = weapon.weapon_class === 'magic' ? C.MAGIC_COLOR : C.ITEM_COLOR;
+        addLine(store, `Received: ${weapon.name}`, color);
+      }
     }
     if (eff.heal && eff.heal > 0) {
       playerHeal(store.player, eff.heal);

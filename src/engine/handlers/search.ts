@@ -4,35 +4,49 @@ import { notifyObjectiveEvent } from '../objectives';
 import { addDynamicExit, getRoom } from '../world';
 import type { GameStore, ItemDef, WeaponDef } from '../types';
 
-export function handleSearch(
+interface RevealOptions {
+  announceSearch?: boolean;
+  alreadySearchedMessage?: boolean;
+  notSearchableMessage?: boolean;
+}
+
+export function revealSearchables(
   store: GameStore,
   itemData: Record<string, ItemDef>,
   weaponData: Record<string, WeaponDef>,
+  options: RevealOptions = {},
 ): void {
   if (!store.player || !store.world) return;
   const room = getRoom(store.world, store.player.currentRoom);
   if (!room) return;
 
   if (!room.searchable) {
-    addLine(store, "There's nothing interesting to search here.", C.HELP_COLOR);
+    if (options.notSearchableMessage) {
+      addLine(store, "There's nothing interesting to search here.", C.HELP_COLOR);
+    }
     return;
   }
   if (store.player.searchedRooms[store.player.currentRoom]) {
-    addLine(store, "You've already searched this room.", C.HELP_COLOR);
+    if (options.alreadySearchedMessage) {
+      addLine(store, "You've already searched this room.", C.HELP_COLOR);
+    }
     return;
   }
 
   store.player.searchedRooms[store.player.currentRoom] = true;
   notifyObjectiveEvent(store, { type: 'searched_room', room: store.player.currentRoom });
-  addLine(store, 'You search the room carefully...', C.HELP_COLOR);
+  if (options.announceSearch) {
+    addLine(store, 'You search the room carefully...', C.HELP_COLOR);
+  }
 
   let foundSomething = false;
   if (room.search_items) {
     for (const id of room.search_items) {
-      if (weaponData[id]) {                                   // reveal as ground loot — player still has to `take`
+      if (weaponData[id]) {
         if (!room._ground_weapons) room._ground_weapons = [];
         if (!room._ground_weapons.includes(id)) room._ground_weapons.push(id);
-        addLine(store, `You find a ${weaponData[id].name}.`, C.LOOT_COLOR);
+        const color = weaponData[id].weapon_class === 'magic' ? C.MAGIC_COLOR : C.LOOT_COLOR;
+        addLine(store, `You find a ${weaponData[id].name}.`, color);
         foundSomething = true;
       } else if (itemData[id]) {
         if (!room._ground_loot) room._ground_loot = [];
@@ -43,7 +57,7 @@ export function handleSearch(
     }
   }
 
-  if (room.secret_exits) {                                    // reveal hidden exits as dynamic exits
+  if (room.secret_exits) {
     for (const [dir, target] of Object.entries(room.secret_exits)) {
       addDynamicExit(store.world, room.id, dir, target);
       addLine(store, `You find a hidden passage leading ${dir}.`, C.LOOT_COLOR);
@@ -62,4 +76,16 @@ export function handleSearch(
   if (!foundSomething) {
     addLine(store, "You don't find anything useful.", C.HELP_COLOR);
   }
+}
+
+export function handleSearch(
+  store: GameStore,
+  itemData: Record<string, ItemDef>,
+  weaponData: Record<string, WeaponDef>,
+): void {
+  revealSearchables(store, itemData, weaponData, {
+    announceSearch: true,
+    alreadySearchedMessage: true,
+    notSearchableMessage: true,
+  });
 }

@@ -220,6 +220,8 @@ export interface NpcDef {
   name: string;
   description: string;
   match_words: string[];
+  ask_topics?: Record<string, string | string[]>;
+  ask_fallback?: string | string[];
   dialogue: Record<string, DialogueNode>;
 }
 

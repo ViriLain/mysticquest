@@ -167,7 +167,10 @@ export function handleCombatCommand(
           if (!room._ground_weapons) room._ground_weapons = [];
           room._ground_weapons.push(results.weapon);
           const weapon = deps.weaponData[results.weapon];
-          if (weapon) addLine(store, iconLine(ICON.loot, `The enemy drops a ${weapon.name}!`), C.LOOT_COLOR);
+          if (weapon) {
+            const color = weapon.weapon_class === 'magic' ? C.MAGIC_COLOR : C.LOOT_COLOR;
+            addLine(store, iconLine(ICON.loot, `The enemy drops a ${weapon.name}!`), color);
+          }
         }
       }
 

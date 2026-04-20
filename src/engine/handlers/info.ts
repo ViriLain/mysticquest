@@ -5,7 +5,7 @@ import { OBJECTIVES } from '../objectives';
 import { addLine } from '../output';
 import { totalAttack, totalDefense, visitedCount, xpToNextLevel } from '../player';
 import { SKILL_TREE, canLearnSkill, getSkillsByTier } from '../skills';
-import type { GameStore, ItemDef, ObjectiveDef, WeaponDef } from '../types';
+import type { GameStore, ItemDef, ObjectiveDef, RGBA, WeaponDef } from '../types';
 
 import itemsJson from '../../data/items.json';
 import weaponsJson from '../../data/weapons.json';
@@ -15,6 +15,39 @@ const itemData = itemsJson as Record<string, ItemDef>;
 
 function weaponLookup(store: GameStore, id: string): WeaponDef | undefined {
   return staticWeaponData[id] ?? store.dungeon?.floorWeapons[id];
+}
+
+function weaponClassTag(weapon: WeaponDef): string {
+  return `[${weapon.weapon_class.charAt(0).toUpperCase() + weapon.weapon_class.slice(1)}]`;
+}
+
+function weaponColor(weapon: WeaponDef): RGBA {
+  return weapon.weapon_class === 'magic' ? C.MAGIC_COLOR : C.HELP_COLOR;
+}
+
+function sortedWeaponIds(store: GameStore): string[] {
+  if (!store.player) return [];
+  const equipped = store.player.equippedWeapon;
+  const others = store.player.weapons
+    .filter(weaponId => weaponId !== equipped)
+    .sort((a, b) => {
+      const aw = weaponLookup(store, a);
+      const bw = weaponLookup(store, b);
+      return (bw?.attack_bonus ?? 0) - (aw?.attack_bonus ?? 0);
+    });
+  return equipped ? [equipped, ...others] : others;
+}
+
+function weaponLine(store: GameStore, weaponId: string, options: { equippedPrefix: boolean; inShop: boolean }): { text: string; color: RGBA } | null {
+  const weapon = weaponLookup(store, weaponId);
+  if (!weapon) return null;
+  let sell = '';
+  if (options.inShop && weapon.price) sell = ` (sells for ${Math.floor(weapon.price / 2)}g)`;
+  const prefix = options.equippedPrefix ? 'Weapon: ' : '';
+  return {
+    text: iconLine(ICON.weapon, `${prefix}${weaponClassTag(weapon)} ${weapon.name} (+${weapon.attack_bonus} ATK)${sell}`),
+    color: options.equippedPrefix && weapon.weapon_class !== 'magic' ? C.ITEM_COLOR : weaponColor(weapon),
+  };
 }
 
 export function showSkills(store: GameStore): void {
@@ -63,11 +96,9 @@ export function showInventory(store: GameStore): void {
   addLine(store, '');
   addLine(store, '=== Inventory ===', C.STAT_COLOR);
 
-  const equippedDef = store.player.equippedWeapon ? weaponLookup(store, store.player.equippedWeapon) : undefined;
-  if (equippedDef) {
-    let sell = '';
-    if (inShop && equippedDef.price) sell = ` (sells for ${Math.floor(equippedDef.price / 2)}g)`;
-    addLine(store, iconLine(ICON.weapon, `Weapon: ${equippedDef.name} (+${equippedDef.attack_bonus} ATK)${sell}`), C.ITEM_COLOR);
+  if (store.player.equippedWeapon) {
+    const equipped = weaponLine(store, store.player.equippedWeapon, { equippedPrefix: true, inShop });
+    if (equipped) addLine(store, equipped.text, equipped.color);
   } else {
     addLine(store, iconLine(ICON.weapon, 'Weapon: Fists'), C.ITEM_COLOR);
   }
@@ -79,13 +110,9 @@ export function showInventory(store: GameStore): void {
     addLine(store, iconLine(ICON.shield, `Shield: ${shield.name} (+${shield.value} DEF)${sell}`), C.ITEM_COLOR);
   }
 
-  const otherWeapons = store.player.weapons.filter(weaponId => weaponId !== store.player!.equippedWeapon);
-  for (const weaponId of otherWeapons) {
-    const weapon = weaponLookup(store, weaponId);
-    if (!weapon) continue;
-    let sell = '';
-    if (inShop && weapon.price) sell = ` (sells for ${Math.floor(weapon.price / 2)}g)`;
-    addLine(store, iconLine(ICON.weapon, `${weapon.name} (+${weapon.attack_bonus} ATK)${sell}`), C.HELP_COLOR);
+  for (const weaponId of sortedWeaponIds(store).filter(weaponId => weaponId !== store.player!.equippedWeapon)) {
+    const line = weaponLine(store, weaponId, { equippedPrefix: false, inShop });
+    if (line) addLine(store, line.text, line.color);
   }
 
   let hasItems = false;
@@ -113,6 +140,26 @@ export function showInventory(store: GameStore): void {
 
   if (!hasItems && store.player.weapons.length === 0) {
     addLine(store, '  (empty)', C.HELP_COLOR);
+  }
+}
+
+export function showWeapons(store: GameStore): void {
+  if (!store.player) return;
+  addLine(store, '');
+  addLine(store, '=== Weapons ===', C.STAT_COLOR);
+  const weaponIds = sortedWeaponIds(store);
+  if (weaponIds.length === 0) {
+    addLine(store, '  (none)', C.HELP_COLOR);
+    return;
+  }
+  for (const weaponId of weaponIds) {
+    const line = weaponLine(store, weaponId, {
+      equippedPrefix: weaponId === store.player.equippedWeapon,
+      inShop: false,
+    });
+    if (!line) continue;
+    const suffix = weaponId === store.player.equippedWeapon ? ' (equipped)' : '';
+    addLine(store, line.text + suffix, line.color);
   }
 }
 
