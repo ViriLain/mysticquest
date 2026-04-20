@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createCombat, enemyDefeated, playerAttack, playerDefend, playerFlee, playerUseItem, playerSkillAttack, tickStatusEffects, applyStatusEffect } from '../../src/engine/combat';
 import { addItem, addWeapon, createPlayer, equipWeapon } from '../../src/engine/player';
 import { createRng } from '../../src/engine/rng';
-import type { ItemDef, StatusEffect, WeaponDef } from '../../src/engine/types';
+import type { ArmorDef, ItemDef, StatusEffect, WeaponDef } from '../../src/engine/types';
 
 const itemData: Record<string, ItemDef> = {
   potion: { name: 'Potion', type: 'consumable', effect: 'heal', value: 25, description: 'heals' },
@@ -93,6 +93,33 @@ describe('playerDefend', () => {
     expect(combat.round).toBe(1);
     expect(player.defending).toBe(false);
     expect(player.hp).toBeLessThan(30);
+  });
+});
+
+describe('armor defense', () => {
+  it('equipped armor reduces damage taken', () => {
+    const armorData: Record<string, ArmorDef> = {
+      test_armor: { name: 'Test Armor', defense: 5, region: 'test', description: 'test' },
+    };
+
+    // Player WITH armor
+    const p1 = createPlayer();
+    p1.equippedArmor = 'test_armor';
+    p1.hp = 200;
+    p1.maxHp = 200;
+    const c1 = createCombat(p1, 'shadow_rat', enemyData);
+    playerDefend(c1, p1, itemData, seededRng(1), armorData);
+    const dmgWithArmor = 200 - p1.hp;
+
+    // Player WITHOUT armor
+    const p2 = createPlayer();
+    p2.hp = 200;
+    p2.maxHp = 200;
+    const c2 = createCombat(p2, 'shadow_rat', enemyData);
+    playerDefend(c2, p2, itemData, seededRng(1));
+    const dmgWithout = 200 - p2.hp;
+
+    expect(dmgWithArmor).toBeLessThan(dmgWithout);
   });
 });
 
@@ -1031,6 +1058,20 @@ describe('active combat skills', () => {
     // Burst damage = 5 + level = 8, plus the normal attack damage
     const totalDmg = startHp - combat.enemy.hp;
     expect(totalDmg).toBeGreaterThanOrEqual(5 + player.level);
+  });
+
+  it('cooldown reduction reduces initial cooldown', () => {
+    const player = createPlayer();
+    player.skills.power_strike = true;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    // Use with 1 cooldown reduction
+    playerSkillAttack(combat, player, 'power_strike', heavyWeaponData, itemData, seededRng(42), 1);
+    expect(combat.skillCooldowns['power_strike']).toBe(4); // 5 - 1 = 4
   });
 
   it('cooldown prevents reuse and decrements each round', () => {

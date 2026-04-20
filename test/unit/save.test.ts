@@ -141,6 +141,25 @@ describe('save round-trip', () => {
     expect(loadedWorld.rooms.manor_entry.weapons).toEqual([]);
   });
 
+  it('persists room.armor through save/load cycle', () => {
+    const world = createWorld();
+    loadRegion(world, manorJson as RegionData);
+    const player = createPlayer();
+
+    world.rooms.manor_entry.armor = ['leather_vest'];
+
+    expect(saveToSlot(1, player, world)).toBe(true);
+
+    const loadedWorld = createWorld();
+    loadRegion(loadedWorld, manorJson as RegionData);
+    const loadedPlayer = createPlayer();
+
+    const result = loadFromSlot(1, loadedPlayer, loadedWorld);
+
+    expect(result.success).toBe(true);
+    expect(loadedWorld.rooms.manor_entry.armor).toEqual(['leather_vest']);
+  });
+
   it('saves and reloads gold value', () => {
     const player = createPlayer();
     player.gold = 42;
