@@ -173,6 +173,8 @@ export function getAutocompleteSuggestions(
   itemData: Record<string, ItemDef>,
   weaponData: Record<string, WeaponDef>,
   npcData: Record<string, NpcDef>,
+  armorData?: Record<string, ArmorDef>,
+  accessoryData?: Record<string, AccessoryDef>,
 ): string[] {
   const lower = input.toLowerCase();
   if (!lower) return [];
@@ -196,15 +198,27 @@ export function getAutocompleteSuggestions(
     for (const id of [...(room.items || []), ...(room._ground_loot || [])]) {
       const item = itemData[id];
       if (item) candidates.push(item.name);
+      const armor = armorData?.[id];
+      if (armor) candidates.push(armor.name);
+      const acc = accessoryData?.[id];
+      if (acc) candidates.push(acc.name);
     }
     for (const id of [...(room.weapons || []), ...(room._ground_weapons || [])]) {
       const weapon = weaponData[id];
       if (weapon) candidates.push(weapon.name);
     }
+    for (const id of [...(room.armor || [])]) {
+      const a = armorData?.[id];
+      if (a) candidates.push(a.name);
+    }
   } else if (verb === 'use' || verb === 'drop' || verb === 'examine') {
     for (const id of Object.keys(store.player.inventory)) {
       const item = itemData[id];
       if (item) candidates.push(item.name);
+      const a = armorData?.[id];
+      if (a) candidates.push(a.name);
+      const acc = accessoryData?.[id];
+      if (acc) candidates.push(acc.name);
     }
     for (const id of Object.keys(store.player.keyItems)) {
       const item = itemData[id];

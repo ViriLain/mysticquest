@@ -54,6 +54,19 @@ function processCombatMessages(store: GameStore, msgs: CombatMessage[]): void {
     if (msg.text.includes('LEVEL UP!')) {
       emitSound(store, 'levelUp');
     }
+    if (msg.text.includes('devastating strike')) {
+      pushEffect(store.effects, 'shake', 0.4, { intensity: 5 });
+      pushEffect(store.effects, 'flash', 0.3, { r: 1, g: 0.6, b: 0 });
+      emitSound(store, 'critical');
+    }
+    if (msg.text.includes('strike from the shadows')) {
+      pushEffect(store.effects, 'flash', 0.4, { r: 1, g: 1, b: 1 });
+      emitSound(store, 'critical');
+    }
+    if (msg.text.includes('amplifies your weapon') || msg.text.includes('burst of arcane energy')) {
+      pushEffect(store.effects, 'glitch', 0.3, { intensity: 0.5 });
+      emitSound(store, 'levelUp');
+    }
   }
 }
 
@@ -77,7 +90,7 @@ export function handleCombatCommand(
     addLine(store, 'You are stunned! You can only use items.', C.COMBAT_COLOR);
     emitSound(store, 'error');
     // Run a lost turn so the stun decrements and the enemy gets to act
-    const stunMsgs = playerDefend(store.combat, store.player, deps.itemData, undefined, deps.armorData);
+    const stunMsgs = playerDefend(store.combat, store.player, deps.itemData, undefined, deps.armorData, deps.accessoryData);
     processCombatMessages(store, stunMsgs);
     deps.refreshHeader();
     if (store.combat && store.combat.playerEffects.length > 0) {
@@ -89,11 +102,11 @@ export function handleCombatCommand(
   let msgs: CombatMessage[] = [];
 
   if (verb === 'attack') {
-    msgs = playerAttack(store.combat, store.player, deps.weaponData, deps.itemData, undefined, undefined, deps.armorData);
+    msgs = playerAttack(store.combat, store.player, deps.weaponData, deps.itemData, undefined, undefined, deps.armorData, deps.accessoryData);
   } else if (verb === 'defend') {
-    msgs = playerDefend(store.combat, store.player, deps.itemData, undefined, deps.armorData);
+    msgs = playerDefend(store.combat, store.player, deps.itemData, undefined, deps.armorData, deps.accessoryData);
   } else if (verb === 'flee') {
-    msgs = playerFlee(store.combat, store.player, deps.itemData, undefined, deps.armorData);
+    msgs = playerFlee(store.combat, store.player, deps.itemData, undefined, deps.armorData, deps.accessoryData);
   } else if (verb === 'use') {
     if (!target) {
       addLine(store, 'Use what?', C.ERROR_COLOR);
@@ -109,7 +122,7 @@ export function handleCombatCommand(
       addLine(store, "You don't have that.", C.ERROR_COLOR);
       return;
     }
-    msgs = playerUseItem(store.combat, store.player, matches[0], deps.itemData, undefined, deps.armorData);
+    msgs = playerUseItem(store.combat, store.player, matches[0], deps.itemData, undefined, deps.armorData, deps.accessoryData);
   } else if (verb === 'inventory') {
     showInventory(store);
     return;
@@ -149,7 +162,7 @@ export function handleCombatCommand(
         }
       }
     }
-    msgs = playerSkillAttack(store.combat, store.player, skill.id, deps.weaponData, deps.itemData, undefined, cooldownReduction, deps.armorData);
+    msgs = playerSkillAttack(store.combat, store.player, skill.id, deps.weaponData, deps.itemData, undefined, cooldownReduction, deps.armorData, deps.accessoryData);
   } else {
     addLine(store, 'In combat: attack, defend, flee, use <item>, skill <name>', C.COMBAT_COLOR);
     return;

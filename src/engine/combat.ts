@@ -1,4 +1,4 @@
-import type { ArmorDef, CombatMessage, CombatResults, CombatState, EnemyDef, ItemDef, PlayerState, StatusEffect, WeaponDef } from './types';
+import type { AccessoryDef, ArmorDef, CombatMessage, CombatResults, CombatState, EnemyDef, ItemDef, PlayerState, StatusEffect, WeaponDef } from './types';
 import { totalAttack, totalDefense, addXp, hasItem, removeItem, heal, takeDamage, isDead, hasSkill } from './player';
 import { ACTIVE_SKILLS } from './skills';
 
@@ -6,6 +6,17 @@ type Rng = () => number;
 
 function defaultRng(): number {
   return Math.random();
+}
+
+function getAccessoryModifier(player: PlayerState, accessoryData: Record<string, AccessoryDef> | undefined, type: string): number {
+  if (!accessoryData || !player.equippedAccessory) return 0;
+  const acc = accessoryData[player.equippedAccessory];
+  if (!acc) return 0;
+  let total = 0;
+  for (const mod of acc.modifiers) {
+    if (mod.type === type) total += mod.value;
+  }
+  return total;
 }
 
 function randInt(min: number, max: number, rng: Rng): number {
@@ -75,6 +86,7 @@ function enemyTurn(
   messages: CombatMessage[],
   rng: Rng,
   armorData?: Record<string, ArmorDef>,
+  accessoryData?: Record<string, AccessoryDef>,
 ): void {
   if (combat.finished) return;
 
@@ -103,6 +115,7 @@ function enemyTurn(
   let reduction = 0;
   if (hasSkill(player, 'arcane_shield')) reduction += 1;
   if (player.firedEvents.keepers_ward) reduction += 3;
+  reduction += getAccessoryModifier(player, accessoryData, 'damage_reduction');
   const actual = takeDamage(player, rawDamage, reduction);
   messages.push({ text: `${combat.enemy.name} deals ${actual} damage to you.`, color: [1, 0.5, 0.5, 1] });
 
@@ -175,6 +188,7 @@ export function playerAttack(
   rng: Rng = defaultRng,
   overrides?: AttackOverrides,
   armorData?: Record<string, ArmorDef>,
+  accessoryData?: Record<string, AccessoryDef>,
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
@@ -206,14 +220,19 @@ export function playerAttack(
   }
 
   let atk = getPlayerAttack(player, weaponData);
+  atk += getAccessoryModifier(player, accessoryData, 'attack');
   let critChance = 10;
   let critMult = 2;
   if (hasSkill(player, 'sharp_eyes')) critChance = 18;
   if (hasSkill(player, 'assassin')) critMult = 3;
   if (equippedWeapon?.weapon_class === 'blade') critChance += 10;
+  critChance += getAccessoryModifier(player, accessoryData, 'crit_chance');
+  critMult += getAccessoryModifier(player, accessoryData, 'crit_mult');
   let effectiveDef = combat.enemy.defense;
   if (hasSkill(player, 'precision')) { atk += 3; effectiveDef = Math.max(0, effectiveDef - 2); }
   if (equippedWeapon?.weapon_class === 'heavy') effectiveDef = Math.max(0, effectiveDef - 2);
+  const accDefIgnore = getAccessoryModifier(player, accessoryData, 'def_ignore');
+  if (accDefIgnore) effectiveDef = Math.max(0, effectiveDef - accDefIgnore);
 
   // Apply skill overrides
   if (overrides?.extraDefIgnore) effectiveDef = Math.max(0, effectiveDef - overrides.extraDefIgnore);
@@ -271,10 +290,11 @@ export function playerAttack(
   if (!overrides?.skipWeaponEffect && player.equippedWeapon && weaponData[player.equippedWeapon]?.status_effect) {
     const se = weaponData[player.equippedWeapon].status_effect!;
     if (rng() * 100 < se.chance) {
+      const durationBonus = getAccessoryModifier(player, accessoryData, 'status_duration');
       const effect: StatusEffect = {
         type: se.type,
         damage: se.damage,
-        remaining: se.duration,
+        remaining: se.duration + durationBonus,
         baseDamage: se.damage,
       };
       applyStatusEffect(combat.enemyEffects, effect);
@@ -283,18 +303,20 @@ export function playerAttack(
     }
   }
 
-  // Magic class: forced proc every 3 swings. Fires in addition to the
-  // chance-roll above; killing-blow hits return early so no proc is wasted
-  // on a corpse.
+  // Magic class: forced proc every N swings (default 3, modified by accessories).
+  // Fires in addition to the chance-roll above; killing-blow hits return early
+  // so no proc is wasted on a corpse.
+  const magicThreshold = Math.max(2, 3 + getAccessoryModifier(player, accessoryData, 'magic_counter_threshold'));
   if (!overrides?.skipWeaponEffect
       && equippedWeapon?.weapon_class === 'magic'
-      && combat.magicHitCounter >= 3
+      && combat.magicHitCounter >= magicThreshold
       && equippedWeapon.status_effect) {
     const mse = equippedWeapon.status_effect;
+    const magicDurationBonus = getAccessoryModifier(player, accessoryData, 'status_duration');
     applyStatusEffect(combat.enemyEffects, {
       type: mse.type,
       damage: mse.damage,
-      remaining: mse.duration,
+      remaining: mse.duration + magicDurationBonus,
       baseDamage: mse.damage,
     });
     messages.push({ text: MAGIC_PROC_MESSAGES[mse.type], color: [0.6, 0.8, 1, 1] });
@@ -304,7 +326,7 @@ export function playerAttack(
   if (equippedWeapon?.weapon_class === 'pierce' && combat.round === 1) {
     // Pierce first strike: enemy skips round 1
   } else {
-    enemyTurn(combat, player, itemData, messages, rng, armorData);
+    enemyTurn(combat, player, itemData, messages, rng, armorData, accessoryData);
   }
   tickBuffs(player, messages);
   applyMeditation(player, messages);
@@ -317,6 +339,7 @@ export function playerDefend(
   itemData: Record<string, ItemDef>,
   rng: Rng = defaultRng,
   armorData?: Record<string, ArmorDef>,
+  accessoryData?: Record<string, AccessoryDef>,
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
@@ -356,7 +379,7 @@ export function playerDefend(
     }
   }
 
-  enemyTurn(combat, player, itemData, messages, rng, armorData);
+  enemyTurn(combat, player, itemData, messages, rng, armorData, accessoryData);
   tickBuffs(player, messages);
   applyMeditation(player, messages);
   return messages;
@@ -368,6 +391,7 @@ export function playerFlee(
   itemData: Record<string, ItemDef>,
   rng: Rng = defaultRng,
   armorData?: Record<string, ArmorDef>,
+  accessoryData?: Record<string, AccessoryDef>,
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
@@ -413,7 +437,7 @@ export function playerFlee(
       }
     }
 
-    enemyTurn(combat, player, itemData, messages, rng, armorData);
+    enemyTurn(combat, player, itemData, messages, rng, armorData, accessoryData);
   }
   tickBuffs(player, messages);
   applyMeditation(player, messages);
@@ -427,6 +451,7 @@ export function playerUseItem(
   itemData: Record<string, ItemDef>,
   rng: Rng = defaultRng,
   armorData?: Record<string, ArmorDef>,
+  accessoryData?: Record<string, AccessoryDef>,
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
   combat.round++;
@@ -505,7 +530,7 @@ export function playerUseItem(
     }
   }
 
-  enemyTurn(combat, player, itemData, messages, rng, armorData);
+  enemyTurn(combat, player, itemData, messages, rng, armorData, accessoryData);
   tickBuffs(player, messages);
   applyMeditation(player, messages);
   return messages;
@@ -585,6 +610,7 @@ export function playerSkillAttack(
   rng: Rng = defaultRng,
   cooldownReduction = 0,
   armorData?: Record<string, ArmorDef>,
+  accessoryData?: Record<string, AccessoryDef>,
 ): CombatMessage[] {
   const messages: CombatMessage[] = [];
 
@@ -608,14 +634,14 @@ export function playerSkillAttack(
     const attackMsgs = playerAttack(combat, player, weaponData, itemData, rng, {
       damageMultiplier: 1.5,
       extraDefIgnore: 3,
-    }, armorData);
+    }, armorData, accessoryData);
     messages.push(...attackMsgs);
   } else if (skillId === 'ambush') {
     messages.push({ text: 'You strike from the shadows!', color: [1, 1, 0.2, 1] });
     const attackMsgs = playerAttack(combat, player, weaponData, itemData, rng, {
       forcedCrit: true,
       forcedCritMult: 3,
-    }, armorData);
+    }, armorData, accessoryData);
     messages.push(...attackMsgs);
   } else if (skillId === 'arcane_surge') {
     // Bonus action BEFORE normal attack
@@ -647,7 +673,7 @@ export function playerSkillAttack(
       // Skip weapon effect roll — arcane surge already handled status application.
       const attackMsgs = playerAttack(combat, player, weaponData, itemData, rng, {
         skipWeaponEffect: true,
-      }, armorData);
+      }, armorData, accessoryData);
       messages.push(...attackMsgs);
     }
   }

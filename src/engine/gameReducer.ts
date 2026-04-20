@@ -8,6 +8,7 @@ import { parseCommand } from './commands';
 import { visitRoom } from './player';
 import { checkAchievement, checkItemAchievements, isUnlocked, tryUnlock } from './achievements';
 import { createCombat } from './combat';
+import { ACTIVE_SKILLS, getSkill } from './skills';
 import { showScore } from './handlers/info';
 import { getRoom, getAdjacentRoom } from './world';
 import { createEffects, updateRainbowTint } from './effects';
@@ -378,7 +379,41 @@ function getAutocompleteSuggestions(store: GameStore, input: string): string[] {
   if (store.state === 'shop') {
     return getShopAutocompleteSuggestions(store, input, buildShopDeps(store));
   }
-  return getAutocompleteSuggestionsRaw(store, input, enemyData, itemData, effectiveWeaponData(store), npcData);
+  if (store.state === 'combat') {
+    return getCombatAutocompleteSuggestions(store, input);
+  }
+  return getAutocompleteSuggestionsRaw(store, input, enemyData, itemData, effectiveWeaponData(store), npcData, effectiveArmorData(store), accessoryData);
+}
+
+function getCombatAutocompleteSuggestions(store: GameStore, input: string): string[] {
+  const lower = input.toLowerCase();
+  if (!lower || !store.player) return [];
+
+  const parts = lower.split(/\s+/);
+  if (parts.length <= 1) {
+    const combatVerbs = ['attack', 'defend', 'flee', 'use', 'skill', 'inventory', 'stats', 'skills'];
+    return combatVerbs.filter(v => v.startsWith(lower) && v !== lower);
+  }
+
+  const verb = parts[0];
+  const partial = parts.slice(1).join(' ');
+  const candidates: string[] = [];
+
+  if (verb === 'use') {
+    for (const id of Object.keys(store.player.inventory)) {
+      const item = itemData[id];
+      if (item?.type === 'consumable') candidates.push(item.name);
+    }
+  } else if (verb === 'skill') {
+    for (const skillId of ACTIVE_SKILLS) {
+      if (!store.player.skills[skillId]) continue;
+      const skill = getSkill(skillId);
+      if (skill) candidates.push(skill.name);
+    }
+  }
+
+  if (!partial) return candidates;
+  return candidates.filter(c => c.toLowerCase().startsWith(partial));
 }
 
 function buildShopDeps(store: GameStore): ShopDeps {

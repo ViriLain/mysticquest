@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createCombat, enemyDefeated, playerAttack, playerDefend, playerFlee, playerUseItem, playerSkillAttack, tickStatusEffects, applyStatusEffect } from '../../src/engine/combat';
 import { addItem, addWeapon, createPlayer, equipWeapon } from '../../src/engine/player';
 import { createRng } from '../../src/engine/rng';
-import type { ArmorDef, ItemDef, StatusEffect, WeaponDef } from '../../src/engine/types';
+import type { AccessoryDef, ArmorDef, ItemDef, StatusEffect, WeaponDef } from '../../src/engine/types';
 
 const itemData: Record<string, ItemDef> = {
   potion: { name: 'Potion', type: 'consumable', effect: 'heal', value: 25, description: 'heals' },
@@ -1227,5 +1227,87 @@ describe('active combat skills', () => {
 
     // Both should deal the same since ambush overrides the crit mult
     expect(ambushDmg).toBe(ambushNoAssassinDmg);
+  });
+});
+
+describe('accessory modifiers in combat', () => {
+  const accData: Record<string, AccessoryDef> = {
+    crit_ring: { name: 'Crit Ring', description: 't', region: 't', modifiers: [{ type: 'crit_chance', value: 50 }] },
+    def_ignore_ring: { name: 'Pierce Ring', description: 't', region: 't', modifiers: [{ type: 'def_ignore', value: 5 }] },
+    dmg_reduce_ring: { name: 'Guard Ring', description: 't', region: 't', modifiers: [{ type: 'damage_reduction', value: 3 }] },
+    lens: { name: 'Mystic Lens', description: 't', region: 't', modifiers: [{ type: 'magic_counter_threshold', value: -1 }] },
+    duration_ring: { name: 'Duration Ring', description: 't', region: 't', modifiers: [{ type: 'status_duration', value: 2 }] },
+  };
+
+  it('crit_chance accessory increases crit rate', () => {
+    let accCrits = 0;
+    let baseCrits = 0;
+    for (let seed = 0; seed < 200; seed++) {
+      const p1 = createPlayer(); p1.maxHp = 9999; p1.hp = 9999;
+      p1.equippedAccessory = 'crit_ring';
+      addWeapon(p1, 'rusty_dagger'); equipWeapon(p1, 'rusty_dagger');
+      const c1 = createCombat(p1, 'shadow_rat', enemyData);
+      const m1 = playerAttack(c1, p1, weaponData, itemData, seededRng(seed), undefined, undefined, accData);
+      if (m1.some(m => m.text.includes('CRITICAL') || m.text.includes('weak point'))) accCrits++;
+
+      const p2 = createPlayer(); p2.maxHp = 9999; p2.hp = 9999;
+      addWeapon(p2, 'rusty_dagger'); equipWeapon(p2, 'rusty_dagger');
+      const c2 = createCombat(p2, 'shadow_rat', enemyData);
+      const m2 = playerAttack(c2, p2, weaponData, itemData, seededRng(seed));
+      if (m2.some(m => m.text.includes('CRITICAL') || m.text.includes('weak point'))) baseCrits++;
+    }
+    expect(accCrits).toBeGreaterThan(baseCrits);
+  });
+
+  it('damage_reduction accessory reduces incoming damage', () => {
+    const p1 = createPlayer(); p1.hp = 200; p1.maxHp = 200;
+    p1.equippedAccessory = 'dmg_reduce_ring';
+    const c1 = createCombat(p1, 'shadow_rat', enemyData);
+    playerDefend(c1, p1, itemData, seededRng(1), undefined, accData);
+    const dmgWith = 200 - p1.hp;
+
+    const p2 = createPlayer(); p2.hp = 200; p2.maxHp = 200;
+    const c2 = createCombat(p2, 'shadow_rat', enemyData);
+    playerDefend(c2, p2, itemData, seededRng(1));
+    const dmgWithout = 200 - p2.hp;
+
+    expect(dmgWith).toBeLessThan(dmgWithout);
+  });
+
+  it('magic_counter_threshold accessory makes magic proc on hit 2', () => {
+    const magicWeapon: Record<string, WeaponDef> = {
+      staff: { name: 'Staff', attack_bonus: 5, region: 'manor', weapon_class: 'magic', description: 'test',
+        status_effect: { type: 'burn', damage: 2, duration: 3, chance: 0 } },
+    };
+    const player = createPlayer(); player.maxHp = 9999; player.hp = 9999;
+    player.equippedAccessory = 'lens';
+    addWeapon(player, 'staff'); equipWeapon(player, 'staff');
+    const tank = { tank: { name: 'Tank', hp: 9999, attack: 1, defense: 0, xp: 1, loot: [] as string[], region: 'test', description: 'tanky', is_boss: false } };
+    const combat = createCombat(player, 'tank', tank);
+
+    playerAttack(combat, player, magicWeapon, itemData, seededRng(1), undefined, undefined, accData);
+    expect(combat.enemyEffects.find(e => e.type === 'burn')).toBeUndefined();
+
+    playerAttack(combat, player, magicWeapon, itemData, seededRng(2), undefined, undefined, accData);
+    expect(combat.enemyEffects.find(e => e.type === 'burn')).toBeDefined();
+    expect(combat.magicHitCounter).toBe(0);
+  });
+
+  it('status_duration accessory extends weapon effect duration', () => {
+    const poisonWeapon: Record<string, WeaponDef> = {
+      venom: { name: 'Venom Blade', attack_bonus: 5, region: 'manor', weapon_class: 'blade', description: 'test',
+        status_effect: { type: 'poison', damage: 2, duration: 3, chance: 100 } },
+    };
+    const player = createPlayer(); player.maxHp = 9999; player.hp = 9999;
+    player.equippedAccessory = 'duration_ring';
+    addWeapon(player, 'venom'); equipWeapon(player, 'venom');
+    const tank = { tank: { name: 'Tank', hp: 9999, attack: 1, defense: 0, xp: 1, loot: [] as string[], region: 'test', description: 'tanky', is_boss: false } };
+    const combat = createCombat(player, 'tank', tank);
+
+    playerAttack(combat, player, poisonWeapon, itemData, seededRng(1), undefined, undefined, accData);
+    const poison = combat.enemyEffects.find(e => e.type === 'poison');
+    expect(poison).toBeDefined();
+    // Base duration 3 + accessory bonus 2 = 5 (applied after enemy tick, so no decrement this round)
+    expect(poison!.remaining).toBe(5);
   });
 });
