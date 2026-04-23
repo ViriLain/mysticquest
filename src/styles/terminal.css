@@ -18,6 +18,15 @@
   padding-bottom: 4px;
 }
 
+.terminal-region-banner {
+  flex-shrink: 0;
+  white-space: pre;
+  padding: 4px 0;
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;
+}
+
 .terminal-separator {
   flex-shrink: 0;
   height: 1px;

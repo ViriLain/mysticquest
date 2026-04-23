@@ -79,4 +79,17 @@ describe('ui state helpers', () => {
     expect(store.state).toBe('gameover');
     expect(retried).toBe(7);
   });
+
+  it('startGameover clears the header so region banner is hidden', () => {
+    const store = createInitialStore();
+    store.player = createPlayer();
+    store.world = createWorld();
+    store.header = { title: 'MYSTICQUEST v1.0', hp: 0, maxHp: 30, level: 1, gold: 0, weapon: 'Fists' };
+    store.currentRegion = 'manor';
+
+    startGameover(store);
+
+    expect(store.header.title).toBe('');
+    expect(store.header.maxHp).toBe(0);
+  });
 });
