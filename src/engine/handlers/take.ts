@@ -1,8 +1,9 @@
+import { getWeaponArtName } from '../asciiArt';
 import * as C from '../constants';
 import { findAllMatches, resolveOrDisambiguate, singularize } from '../matching';
 import { notifyObjectiveEvent } from '../objectives';
 import { addItem, addWeapon, equipWeapon } from '../player';
-import { addLine, emitSound } from '../output';
+import { addLine, displayAscii, emitSound } from '../output';
 import type { AccessoryDef, ArmorDef, GameStore, ItemDef, RoomDef, WeaponDef } from '../types';
 import { getRoom } from '../world';
 
@@ -48,6 +49,12 @@ export function handleTake(
     const color = weapon.weapon_class === 'magic' ? C.MAGIC_COLOR : C.ITEM_COLOR;
     removeFromRoom(room, weaponId);
     addWeapon(player, weaponId);
+    const artKey = getWeaponArtName(weaponId);
+    if (artKey) {
+      addLine(store, '');
+      displayAscii(store, artKey, color);
+      addLine(store, '');
+    }
     addLine(store, `You pick up the ${weapon.name}.`, color);
     notifyObjectiveEvent(store, { type: 'took_item', item: weaponId });
     emitSound(store, 'pickup');

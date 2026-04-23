@@ -12,6 +12,12 @@ import regionWilds from '../assets/ascii/region_wilds.txt?raw';
 import regionDarkness from '../assets/ascii/region_darkness.txt?raw';
 import regionWastes from '../assets/ascii/region_wastes.txt?raw';
 import regionHidden from '../assets/ascii/region_hidden.txt?raw';
+import weaponHrunting from '../assets/ascii/weapon_hrunting.txt?raw';
+import weaponTyrfing from '../assets/ascii/weapon_tyrfing.txt?raw';
+import weaponExcalibur from '../assets/ascii/weapon_excalibur.txt?raw';
+import weaponKeyblade from '../assets/ascii/weapon_keyblade.txt?raw';
+import weaponAnduril from '../assets/ascii/weapon_anduril.txt?raw';
+import weaponRagnarok from '../assets/ascii/weapon_ragnarok.txt?raw';
 
 const ASCII_MAP: Record<string, string> = {
   title,
@@ -27,6 +33,12 @@ const ASCII_MAP: Record<string, string> = {
   region_darkness: regionDarkness,
   region_wastes: regionWastes,
   region_hidden: regionHidden,
+  weapon_hrunting: weaponHrunting,
+  weapon_tyrfing: weaponTyrfing,
+  weapon_excalibur: weaponExcalibur,
+  weapon_keyblade: weaponKeyblade,
+  weapon_anduril: weaponAnduril,
+  weapon_ragnarok: weaponRagnarok,
 };
 
 export function getAsciiLines(name: string): string[] | null {
@@ -42,5 +54,10 @@ export function getAsciiLines(name: string): string[] | null {
 export function getRegionArtName(region: string | null): string | null {
   if (!region) return null;
   const key = `region_${region}`;
+  return key in ASCII_MAP ? key : null;
+}
+
+export function getWeaponArtName(weaponId: string): string | null {
+  const key = `weapon_${weaponId}`;
   return key in ASCII_MAP ? key : null;
 }
