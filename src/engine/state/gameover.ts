@@ -2,7 +2,7 @@ import type { GameStore } from '../types';
 import * as C from '../constants';
 import { pushEffect } from '../effects';
 import { anySlotHasData } from '../save';
-import { addLine, clearTerminal, displayAscii, emitSound } from '../output';
+import { addLine, clearTerminal, displayAscii, emitSound, hideHeader } from '../output';
 
 export interface GameoverDeps {
   startMenu: () => void;
@@ -20,6 +20,7 @@ export function startGameover(store: GameStore): void {
   pushEffect(store.effects, 'glitch', 2.0, { intensity: 0.7 });
 
   clearTerminal(store);
+  hideHeader(store);
   store.baseColor = [1.0, 0.2, 0.2, 1];
 
   if (store.gameMode === 'dungeon' && store.dungeon) {
