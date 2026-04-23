@@ -12,6 +12,7 @@ import {
 } from '../engine/audio';
 import type { GameStore, RGBA } from '../engine/types';
 import { loadSettings, fontSizePx, remapColor, typewriterDelay, fontSizeLabel, colorModeLabel, textSpeedLabel } from '../engine/settings';
+import { getAsciiLines, getRegionArtName } from '../engine/asciiArt';
 import Minimap from './Minimap';
 import '../styles/crt.css';
 import '../styles/terminal.css';
@@ -269,6 +270,9 @@ export default function Game() {
 
   const hasSave = store.state === 'menu' ? anySlotHasData() : true;
 
+  const regionArtKey = getRegionArtName(store.currentRegion);
+  const regionBannerLines = regionArtKey ? getAsciiLines(regionArtKey) : null;
+
   return (
     <div className="crt-container" onClick={focusInput}>
       {/* Tint overlay */}
@@ -317,6 +321,11 @@ export default function Game() {
             <div className="terminal-header" style={{ color: headerColor }}>
               {`${store.header.title}    HP:${store.header.hp}/${store.header.maxHp}  LVL:${store.header.level}  G:${store.header.gold}  ${store.header.weapon}`}
             </div>
+            {regionBannerLines && (
+              <div className="terminal-region-banner" style={{ color: headerColor }}>
+                {regionBannerLines.join('\n')}
+              </div>
+            )}
             <div className="terminal-separator" style={{ backgroundColor: dimColor }} />
           </>
         )}
