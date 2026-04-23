@@ -3,11 +3,11 @@ import { findAllMatches, resolveOrDisambiguate, singularize } from '../matching'
 import { notifyObjectiveEvent } from '../objectives';
 import { addItem, addWeapon, equipWeapon } from '../player';
 import { addLine, emitSound } from '../output';
-import type { GameStore, ItemDef, RoomDef, WeaponDef } from '../types';
+import type { AccessoryDef, ArmorDef, GameStore, ItemDef, RoomDef, WeaponDef } from '../types';
 import { getRoom } from '../world';
 
 function removeFromRoom(room: RoomDef, itemId: string): string | null {
-  const lists = ['items', 'weapons', '_ground_loot', '_ground_weapons'] as const;
+  const lists = ['items', 'weapons', 'armor', '_ground_loot', '_ground_weapons'] as const;
   for (const listName of lists) {
     const list = room[listName] as string[] | undefined;
     if (list) {
@@ -28,6 +28,8 @@ export function handleTake(
   weaponData: Record<string, WeaponDef>,
   checkItemAchievements: () => void,
   refreshHeader: () => void,
+  armorData?: Record<string, ArmorDef>,
+  accessoryData?: Record<string, AccessoryDef>,
 ): void {
   if (!store.player || !store.world) return;
   if (!target) { addLine(store, 'Take what?', C.ERROR_COLOR); return; }
@@ -42,14 +44,16 @@ export function handleTake(
   const singular = singularize(target);
 
   const takeWeapon = (weaponId: string): void => {
+    const weapon = weaponData[weaponId];
+    const color = weapon.weapon_class === 'magic' ? C.MAGIC_COLOR : C.ITEM_COLOR;
     removeFromRoom(room, weaponId);
     addWeapon(player, weaponId);
-    addLine(store, `You pick up the ${weaponData[weaponId].name}.`, C.ITEM_COLOR);
+    addLine(store, `You pick up the ${weapon.name}.`, color);
     notifyObjectiveEvent(store, { type: 'took_item', item: weaponId });
     emitSound(store, 'pickup');
     if (!player.equippedWeapon) {
       equipWeapon(player, weaponId);
-      addLine(store, `You equip the ${weaponData[weaponId].name}.`, C.ITEM_COLOR);
+      addLine(store, `You equip the ${weapon.name}.`, color);
       emitSound(store, 'equip');
       refreshHeader();
     }
@@ -67,6 +71,36 @@ export function handleTake(
     if (itemData[itemId].type === 'shield' && !player.equippedShield) {
       player.equippedShield = itemId;
       addLine(store, `You equip the ${itemData[itemId].name}.`, C.ITEM_COLOR);
+      emitSound(store, 'equip');
+    }
+    checkItemAchievements();
+  };
+
+  const takeArmor = (armorId: string): void => {
+    const armor = armorData![armorId];
+    removeFromRoom(room, armorId);
+    player.inventory[armorId] = (player.inventory[armorId] || 0) + 1;
+    addLine(store, `You pick up the ${armor.name}.`, C.ITEM_COLOR);
+    notifyObjectiveEvent(store, { type: 'took_item', item: armorId });
+    emitSound(store, 'pickup');
+    if (!player.equippedArmor) {
+      player.equippedArmor = armorId;
+      addLine(store, `You equip the ${armor.name}.`, C.ITEM_COLOR);
+      emitSound(store, 'equip');
+    }
+    checkItemAchievements();
+  };
+
+  const takeAccessory = (accId: string): void => {
+    const acc = accessoryData![accId];
+    removeFromRoom(room, accId);
+    player.inventory[accId] = (player.inventory[accId] || 0) + 1;
+    addLine(store, `You pick up the ${acc.name}.`, C.ITEM_COLOR);
+    notifyObjectiveEvent(store, { type: 'took_item', item: accId });
+    emitSound(store, 'pickup');
+    if (!player.equippedAccessory) {
+      player.equippedAccessory = accId;
+      addLine(store, `You equip the ${acc.name}.`, C.ITEM_COLOR);
       emitSound(store, 'equip');
     }
     checkItemAchievements();
@@ -104,6 +138,48 @@ export function handleTake(
   if (itemMatches.length === 1) {
     takeItem(itemMatches[0]);
     return;
+  }
+
+  // Check for armor in room
+  if (armorData) {
+    const roomArmorIds = [...(room.armor || []), ...(room._ground_loot || []).filter(id => armorData[id])];
+    let armorMatches = findAllMatches(target, roomArmorIds, armorData);
+    if (armorMatches.length === 0 && singular) {
+      armorMatches = findAllMatches(singular, roomArmorIds, armorData);
+    }
+    if (armorMatches.length > 1) {
+      if (singular) {
+        armorMatches.forEach(id => takeArmor(id));
+        return;
+      }
+      resolveOrDisambiguate(store, armorMatches, armorData, 'armor do you want to take');
+      return;
+    }
+    if (armorMatches.length === 1) {
+      takeArmor(armorMatches[0]);
+      return;
+    }
+  }
+
+  // Check for accessories on the ground
+  if (accessoryData) {
+    const roomAccIds = (room._ground_loot || []).filter(id => accessoryData[id]);
+    let accMatches = findAllMatches(target, roomAccIds, accessoryData);
+    if (accMatches.length === 0 && singular) {
+      accMatches = findAllMatches(singular, roomAccIds, accessoryData);
+    }
+    if (accMatches.length > 1) {
+      if (singular) {
+        accMatches.forEach(id => takeAccessory(id));
+        return;
+      }
+      resolveOrDisambiguate(store, accMatches, accessoryData, 'accessory do you want to take');
+      return;
+    }
+    if (accMatches.length === 1) {
+      takeAccessory(accMatches[0]);
+      return;
+    }
   }
 
   addLine(store, "You don't see that here.", C.ERROR_COLOR);

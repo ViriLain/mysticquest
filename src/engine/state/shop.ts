@@ -1,12 +1,13 @@
 import { getEffectiveStock, type ShopDef } from '../economy';
 import { displayShop, handleShopCommand } from '../handlers/shop';
-import type { GameStore, ItemDef, NpcDef, WeaponDef } from '../types';
+import type { ArmorDef, GameStore, ItemDef, NpcDef, WeaponDef } from '../types';
 
 export interface ShopDeps {
   shops: Record<string, ShopDef>;
   itemData: Record<string, ItemDef>;
   weaponData: Record<string, WeaponDef>;
   npcData: Record<string, NpcDef>;
+  armorData?: Record<string, ArmorDef>;
   refreshHeader: () => void;
 }
 
@@ -23,7 +24,7 @@ export function enterShop(
   if (!store.shopState.runtime[shopId]) {
     store.shopState.runtime[shopId] = { shopId, remainingStock: {} };
   }
-  displayShop(store, shop, deps.itemData, deps.weaponData);
+  displayShop(store, shop, deps.itemData, deps.weaponData, deps.armorData);
 }
 
 export function handleShopInput(
@@ -32,7 +33,7 @@ export function handleShopInput(
   target: string,
   deps: ShopDeps,
 ): void {
-  handleShopCommand(store, verb, target, deps.shops, deps.itemData, deps.weaponData, deps.npcData, deps.refreshHeader);
+  handleShopCommand(store, verb, target, deps.shops, deps.itemData, deps.weaponData, deps.npcData, deps.refreshHeader, deps.armorData);
 }
 
 export function getShopAutocompleteSuggestions(
@@ -58,7 +59,11 @@ export function getShopAutocompleteSuggestions(
   if (verb === 'buy' || verb === 'examine') {
     const stock = getEffectiveStock(shop, runtime).filter(entry => entry.remaining > 0);
     for (const entry of stock) {
-      const def = entry.entry.type === 'weapon' ? deps.weaponData[entry.entry.id] : deps.itemData[entry.entry.id];
+      const def = entry.entry.type === 'weapon'
+        ? deps.weaponData[entry.entry.id]
+        : entry.entry.type === 'armor'
+          ? deps.armorData?.[entry.entry.id]
+          : deps.itemData[entry.entry.id];
       if (def) candidates.push(def.name);
     }
   }
@@ -66,6 +71,8 @@ export function getShopAutocompleteSuggestions(
     for (const id of Object.keys(store.player.inventory)) {
       const item = deps.itemData[id];
       if (item) candidates.push(item.name);
+      const armor = deps.armorData?.[id];
+      if (armor) candidates.push(armor.name);
     }
     for (const id of Object.keys(store.player.keyItems)) {
       const item = deps.itemData[id];

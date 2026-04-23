@@ -1,15 +1,24 @@
 import * as C from '../constants';
-import type { GameStore } from '../types';
+import type { AccessoryDef, ArmorDef, GameStore, ItemDef, WeaponDef } from '../types';
 import { displayRoom } from '../display';
 import { addLine } from '../output';
 import { getAdjacentRoom, getRoom } from '../world';
+import { revealSearchables } from './search';
 
-export function handleLook(store: GameStore, direction?: string): void {
+export function handleLook(
+  store: GameStore,
+  direction: string | undefined,
+  itemData: Record<string, ItemDef>,
+  weaponData: Record<string, WeaponDef>,
+  armorData?: Record<string, ArmorDef>,
+  accessoryData?: Record<string, AccessoryDef>,
+): void {
   if (!store.player || !store.world) return;
 
   if (!direction) {
     addLine(store, '');
     displayRoom(store, store.player.currentRoom);
+    revealSearchables(store, itemData, weaponData, {}, armorData, accessoryData);
     return;
   }
 

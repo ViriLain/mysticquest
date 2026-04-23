@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createInitialStore } from '../../src/engine/gameReducer';
 import { createWorld, loadRegion } from '../../src/engine/world';
 import manorJson from '../../src/data/regions/manor.json';
+import * as C from '../../src/engine/constants';
 import { displayRoom } from '../../src/engine/display';
 import type { RegionData } from '../../src/engine/types';
 
@@ -39,5 +40,32 @@ describe('displayRoom', () => {
     displayRoom(store, 'missing_room');
 
     expect(store.typewriterQueue.map(line => line.text)).toEqual(['ERROR: Room not found.']);
+  });
+
+  it('uses magic color for magic weapons in a room or on the ground', () => {
+    const store = createInitialStore();
+    const world = createWorld();
+    loadRegion(world, {
+      rooms: [
+        {
+          id: 'grove',
+          name: 'Grove',
+          region: 'test',
+          description: '',
+          exits: {},
+          weapons: ['hrunting'],
+          _ground_weapons: ['tyrfing'],
+        },
+      ],
+    } as RegionData);
+    store.world = world;
+
+    displayRoom(store, 'grove');
+
+    const magicLines = store.typewriterQueue.filter(line =>
+      line.text.includes('Hrunting') || line.text.includes('Tyrfing'),
+    );
+    expect(magicLines).toHaveLength(2);
+    expect(magicLines.every(line => line.color === C.MAGIC_COLOR)).toBe(true);
   });
 });

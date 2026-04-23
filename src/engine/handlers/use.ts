@@ -2,7 +2,7 @@ import * as C from '../constants';
 import { findAllMatches, resolveOrDisambiguate, singularize } from '../matching';
 import { equipWeapon, hasItem, hasKeyItem, hasSkill, heal as playerHeal, removeItem } from '../player';
 import { addLine, emitSound } from '../output';
-import type { GameStore, ItemDef, WeaponDef } from '../types';
+import type { AccessoryDef, ArmorDef, GameStore, ItemDef, WeaponDef } from '../types';
 
 export function handleUse(
   store: GameStore,
@@ -11,6 +11,8 @@ export function handleUse(
   weaponData: Record<string, WeaponDef>,
   refreshHeader: () => void,
   checkEndingsForItem: (itemId: string) => void,
+  armorData?: Record<string, ArmorDef>,
+  accessoryData?: Record<string, AccessoryDef>,
 ): void {
   if (!store.player || !store.world) return;
   if (!target) { addLine(store, 'Use what?', C.ERROR_COLOR); return; }
@@ -25,8 +27,10 @@ export function handleUse(
   const singular = singularize(target);
 
   const applyWeapon = (weaponId: string): void => {
+    const weapon = weaponData[weaponId];
     equipWeapon(player, weaponId);
-    addLine(store, `You equip the ${weaponData[weaponId].name}.`, C.ITEM_COLOR);
+    const color = weapon.weapon_class === 'magic' ? C.MAGIC_COLOR : C.ITEM_COLOR;
+    addLine(store, `You equip the ${weapon.name}.`, color);
     emitSound(store, 'equip');
     refreshHeader();
   };
@@ -76,6 +80,44 @@ export function handleUse(
 
     return false;
   };
+
+  // Check if target matches armor in inventory
+  if (armorData) {
+    const armorIds = Object.keys(player.inventory).filter(id => armorData[id]);
+    let armorMatches = findAllMatches(target, armorIds, armorData);
+    if (armorMatches.length === 0 && singular) {
+      armorMatches = findAllMatches(singular, armorIds, armorData);
+    }
+    if (armorMatches.length > 1) {
+      resolveOrDisambiguate(store, armorMatches, armorData, 'armor do you want to equip');
+      return;
+    }
+    if (armorMatches.length === 1) {
+      player.equippedArmor = armorMatches[0];
+      addLine(store, `You equip the ${armorData[armorMatches[0]].name}.`, C.ITEM_COLOR);
+      emitSound(store, 'equip');
+      return;
+    }
+  }
+
+  // Check if target matches accessory in inventory
+  if (accessoryData) {
+    const accIds = Object.keys(player.inventory).filter(id => accessoryData[id]);
+    let accMatches = findAllMatches(target, accIds, accessoryData);
+    if (accMatches.length === 0 && singular) {
+      accMatches = findAllMatches(singular, accIds, accessoryData);
+    }
+    if (accMatches.length > 1) {
+      resolveOrDisambiguate(store, accMatches, accessoryData, 'accessory do you want to equip');
+      return;
+    }
+    if (accMatches.length === 1) {
+      player.equippedAccessory = accMatches[0];
+      addLine(store, `You equip the ${accessoryData[accMatches[0]].name}.`, C.ITEM_COLOR);
+      emitSound(store, 'equip');
+      return;
+    }
+  }
 
   let weaponMatches = findAllMatches(target, ownedWeaponIds, weaponData);
   if (weaponMatches.length === 0 && singular) {

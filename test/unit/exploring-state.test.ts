@@ -72,4 +72,21 @@ describe('exploring state', () => {
     expect(store.player?.equippedWeapon).toBe('rusty_dagger');
     expect(store.lastCommand).toBe('take dagger');
   });
+
+  it('skill command outside combat prints helpful message', () => {
+    const store = makeExploringStore();
+    handleExploringCommand(store, 'skill', 'power strike', makeDeps(store));
+    expect(store.typewriterQueue.some(l => l.text.includes('combat'))).toBe(true);
+  });
+
+  it('dispatches weapons as a focused inventory command', () => {
+    const store = makeExploringStore();
+    store.player!.weapons = ['rusty_dagger', 'hrunting'];
+    store.player!.equippedWeapon = 'rusty_dagger';
+
+    handleExploringCommand(store, 'weapons', '', makeDeps(store));
+
+    expect(store.typewriterQueue.map(line => line.text)).toContain('=== Weapons ===');
+    expect(store.lastCommand).toBeNull();
+  });
 });

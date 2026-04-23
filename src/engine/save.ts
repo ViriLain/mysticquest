@@ -10,6 +10,7 @@ interface RoomState {
   dynamic_exits?: Record<string, string>;
   items?: string[];
   weapons?: string[];
+  armor?: string[];
   ground_loot?: string[];
   ground_weapons?: string[];
 }
@@ -26,6 +27,8 @@ interface SaveData {
     weapons: string[];
     equipped_weapon: string | null;
     equipped_shield: string | null;
+    equipped_armor?: string | null;
+    equipped_accessory?: string | null;
     key_items: Record<string, boolean>;
     visited_rooms: Record<string, boolean>;
     searched_rooms: Record<string, boolean>;
@@ -91,6 +94,10 @@ function serialize(
       rs.weapons = [...room.weapons];
       hasData = true;
     }
+    if (room.armor && room.armor.length > 0) {
+      rs.armor = [...room.armor];
+      hasData = true;
+    }
     if (room._ground_loot && room._ground_loot.length > 0) {
       rs.ground_loot = room._ground_loot;
       hasData = true;
@@ -114,6 +121,8 @@ function serialize(
       weapons: player.weapons,
       equipped_weapon: player.equippedWeapon,
       equipped_shield: player.equippedShield,
+      equipped_armor: player.equippedArmor,
+      equipped_accessory: player.equippedAccessory,
       key_items: player.keyItems,
       visited_rooms: player.visitedRooms,
       searched_rooms: player.searchedRooms,
@@ -171,6 +180,8 @@ function deserialize(
     player.weapons = p.weapons || [];
     player.equippedWeapon = p.equipped_weapon;
     player.equippedShield = p.equipped_shield;
+    player.equippedArmor = p.equipped_armor ?? null;
+    player.equippedAccessory = p.equipped_accessory ?? null;
     player.keyItems = p.key_items || {};
     player.visitedRooms = p.visited_rooms || {};
     player.searchedRooms = p.searched_rooms || {};
@@ -194,6 +205,7 @@ function deserialize(
         if (rs.dynamic_exits) room._dynamic_exits = rs.dynamic_exits;
         if (rs.items) room.items = rs.items;
         if (rs.weapons) room.weapons = rs.weapons;
+        if (rs.armor) room.armor = rs.armor;
         if (rs.ground_loot) room._ground_loot = rs.ground_loot;
         if (rs.ground_weapons) room._ground_weapons = rs.ground_weapons;
       }

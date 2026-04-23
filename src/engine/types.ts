@@ -89,6 +89,40 @@ export interface StatusEffect {
 
 export type WeaponClass = 'blade' | 'heavy' | 'pierce' | 'magic';
 
+export type ModifierSource = 'skill' | 'weapon_class' | 'accessory' | 'armor' | 'buff';
+
+export type ModifierType =
+  | 'attack' | 'defense' | 'max_hp'
+  | 'crit_chance' | 'crit_mult'
+  | 'def_ignore'
+  | 'cooldown_reduction'
+  | 'status_duration' | 'magic_counter_threshold'
+  | 'damage_reduction';
+
+export interface Modifier {
+  type: ModifierType;
+  value: number;
+  source: ModifierSource;
+  sourceId: string;
+}
+
+export interface ArmorDef {
+  name: string;
+  defense: number;
+  region: string;
+  description: string;
+  match_words?: string[];
+  price?: number;
+}
+
+export interface AccessoryDef {
+  name: string;
+  description: string;
+  region: string;
+  match_words?: string[];
+  modifiers: Array<{ type: ModifierType; value: number }>;
+}
+
 export interface WeaponDef {
   name: string;
   attack_bonus: number;
@@ -125,6 +159,8 @@ export interface EnemyDef {
   gold?: number;
   loot: string[];
   loot_weapon?: string;
+  loot_armor?: string;
+  loot_accessory?: string;
   region: string;
   description: string;
   is_boss: boolean;
@@ -153,6 +189,7 @@ export interface RoomDef {
   secret_exits?: Record<string, string>;
   items?: string[];
   weapons?: string[];
+  armor?: string[];
   enemies?: string[];
   searchable?: boolean;
   search_items?: string[];
@@ -220,6 +257,8 @@ export interface NpcDef {
   name: string;
   description: string;
   match_words: string[];
+  ask_topics?: Record<string, string | string[]>;
+  ask_fallback?: string | string[];
   dialogue: Record<string, DialogueNode>;
 }
 
@@ -264,6 +303,8 @@ export interface PlayerState {
   weapons: string[];
   equippedWeapon: string | null;
   equippedShield: string | null;
+  equippedArmor: string | null;
+  equippedAccessory: string | null;
   keyItems: Record<string, boolean>;
   visitedRooms: Record<string, boolean>;
   searchedRooms: Record<string, boolean>;
@@ -287,6 +328,8 @@ export interface EnemyInstance {
   gold: number;
   loot: string[];
   lootWeapon?: string;
+  lootArmor?: string;
+  lootAccessory?: string;
   isBoss: boolean;
   description: string;
   statusEffect: EnemyDef['status_effect'] | null;
@@ -301,6 +344,7 @@ export interface CombatState {
   playerEffects: StatusEffect[];
   enemyEffects: StatusEffect[];
   magicHitCounter: number;
+  skillCooldowns: Record<string, number>;
 }
 
 export interface EffectsState {
@@ -397,7 +441,7 @@ export interface GameStore {
   shopMenuMode: 'buy' | 'sell' | 'sell_confirm' | null;
   shopMenuItems: Array<{ label: string; id: string; index: number }>;
   shopMenuSelected: number;
-  shopSellConfirm: { id: string; type: 'item' | 'weapon' } | null;
+  shopSellConfirm: { id: string; type: 'item' | 'weapon' | 'armor' } | null;
 
   // Minimap
   minimapOpen: boolean;
@@ -435,6 +479,7 @@ export interface DungeonState {
   score: DungeonScore;
   floorEnemies: Record<string, EnemyDef>;
   floorWeapons: Record<string, WeaponDef>;
+  floorArmor: Record<string, ArmorDef>;
   dungeonPerks: string[];
 }
 
@@ -453,5 +498,7 @@ export interface CombatResults {
   leveled: boolean;
   loot: string[];
   weapon: string | null;
+  armor: string | null;
+  accessory: string | null;
   messages: CombatMessage[];
 }

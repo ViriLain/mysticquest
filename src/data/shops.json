@@ -9,7 +9,8 @@
       { "id": "iron_shield", "qty": 1 },
       { "id": "rusty_dagger", "qty": 1, "type": "weapon" },
       { "id": "antidote", "qty": 3 },
-      { "id": "salve", "qty": 3 }
+      { "id": "salve", "qty": 3 },
+      { "id": "leather_vest", "qty": 1, "type": "armor" }
     ]
   },
   "wilds_wren": {
@@ -22,7 +23,8 @@
       { "id": "strength_tonic", "qty": 2 },
       { "id": "spear", "qty": 1, "type": "weapon" },
       { "id": "antidote", "qty": 5 },
-      { "id": "salve", "qty": 5 }
+      { "id": "salve", "qty": 5 },
+      { "id": "rangers_hide", "qty": 1, "type": "armor" }
     ]
   },
   "wastes_hermit": {
@@ -35,7 +37,8 @@
       { "id": "steel_shield", "qty": 1 },
       { "id": "antidote", "qty": 5 },
       { "id": "salve", "qty": 5 },
-      { "id": "panacea", "qty": 2 }
+      { "id": "panacea", "qty": 2 },
+      { "id": "desert_wrap", "qty": 1, "type": "armor" }
     ]
   }
 }

@@ -22,6 +22,7 @@ export function handleHelp(store: GameStore): void {
   addLine(store, '');
   addLine(store, ' COMBAT', C.COMBAT_COLOR);
   addLine(store, '  attack <enemy>  - Attack an enemy in the room', C.HELP_COLOR);
+  addLine(store, '  skill <name>    - Use a combat skill (cooldown-based)', C.HELP_COLOR);
   addLine(store, '');
   addLine(store, ' INFO', C.STAT_COLOR);
   addLine(store, '  inventory (i)   - Show your inventory', C.HELP_COLOR);
@@ -29,6 +30,8 @@ export function handleHelp(store: GameStore): void {
   addLine(store, '  journal         - View your adventure journal', C.HELP_COLOR);
   addLine(store, '  map             - Open the area map', C.HELP_COLOR);
   addLine(store, '  talk <npc>      - Talk to someone in the room', C.HELP_COLOR);
+  addLine(store, '  ask <npc> about <thing> - Ask someone about an item or clue', C.HELP_COLOR);
+  addLine(store, '  weapons         - List weapons by damage', C.HELP_COLOR);
   addLine(store, '  skills          - Open the skill tree', C.HELP_COLOR);
   addLine(store, '  learn <skill>   - Learn a new skill', C.HELP_COLOR);
   addLine(store, '  achievements    - View achievements', C.HELP_COLOR);

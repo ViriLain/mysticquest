@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import hiddenJson from '../../src/data/regions/hidden.json';
 import manorJson from '../../src/data/regions/manor.json';
 import { addDynamicExit, createWorld, getExits, getLivingEnemies, loadRegion, markEnemyDead } from '../../src/engine/world';
 import type { RegionData } from '../../src/engine/types';
@@ -72,5 +73,16 @@ describe('world helpers', () => {
     loadRegion(secondWorld, manorJson as RegionData);
 
     expect(secondWorld.rooms.manor_entry._ground_loot).toBeUndefined();
+  });
+
+  it('uses up to return from the Shroomy Forest to the wilds', () => {
+    const world = createWorld();
+    loadRegion(world, hiddenJson as RegionData);
+
+    expect(getExits(world, 'hidden_shroomy_forest')).toMatchObject({
+      up: 'wilds_clearing',
+      east: 'hidden_diner',
+    });
+    expect(getExits(world, 'hidden_shroomy_forest').north).toBeUndefined();
   });
 });

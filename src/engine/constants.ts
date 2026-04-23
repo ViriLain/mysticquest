@@ -5,6 +5,7 @@ export const EXITS_COLOR: RGBA = [0.5, 0.8, 1.0, 1.0];
 export const ERROR_COLOR: RGBA = [1.0, 0.4, 0.4, 1.0];
 export const HELP_COLOR: RGBA = [0.7, 0.7, 0.7, 1.0];
 export const ITEM_COLOR: RGBA = [0.4, 1.0, 0.4, 1.0];
+export const MAGIC_COLOR: RGBA = [0.8, 0.45, 1.0, 1.0];
 export const COMBAT_COLOR: RGBA = [1.0, 0.6, 0.2, 1.0];
 export const LOOT_COLOR: RGBA = [1.0, 0.8, 0.2, 1.0];
 export const STAT_COLOR: RGBA = [0.6, 0.8, 1.0, 1.0];

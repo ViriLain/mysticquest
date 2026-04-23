@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createCombat, enemyDefeated, playerAttack, playerDefend, playerFlee, playerUseItem, tickStatusEffects, applyStatusEffect } from '../../src/engine/combat';
+import { createCombat, enemyDefeated, playerAttack, playerDefend, playerFlee, playerUseItem, playerSkillAttack, tickStatusEffects, applyStatusEffect } from '../../src/engine/combat';
 import { addItem, addWeapon, createPlayer, equipWeapon } from '../../src/engine/player';
 import { createRng } from '../../src/engine/rng';
-import type { ItemDef, StatusEffect, WeaponDef } from '../../src/engine/types';
+import type { AccessoryDef, ArmorDef, ItemDef, StatusEffect, WeaponDef } from '../../src/engine/types';
 
 const itemData: Record<string, ItemDef> = {
   potion: { name: 'Potion', type: 'consumable', effect: 'heal', value: 25, description: 'heals' },
@@ -93,6 +93,61 @@ describe('playerDefend', () => {
     expect(combat.round).toBe(1);
     expect(player.defending).toBe(false);
     expect(player.hp).toBeLessThan(30);
+  });
+});
+
+describe('armor defense', () => {
+  it('equipped armor reduces damage taken', () => {
+    const armorData: Record<string, ArmorDef> = {
+      test_armor: { name: 'Test Armor', defense: 5, region: 'test', description: 'test' },
+    };
+
+    // Player WITH armor
+    const p1 = createPlayer();
+    p1.equippedArmor = 'test_armor';
+    p1.hp = 200;
+    p1.maxHp = 200;
+    const c1 = createCombat(p1, 'shadow_rat', enemyData);
+    playerDefend(c1, p1, itemData, seededRng(1), armorData);
+    const dmgWithArmor = 200 - p1.hp;
+
+    // Player WITHOUT armor
+    const p2 = createPlayer();
+    p2.hp = 200;
+    p2.maxHp = 200;
+    const c2 = createCombat(p2, 'shadow_rat', enemyData);
+    playerDefend(c2, p2, itemData, seededRng(1));
+    const dmgWithout = 200 - p2.hp;
+
+    expect(dmgWithArmor).toBeLessThan(dmgWithout);
+  });
+
+  it('accessory defense modifiers affect incoming damage', () => {
+    const accessoryData: Record<string, AccessoryDef> = {
+      brittle_charm: {
+        name: 'Brittle Charm',
+        description: 'less protection',
+        region: 'test',
+        modifiers: [{ type: 'defense', value: -1 }],
+      },
+    };
+
+    const p1 = createPlayer();
+    p1.equippedAccessory = 'brittle_charm';
+    p1.hp = 200;
+    p1.maxHp = 200;
+    const c1 = createCombat(p1, 'shadow_rat', enemyData);
+    playerDefend(c1, p1, itemData, seededRng(1), undefined, accessoryData);
+    const dmgWithPenalty = 200 - p1.hp;
+
+    const p2 = createPlayer();
+    p2.hp = 200;
+    p2.maxHp = 200;
+    const c2 = createCombat(p2, 'shadow_rat', enemyData);
+    playerDefend(c2, p2, itemData, seededRng(1));
+    const dmgWithoutPenalty = 200 - p2.hp;
+
+    expect(dmgWithPenalty).toBeGreaterThan(dmgWithoutPenalty);
   });
 });
 
@@ -383,18 +438,35 @@ describe('weapon class passives', () => {
     expect(heavyTotal).toBeGreaterThan(bladeTotal);
   });
 
-  it('heavy class shows armor pierce message', () => {
+  it('heavy class shows armor pierce message on round 1 only', () => {
     const heavyWeaponData: Record<string, WeaponDef> = {
       test_heavy: { name: 'Test Heavy', attack_bonus: 5, region: 'manor', weapon_class: 'heavy', description: 'test' },
     };
     const player = createPlayer();
+    player.maxHp = 9999;
+    player.hp = 9999;
     addWeapon(player, 'test_heavy');
     equipWeapon(player, 'test_heavy');
-    const combat = createCombat(player, 'shadow_rat', enemyData);
+    const tankEnemy = {
+      tank: {
+        name: 'Tank',
+        hp: 9999,
+        attack: 1,
+        defense: 0,
+        xp: 1,
+        loot: [] as string[],
+        region: 'test',
+        description: 'tanky',
+        is_boss: false,
+      },
+    };
+    const combat = createCombat(player, 'tank', tankEnemy);
 
-    const messages = playerAttack(combat, player, heavyWeaponData, itemData, seededRng(1));
+    const round1 = playerAttack(combat, player, heavyWeaponData, itemData, seededRng(1));
+    expect(round1.some(m => m.text.includes('smashes through armor'))).toBe(true);
 
-    expect(messages.some(m => m.text.includes('smashes through armor'))).toBe(true);
+    const round2 = playerAttack(combat, player, heavyWeaponData, itemData, seededRng(2));
+    expect(round2.some(m => m.text.includes('smashes through armor'))).toBe(false);
   });
 
   it('pierce class skips enemy attack on round 1', () => {
@@ -898,5 +970,372 @@ describe('Iron Will stun resistance', () => {
     }
     // Without Iron Will, 100% chance should always apply
     expect(stunCount).toBe(10);
+  });
+});
+
+describe('active combat skills', () => {
+  const tankEnemy = {
+    tank: {
+      name: 'Tank',
+      hp: 9999,
+      attack: 1,
+      defense: 10,
+      xp: 1,
+      loot: [] as string[],
+      region: 'test',
+      description: 'tanky',
+      is_boss: false,
+    },
+  };
+
+  const heavyWeaponData: Record<string, WeaponDef> = {
+    test_heavy: { name: 'Test Heavy', attack_bonus: 5, region: 'manor', weapon_class: 'heavy', description: 'test' },
+  };
+
+  const magicWeaponWithEffect: Record<string, WeaponDef> = {
+    burn_staff: {
+      name: 'Burn Staff', attack_bonus: 5, region: 'manor', weapon_class: 'magic',
+      description: 'burns', status_effect: { type: 'burn', damage: 2, duration: 3, chance: 100 },
+    },
+  };
+
+  const plainWeaponData: Record<string, WeaponDef> = {
+    club: { name: 'Club', attack_bonus: 3, region: 'manor', weapon_class: 'heavy', description: 'plain' },
+  };
+
+  it('power_strike deals more damage than normal attack against high-DEF enemy', () => {
+    // Normal attack
+    const p1 = createPlayer();
+    p1.attack = 10;
+    p1.maxHp = 9999;
+    p1.hp = 9999;
+    addWeapon(p1, 'test_heavy');
+    equipWeapon(p1, 'test_heavy');
+    const c1 = createCombat(p1, 'tank', tankEnemy);
+    playerAttack(c1, p1, heavyWeaponData, itemData, seededRng(42));
+    const normalDmg = 9999 - c1.enemy.hp;
+
+    // Skill attack
+    const p2 = createPlayer();
+    p2.attack = 10;
+    p2.maxHp = 9999;
+    p2.hp = 9999;
+    p2.skills.power_strike = true;
+    addWeapon(p2, 'test_heavy');
+    equipWeapon(p2, 'test_heavy');
+    const c2 = createCombat(p2, 'tank', tankEnemy);
+    playerSkillAttack(c2, p2, 'power_strike', heavyWeaponData, itemData, seededRng(42));
+    const skillDmg = 9999 - c2.enemy.hp;
+
+    expect(skillDmg).toBeGreaterThan(normalDmg);
+  });
+
+  it('ambush guarantees a 3x crit', () => {
+    const player = createPlayer();
+    player.attack = 10;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    player.skills.ambush = true;
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    const msgs = playerSkillAttack(combat, player, 'ambush', heavyWeaponData, itemData, seededRng(42));
+
+    expect(msgs.some(m => m.text.includes('strike from the shadows'))).toBe(true);
+    expect(msgs.some(m => m.text.includes('CRITICAL HIT') || m.text.includes('weak point'))).toBe(true);
+    expect(combat.skillCooldowns['ambush']).toBeGreaterThan(0);
+  });
+
+  it('arcane_surge applies double-duration status effect', () => {
+    const player = createPlayer();
+    player.attack = 10;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    player.skills.arcane_surge = true;
+    addWeapon(player, 'burn_staff');
+    equipWeapon(player, 'burn_staff');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    const msgs = playerSkillAttack(combat, player, 'arcane_surge', magicWeaponWithEffect, itemData, seededRng(42));
+
+    expect(msgs.some(m => m.text.includes('amplifies your weapon'))).toBe(true);
+    // Applied at double duration (3 * 2 = 6), but one tick fires in the
+    // same round during playerAttack's enemy-effect-tick phase, so remaining
+    // is 5 after the skill round completes. Total ticks = 6 as intended.
+    const burn = combat.enemyEffects.find(e => e.type === 'burn');
+    expect(burn).toBeDefined();
+    expect(burn!.remaining).toBe(5);
+  });
+
+  it('arcane_surge deals level-scaled burst when weapon has no status effect', () => {
+    const player = createPlayer();
+    player.attack = 10;
+    player.level = 3;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    player.skills.arcane_surge = true;
+    addWeapon(player, 'club');
+    equipWeapon(player, 'club');
+    const combat = createCombat(player, 'tank', tankEnemy);
+    const startHp = combat.enemy.hp;
+
+    const msgs = playerSkillAttack(combat, player, 'arcane_surge', plainWeaponData, itemData, seededRng(42));
+
+    expect(msgs.some(m => m.text.includes('burst of arcane energy'))).toBe(true);
+    // Burst damage = 5 + level = 8, plus the normal attack damage
+    const totalDmg = startHp - combat.enemy.hp;
+    expect(totalDmg).toBeGreaterThanOrEqual(5 + player.level);
+  });
+
+  it('cooldown reduction reduces initial cooldown', () => {
+    const player = createPlayer();
+    player.skills.power_strike = true;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    // Use with 1 cooldown reduction
+    playerSkillAttack(combat, player, 'power_strike', heavyWeaponData, itemData, seededRng(42), 1);
+    expect(combat.skillCooldowns['power_strike']).toBe(4); // 5 - 1 = 4
+  });
+
+  it('cooldown prevents reuse and decrements each round', () => {
+    const player = createPlayer();
+    player.attack = 10;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    player.skills.power_strike = true;
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    // Use the skill
+    playerSkillAttack(combat, player, 'power_strike', heavyWeaponData, itemData, seededRng(42));
+    const cdAfterUse = combat.skillCooldowns['power_strike'];
+    expect(cdAfterUse).toBe(5);
+
+    // Normal attack decrements cooldown
+    playerAttack(combat, player, heavyWeaponData, itemData, seededRng(43));
+    expect(combat.skillCooldowns['power_strike']).toBe(cdAfterUse - 1);
+
+    // Another normal attack
+    playerAttack(combat, player, heavyWeaponData, itemData, seededRng(44));
+    expect(combat.skillCooldowns['power_strike']).toBe(cdAfterUse - 2);
+  });
+
+  it('using skill on cooldown does not advance round', () => {
+    const player = createPlayer();
+    player.attack = 10;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    player.skills.power_strike = true;
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    // Use the skill
+    playerSkillAttack(combat, player, 'power_strike', heavyWeaponData, itemData, seededRng(42));
+    const roundAfterUse = combat.round;
+
+    // Try again immediately — should fail
+    const msgs = playerSkillAttack(combat, player, 'power_strike', heavyWeaponData, itemData, seededRng(43));
+    expect(combat.round).toBe(roundAfterUse);
+    expect(msgs.some(m => m.text.includes('cooldown'))).toBe(true);
+  });
+
+  it('using unknown skill returns error', () => {
+    const player = createPlayer();
+    player.maxHp = 9999;
+    player.hp = 9999;
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    const msgs = playerSkillAttack(combat, player, 'power_strike', heavyWeaponData, itemData, seededRng(42));
+    expect(combat.round).toBe(0);
+    expect(msgs.some(m => m.text.includes("haven't learned"))).toBe(true);
+  });
+
+  it('cooldowns tick during defend and flee', () => {
+    const player = createPlayer();
+    player.attack = 10;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    player.skills.ambush = true;
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    // Use the skill
+    playerSkillAttack(combat, player, 'ambush', heavyWeaponData, itemData, seededRng(42));
+    const cdAfterUse = combat.skillCooldowns['ambush'];
+    expect(cdAfterUse).toBe(4);
+
+    // Defend decrements cooldown
+    playerDefend(combat, player, itemData, seededRng(43));
+    expect(combat.skillCooldowns['ambush']).toBe(cdAfterUse - 1);
+
+    // Flee (may or may not succeed, but cooldown still ticks)
+    playerFlee(combat, player, itemData, seededRng(44));
+    expect(combat.skillCooldowns['ambush']).toBe(cdAfterUse - 2);
+  });
+
+  it('cooldowns tick during useItem', () => {
+    const player = createPlayer();
+    player.attack = 10;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    player.skills.power_strike = true;
+    addItem(player, 'potion', itemData);
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    playerSkillAttack(combat, player, 'power_strike', heavyWeaponData, itemData, seededRng(42));
+    const cdAfterUse = combat.skillCooldowns['power_strike'];
+
+    player.hp = 10; // damage so potion is useful
+    playerUseItem(combat, player, 'potion', itemData, seededRng(43));
+    expect(combat.skillCooldowns['power_strike']).toBe(cdAfterUse - 1);
+  });
+
+  it('cooldown is removed when it reaches zero', () => {
+    const player = createPlayer();
+    player.attack = 10;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    player.skills.ambush = true;
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    // Use ambush (cooldown 4)
+    playerSkillAttack(combat, player, 'ambush', heavyWeaponData, itemData, seededRng(42));
+    expect(combat.skillCooldowns['ambush']).toBe(4);
+
+    // 4 normal attacks to tick it down to 0
+    for (let i = 0; i < 4; i++) {
+      playerAttack(combat, player, heavyWeaponData, itemData, seededRng(43 + i));
+    }
+    // Should be deleted, not just 0
+    expect(combat.skillCooldowns['ambush']).toBeUndefined();
+  });
+
+  it('ambush does not double-dip with assassin passive crit multiplier', () => {
+    // Ambush forces 3x crit. With assassin also giving 3x, we should NOT
+    // see 3*3 = 9x. The forced crit mult should override, not multiply.
+    const player = createPlayer();
+    player.attack = 10;
+    player.maxHp = 9999;
+    player.hp = 9999;
+    player.skills.ambush = true;
+    player.skills.assassin = true;
+    addWeapon(player, 'test_heavy');
+    equipWeapon(player, 'test_heavy');
+    const combat = createCombat(player, 'tank', tankEnemy);
+
+    playerSkillAttack(combat, player, 'ambush', heavyWeaponData, itemData, seededRng(42));
+    const ambushDmg = 9999 - combat.enemy.hp;
+
+    // Compare: same setup without assassin
+    const p2 = createPlayer();
+    p2.attack = 10;
+    p2.maxHp = 9999;
+    p2.hp = 9999;
+    p2.skills.ambush = true;
+    addWeapon(p2, 'test_heavy');
+    equipWeapon(p2, 'test_heavy');
+    const c2 = createCombat(p2, 'tank', tankEnemy);
+
+    playerSkillAttack(c2, p2, 'ambush', heavyWeaponData, itemData, seededRng(42));
+    const ambushNoAssassinDmg = 9999 - c2.enemy.hp;
+
+    // Both should deal the same since ambush overrides the crit mult
+    expect(ambushDmg).toBe(ambushNoAssassinDmg);
+  });
+});
+
+describe('accessory modifiers in combat', () => {
+  const accData: Record<string, AccessoryDef> = {
+    crit_ring: { name: 'Crit Ring', description: 't', region: 't', modifiers: [{ type: 'crit_chance', value: 50 }] },
+    def_ignore_ring: { name: 'Pierce Ring', description: 't', region: 't', modifiers: [{ type: 'def_ignore', value: 5 }] },
+    dmg_reduce_ring: { name: 'Guard Ring', description: 't', region: 't', modifiers: [{ type: 'damage_reduction', value: 3 }] },
+    lens: { name: 'Mystic Lens', description: 't', region: 't', modifiers: [{ type: 'magic_counter_threshold', value: -1 }] },
+    duration_ring: { name: 'Duration Ring', description: 't', region: 't', modifiers: [{ type: 'status_duration', value: 2 }] },
+  };
+
+  it('crit_chance accessory increases crit rate', () => {
+    let accCrits = 0;
+    let baseCrits = 0;
+    for (let seed = 0; seed < 200; seed++) {
+      const p1 = createPlayer(); p1.maxHp = 9999; p1.hp = 9999;
+      p1.equippedAccessory = 'crit_ring';
+      addWeapon(p1, 'rusty_dagger'); equipWeapon(p1, 'rusty_dagger');
+      const c1 = createCombat(p1, 'shadow_rat', enemyData);
+      const m1 = playerAttack(c1, p1, weaponData, itemData, seededRng(seed), undefined, undefined, accData);
+      if (m1.some(m => m.text.includes('CRITICAL') || m.text.includes('weak point'))) accCrits++;
+
+      const p2 = createPlayer(); p2.maxHp = 9999; p2.hp = 9999;
+      addWeapon(p2, 'rusty_dagger'); equipWeapon(p2, 'rusty_dagger');
+      const c2 = createCombat(p2, 'shadow_rat', enemyData);
+      const m2 = playerAttack(c2, p2, weaponData, itemData, seededRng(seed));
+      if (m2.some(m => m.text.includes('CRITICAL') || m.text.includes('weak point'))) baseCrits++;
+    }
+    expect(accCrits).toBeGreaterThan(baseCrits);
+  });
+
+  it('damage_reduction accessory reduces incoming damage', () => {
+    const p1 = createPlayer(); p1.hp = 200; p1.maxHp = 200;
+    p1.equippedAccessory = 'dmg_reduce_ring';
+    const c1 = createCombat(p1, 'shadow_rat', enemyData);
+    playerDefend(c1, p1, itemData, seededRng(1), undefined, accData);
+    const dmgWith = 200 - p1.hp;
+
+    const p2 = createPlayer(); p2.hp = 200; p2.maxHp = 200;
+    const c2 = createCombat(p2, 'shadow_rat', enemyData);
+    playerDefend(c2, p2, itemData, seededRng(1));
+    const dmgWithout = 200 - p2.hp;
+
+    expect(dmgWith).toBeLessThan(dmgWithout);
+  });
+
+  it('magic_counter_threshold accessory makes magic proc on hit 2', () => {
+    const magicWeapon: Record<string, WeaponDef> = {
+      staff: { name: 'Staff', attack_bonus: 5, region: 'manor', weapon_class: 'magic', description: 'test',
+        status_effect: { type: 'burn', damage: 2, duration: 3, chance: 0 } },
+    };
+    const player = createPlayer(); player.maxHp = 9999; player.hp = 9999;
+    player.equippedAccessory = 'lens';
+    addWeapon(player, 'staff'); equipWeapon(player, 'staff');
+    const tank = { tank: { name: 'Tank', hp: 9999, attack: 1, defense: 0, xp: 1, loot: [] as string[], region: 'test', description: 'tanky', is_boss: false } };
+    const combat = createCombat(player, 'tank', tank);
+
+    playerAttack(combat, player, magicWeapon, itemData, seededRng(1), undefined, undefined, accData);
+    expect(combat.enemyEffects.find(e => e.type === 'burn')).toBeUndefined();
+
+    playerAttack(combat, player, magicWeapon, itemData, seededRng(2), undefined, undefined, accData);
+    expect(combat.enemyEffects.find(e => e.type === 'burn')).toBeDefined();
+    expect(combat.magicHitCounter).toBe(0);
+  });
+
+  it('status_duration accessory extends weapon effect duration', () => {
+    const poisonWeapon: Record<string, WeaponDef> = {
+      venom: { name: 'Venom Blade', attack_bonus: 5, region: 'manor', weapon_class: 'blade', description: 'test',
+        status_effect: { type: 'poison', damage: 2, duration: 3, chance: 100 } },
+    };
+    const player = createPlayer(); player.maxHp = 9999; player.hp = 9999;
+    player.equippedAccessory = 'duration_ring';
+    addWeapon(player, 'venom'); equipWeapon(player, 'venom');
+    const tank = { tank: { name: 'Tank', hp: 9999, attack: 1, defense: 0, xp: 1, loot: [] as string[], region: 'test', description: 'tanky', is_boss: false } };
+    const combat = createCombat(player, 'tank', tank);
+
+    playerAttack(combat, player, poisonWeapon, itemData, seededRng(1), undefined, undefined, accData);
+    const poison = combat.enemyEffects.find(e => e.type === 'poison');
+    expect(poison).toBeDefined();
+    // Base duration 3 + accessory bonus 2 = 5 (applied after enemy tick, so no decrement this round)
+    expect(poison!.remaining).toBe(5);
   });
 });

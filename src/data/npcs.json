@@ -3,6 +3,12 @@
     "name": "Dusty Merchant",
     "description": "A hunched figure in a tattered cloak stands behind a makeshift counter of stacked crates. His eyes glint in the dim light as he beckons you closer.",
     "match_words": ["merchant", "dusty", "trader", "shop"],
+    "ask_fallback": "Dusty scratches his beard. \"Can't say I know much about that. I mostly know prices, potions, and why the cellar is bad news.\"",
+    "ask_topics": {
+      "ancient_map": "Dusty squints at the map. \"That is older than the manor. If it shows you a path, assume the path was hidden for a reason.\"",
+      "dark_crown": "Dusty lowers his voice. \"Black iron, whispering metal... no honest merchant wants that on the shelf. Keep it off your head.\"",
+      "magic_weapons": "Dusty says, \"Magic weapons don't sit quiet. If one hums, glows, or makes the air taste like pennies, treat it with respect.\""
+    },
     "dialogue": {
       "start": {
         "text": [
@@ -84,6 +90,14 @@
     "name": "Forest Guide",
     "description": "A weathered woman in green leather sits on a mossy stump, whittling a stick. A hawk perches on her shoulder, watching you with sharp eyes.",
     "match_words": ["guide", "woman", "ranger", "forest guide"],
+    "ask_fallback": "Wren narrows her eyes. \"If it matters, the forest will leave tracks. I do not know that one.\"",
+    "ask_topics": {
+      "ancient_map": "Wren taps the Ancient Map. \"It marks old paths that the forest tries to forget. If a route feels wrong, check the map and trust the hidden trail.\"",
+      "mushrooms": "Wren says, \"The mushrooms are not just decoration. Follow them when the normal paths stop making sense.\"",
+      "hrunting": "Wren says, \"Hrunting is older than these trees. If you carry it, listen for the hum before a fight; that is the blade waking up.\"",
+      "tyrfing": "Wren frowns. \"Tyrfing is powerful, but cursed things always collect their price. Do not let it choose your battles for you.\"",
+      "magic_weapons": "Wren says, \"Magic weapons leave signs: a glow, a hum, a wrongness in the air. They are rare because most people are wise enough to hide them.\""
+    },
     "dialogue": {
       "start": {
         "text": [
@@ -173,6 +187,14 @@
     "name": "Hermit of the Wastes",
     "description": "An old man wrapped in sun-bleached rags sits cross-legged in the dust. His eyes are milky white but somehow he seems to see everything.",
     "match_words": ["hermit", "old man", "sage", "wastes hermit"],
+    "ask_fallback": "The hermit tilts his head toward the wind. \"The dust has not told me that story.\"",
+    "ask_topics": {
+      "dark_crown": "The hermit whispers, \"The crown did not rule the wastes. It consumed them. Power that asks to be worn is already wearing you.\"",
+      "ancient_map": "The hermit runs one finger over the map without touching it. \"Old roads remember old sins. It may guide you where memory failed.\"",
+      "excalibur": "The hermit says, \"A blade of light has no patience for corruption. But even a legend needs a steady hand.\"",
+      "keeper_ward": "The hermit says, \"A ward is a promise made solid. If the Keeper grants one, carry it like a second heartbeat.\"",
+      "magic_weapons": "The hermit says, \"Magic in steel is memory with an edge. Ask what the weapon remembers before you swing it.\""
+    },
     "dialogue": {
       "start": {
         "text": [
@@ -275,6 +297,17 @@
     "name": "The Last Keeper",
     "description": "A translucent figure kneeling in the center of the sanctum. Not a ghost — more like a recording etched into the stone itself. Its face is ancient and serene.",
     "match_words": ["keeper", "last keeper", "spirit", "figure", "statue"],
+    "ask_fallback": "The Last Keeper answers, \"That memory is not preserved here.\"",
+    "ask_topics": {
+      "dark_crown": "The Last Keeper says, \"The dark crown was forged to unify a kingdom. It learned command, then hunger, then corruption.\"",
+      "keeper_ward": "The Last Keeper says, \"The ward is the last clean fragment of our craft. It cannot save you from choice, but it can shield you from harm.\"",
+      "keepers_blade": "The Last Keeper says, \"That blade was made for guardians, not conquerors. Let it protect more than your pride.\"",
+      "excalibur": "The Last Keeper says, \"Light-bearing weapons resist the crown's song. They are useful, but not immune to the hand that holds them.\"",
+      "keyblade": "The Last Keeper says, \"A key-shaped blade is a strange mercy. Some locks are doors, and some locks are hearts.\"",
+      "anduril": "The Last Keeper says, \"A reforged flame is a promise that ruin need not be final.\"",
+      "ragnarok": "The Last Keeper says, \"A weapon named for endings should be drawn only when you accept what ending means.\"",
+      "magic_weapons": "The Last Keeper says, \"Enchanted weapons are arguments made permanent. Choose the argument you are willing to become.\""
+    },
     "dialogue": {
       "start": {
         "text": [
@@ -364,6 +397,14 @@
     "name": "Sir Whiskers III",
     "description": "A rotund tabby cat wearing a tiny top hat and monocle lounges on a velvet cushion. It speaks in a refined accent despite being, you know, a cat.",
     "match_words": ["cat", "whiskers", "sir whiskers", "tabby"],
+    "ask_fallback": "Sir Whiskers III flicks his tail. \"I am a cat, not a search engine. Ask me about mushrooms, hats, or Milo.\"",
+    "ask_topics": {
+      "mushrooms": "Sir Whiskers III says, \"Collect the red, grey, green, and orange mushrooms, then take them to the diner. Carl knows what to do. Allegedly.\"",
+      "ancient_map": "Sir Whiskers III says, \"Maps are adorable. Humans need paper to find doors. Cats simply know.\"",
+      "badger_on_stick": "Sir Whiskers III says, \"An elegant weapon for a less civilized age. Also, do not feed it after midnight.\"",
+      "falcon_punch": "Sir Whiskers III says, \"That is not a weapon. That is a lifestyle choice shouted at maximum volume.\"",
+      "magic_weapons": "Sir Whiskers III says, \"If it glows purple, hoard it. If it whispers, pretend you cannot hear it. Standard cat rules.\""
+    },
     "dialogue": {
       "start": {
         "text": [

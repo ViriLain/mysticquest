@@ -134,7 +134,7 @@ function handleDungeonSpecialChoice(store: GameStore, room: RoomDef, input: stri
     if (choice === 1) {
       store.player.buffAttack += 5;
       store.player.defense = Math.max(0, store.player.defense - 3);
-      addLine(store, 'Dark power surges through you! +5 ATK, -3 DEF for this floor.', C.COMBAT_COLOR);
+      addLine(store, 'Dark power surges through you! +5 ATK, -3 DEF permanently.', C.COMBAT_COLOR);
       emitSound(store, 'equip');
     } else if (choice === 2) {
       playerHeal(store.player, 10);

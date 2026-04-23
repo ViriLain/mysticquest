@@ -1,12 +1,14 @@
 import type {
   EndingCheckContext, GameStore, EndingDef,
   WeaponDef, ItemDef, EnemyDef, NpcDef,
+  ArmorDef, AccessoryDef,
 } from './types';
 import * as C from './constants';
 import { parseCommand } from './commands';
 import { visitRoom } from './player';
 import { checkAchievement, checkItemAchievements, isUnlocked, tryUnlock } from './achievements';
 import { createCombat } from './combat';
+import { ACTIVE_SKILLS, getSkill } from './skills';
 import { showScore } from './handlers/info';
 import { getRoom, getAdjacentRoom } from './world';
 import { createEffects, updateRainbowTint } from './effects';
@@ -37,18 +39,29 @@ import weaponsJson from '../data/weapons.json';
 import itemsJson from '../data/items.json';
 import enemiesJson from '../data/enemies.json';
 import endingsJson from '../data/endings.json';
+import armorJson from '../data/armor.json';
+import accessoriesJson from '../data/accessories.json';
 
 const weaponData = weaponsJson as Record<string, WeaponDef>;
 const itemData = itemsJson as Record<string, ItemDef>;
 const enemyData = enemiesJson as Record<string, EnemyDef>;
 const endingsData = endingsJson as Record<string, EndingDef>;
 const shopData = shopsJson as Record<string, ShopDef>;
+const armorData = armorJson as Record<string, ArmorDef>;
+const accessoryData = accessoriesJson as Record<string, AccessoryDef>;
 
 function effectiveWeaponData(store: GameStore): Record<string, WeaponDef> {
   if (store.gameMode === 'dungeon' && store.dungeon?.floorWeapons) {
     return { ...weaponData, ...store.dungeon.floorWeapons };
   }
   return weaponData;
+}
+
+function effectiveArmorData(store: GameStore): Record<string, ArmorDef> {
+  if (store.gameMode === 'dungeon' && store.dungeon?.floorArmor) {
+    return { ...armorData, ...store.dungeon.floorArmor };
+  }
+  return armorData;
 }
 
 // ---- Helpers ----
@@ -179,6 +192,25 @@ function startEnding(store: GameStore, ending: EndingDef): void {
   addLine(store, '');
 }
 
+function resumeAfterEnding(store: GameStore): void {
+  if (!store.player || !store.world) {
+    startMenu(store);
+    return;
+  }
+  store.endingData = null;
+  store.endingLineIndex = 0;
+  store.endingTimer = 0;
+  store.endingAllTyped = false;
+  store.endingPsychedelicTime = 0;
+  store.baseColor = [...C.BASE_COLOR];
+  store.state = 'exploring';
+  clearTerminal(store);
+  updateHeader(store);
+  displayRoom(store, store.player.currentRoom);
+  const room = getRoom(store.world, store.player.currentRoom);
+  applyRegionTint(store, room?.region);
+}
+
 function startCombat(store: GameStore, enemyId: string): void {
   if (!store.player) return;
   const combinedEnemies = store.gameMode === 'dungeon' && store.dungeon
@@ -209,7 +241,7 @@ function startCombat(store: GameStore, enemyId: string): void {
   if (edata.description) addLine(store, edata.description, C.HELP_COLOR);
   addLine(store, `HP: ${edata.hp}  ATK: ${edata.attack}  DEF: ${edata.defense}`, C.HELP_COLOR);
   addLine(store, '');
-  addLine(store, 'Commands: attack, defend, flee, use <item>', C.COMBAT_COLOR);
+  addLine(store, 'Commands: attack, defend, flee, use <item>, skill <name>', C.COMBAT_COLOR);
 }
 
 function buildCombatDeps(store: GameStore): CombatDeps {
@@ -217,6 +249,8 @@ function buildCombatDeps(store: GameStore): CombatDeps {
     itemData,
     weaponData: effectiveWeaponData(store),
     enemyData,
+    armorData: effectiveArmorData(store),
+    accessoryData,
     refreshHeader: () => updateHeader(store),
     checkEndingsForBoss: enemyId => {
       checkEndingsContext(store, { bossJustDefeated: enemyId });
@@ -252,6 +286,8 @@ function buildExploringDeps(store: GameStore): ExploringDeps {
     itemData,
     weaponData: effectiveWeaponData(store),
     npcData,
+    armorData,
+    accessoryData,
     refreshHeader: () => updateHeader(store),
     enterRoom: roomId => enterRoom(store, roomId),
     emit: sound => emitSound(store, sound),
@@ -343,7 +379,41 @@ function getAutocompleteSuggestions(store: GameStore, input: string): string[] {
   if (store.state === 'shop') {
     return getShopAutocompleteSuggestions(store, input, buildShopDeps(store));
   }
-  return getAutocompleteSuggestionsRaw(store, input, enemyData, itemData, effectiveWeaponData(store), npcData);
+  if (store.state === 'combat') {
+    return getCombatAutocompleteSuggestions(store, input);
+  }
+  return getAutocompleteSuggestionsRaw(store, input, enemyData, itemData, effectiveWeaponData(store), npcData, effectiveArmorData(store), accessoryData);
+}
+
+function getCombatAutocompleteSuggestions(store: GameStore, input: string): string[] {
+  const lower = input.toLowerCase();
+  if (!lower || !store.player) return [];
+
+  const parts = lower.split(/\s+/);
+  if (parts.length <= 1) {
+    const combatVerbs = ['attack', 'defend', 'flee', 'use', 'skill', 'inventory', 'stats', 'skills'];
+    return combatVerbs.filter(v => v.startsWith(lower) && v !== lower);
+  }
+
+  const verb = parts[0];
+  const partial = parts.slice(1).join(' ');
+  const candidates: string[] = [];
+
+  if (verb === 'use') {
+    for (const id of Object.keys(store.player.inventory)) {
+      const item = itemData[id];
+      if (item?.type === 'consumable') candidates.push(item.name);
+    }
+  } else if (verb === 'skill') {
+    for (const skillId of ACTIVE_SKILLS) {
+      if (!store.player.skills[skillId]) continue;
+      const skill = getSkill(skillId);
+      if (skill) candidates.push(skill.name);
+    }
+  }
+
+  if (!partial) return candidates;
+  return candidates.filter(c => c.toLowerCase().startsWith(partial));
 }
 
 function buildShopDeps(store: GameStore): ShopDeps {
@@ -352,6 +422,7 @@ function buildShopDeps(store: GameStore): ShopDeps {
     itemData,
     weaponData: effectiveWeaponData(store),
     npcData,
+    armorData: effectiveArmorData(store),
     refreshHeader: () => updateHeader(store),
   };
 }
@@ -574,7 +645,7 @@ function updateEnding(s: GameStore, dt: number): void {
         } else {
           s.endingAllTyped = true;
           addLine(s, '');
-          addLine(s, 'Press any key to return to menu.', C.HELP_COLOR);
+          addLine(s, 'Press any key to continue exploring.', C.HELP_COLOR);
         }
       }
     }
@@ -613,9 +684,7 @@ function handleKeyPressed(s: GameStore, key: string): void {
       return;
     }
     if (s.endingAllTyped) {
-      s.endingData = null;
-      s.baseColor = [...C.BASE_COLOR];
-      startMenu(s);
+      resumeAfterEnding(s);
     }
     return;
   }
@@ -805,7 +874,7 @@ function handleKeyPressed(s: GameStore, key: string): void {
           if (mode === 'buy') {
             handleShopInput(s, 'buy', item.label, buildShopDeps(s));
           } else {
-            handleShopInput(s, 'sell', item.label, buildShopDeps(s));
+            handleShopInput(s, 'sell', item.id, buildShopDeps(s));
           }
         }
       }

@@ -1,7 +1,7 @@
-import type { CombatMessage, EnemyDef, GameStore, ItemDef, RoomDef, StatusEffect, WeaponDef } from '../types';
+import type { AccessoryDef, ArmorDef, CombatMessage, EnemyDef, GameStore, ItemDef, RoomDef, StatusEffect, WeaponDef } from '../types';
 import * as C from '../constants';
 import { notifyObjectiveEvent } from '../objectives';
-import { playerAttack, playerDefend, playerFlee, playerUseItem, enemyDefeated } from '../combat';
+import { playerAttack, playerDefend, playerFlee, playerUseItem, playerSkillAttack, enemyDefeated } from '../combat';
 import { awardGold } from '../economy';
 import { showInventory, showSkills, showStats } from '../handlers/info';
 import { ICON, iconLine } from '../icons';
@@ -9,11 +9,14 @@ import { findAllMatches, resolveOrDisambiguate } from '../matching';
 import { addLine, emitSound } from '../output';
 import { pushEffect } from '../effects';
 import { markEnemyDead } from '../world';
+import { ACTIVE_SKILLS, getSkill, findSkillByName } from '../skills';
 
 export interface CombatDeps {
   itemData: Record<string, ItemDef>;
   weaponData: Record<string, WeaponDef>;
   enemyData: Record<string, EnemyDef>;
+  armorData?: Record<string, ArmorDef>;
+  accessoryData?: Record<string, AccessoryDef>;
   refreshHeader: () => void;
   checkEndingsForBoss: (enemyId: string) => void;
   checkAchievement: (id: string) => void;
@@ -51,6 +54,19 @@ function processCombatMessages(store: GameStore, msgs: CombatMessage[]): void {
     if (msg.text.includes('LEVEL UP!')) {
       emitSound(store, 'levelUp');
     }
+    if (msg.text.includes('devastating strike')) {
+      pushEffect(store.effects, 'shake', 0.4, { intensity: 5 });
+      pushEffect(store.effects, 'flash', 0.3, { r: 1, g: 0.6, b: 0 });
+      emitSound(store, 'critical');
+    }
+    if (msg.text.includes('strike from the shadows')) {
+      pushEffect(store.effects, 'flash', 0.4, { r: 1, g: 1, b: 1 });
+      emitSound(store, 'critical');
+    }
+    if (msg.text.includes('amplifies your weapon') || msg.text.includes('burst of arcane energy')) {
+      pushEffect(store.effects, 'glitch', 0.3, { intensity: 0.5 });
+      emitSound(store, 'levelUp');
+    }
   }
 }
 
@@ -74,7 +90,7 @@ export function handleCombatCommand(
     addLine(store, 'You are stunned! You can only use items.', C.COMBAT_COLOR);
     emitSound(store, 'error');
     // Run a lost turn so the stun decrements and the enemy gets to act
-    const stunMsgs = playerDefend(store.combat, store.player, deps.itemData);
+    const stunMsgs = playerDefend(store.combat, store.player, deps.itemData, undefined, deps.armorData, deps.accessoryData);
     processCombatMessages(store, stunMsgs);
     deps.refreshHeader();
     if (store.combat && store.combat.playerEffects.length > 0) {
@@ -86,11 +102,11 @@ export function handleCombatCommand(
   let msgs: CombatMessage[] = [];
 
   if (verb === 'attack') {
-    msgs = playerAttack(store.combat, store.player, deps.weaponData, deps.itemData);
+    msgs = playerAttack(store.combat, store.player, deps.weaponData, deps.itemData, undefined, undefined, deps.armorData, deps.accessoryData);
   } else if (verb === 'defend') {
-    msgs = playerDefend(store.combat, store.player, deps.itemData);
+    msgs = playerDefend(store.combat, store.player, deps.itemData, undefined, deps.armorData, deps.accessoryData);
   } else if (verb === 'flee') {
-    msgs = playerFlee(store.combat, store.player, deps.itemData);
+    msgs = playerFlee(store.combat, store.player, deps.itemData, undefined, deps.armorData, deps.accessoryData);
   } else if (verb === 'use') {
     if (!target) {
       addLine(store, 'Use what?', C.ERROR_COLOR);
@@ -106,7 +122,7 @@ export function handleCombatCommand(
       addLine(store, "You don't have that.", C.ERROR_COLOR);
       return;
     }
-    msgs = playerUseItem(store.combat, store.player, matches[0], deps.itemData);
+    msgs = playerUseItem(store.combat, store.player, matches[0], deps.itemData, undefined, deps.armorData, deps.accessoryData);
   } else if (verb === 'inventory') {
     showInventory(store);
     return;
@@ -116,8 +132,39 @@ export function handleCombatCommand(
   } else if (verb === 'skills') {
     showSkills(store);
     return;
+  } else if (verb === 'skill') {
+    if (!target) {
+      addLine(store, '=== Active Skills ===', C.STAT_COLOR);
+      let hasAny = false;
+      for (const skillId of ACTIVE_SKILLS) {
+        if (!store.player.skills[skillId]) continue;
+        hasAny = true;
+        const cd = store.combat.skillCooldowns[skillId];
+        const status = cd ? ` (cooldown: ${cd} rounds)` : ' (ready)';
+        const skill = getSkill(skillId);
+        addLine(store, `  ${skill?.name || skillId}${status}`, cd ? C.HELP_COLOR : C.CHOICE_COLOR);
+      }
+      if (!hasAny) addLine(store, '  (no active skills learned)', C.HELP_COLOR);
+      return;
+    }
+    const skill = findSkillByName(target);
+    if (!skill || !ACTIVE_SKILLS.has(skill.id)) {
+      addLine(store, "You don't know that skill.", C.ERROR_COLOR);
+      return;
+    }
+    // Compute cooldown reduction from accessories
+    let cooldownReduction = 0;
+    if (deps.accessoryData && store.player.equippedAccessory) {
+      const acc = deps.accessoryData[store.player.equippedAccessory];
+      if (acc) {
+        for (const mod of acc.modifiers) {
+          if (mod.type === 'cooldown_reduction') cooldownReduction += mod.value;
+        }
+      }
+    }
+    msgs = playerSkillAttack(store.combat, store.player, skill.id, deps.weaponData, deps.itemData, undefined, cooldownReduction, deps.armorData, deps.accessoryData);
   } else {
-    addLine(store, 'In combat: attack, defend, flee, use <item>', C.COMBAT_COLOR);
+    addLine(store, 'In combat: attack, defend, flee, use <item>, skill <name>', C.COMBAT_COLOR);
     return;
   }
 
@@ -167,7 +214,22 @@ export function handleCombatCommand(
           if (!room._ground_weapons) room._ground_weapons = [];
           room._ground_weapons.push(results.weapon);
           const weapon = deps.weaponData[results.weapon];
-          if (weapon) addLine(store, iconLine(ICON.loot, `The enemy drops a ${weapon.name}!`), C.LOOT_COLOR);
+          if (weapon) {
+            const color = weapon.weapon_class === 'magic' ? C.MAGIC_COLOR : C.LOOT_COLOR;
+            addLine(store, iconLine(ICON.loot, `The enemy drops a ${weapon.name}!`), color);
+          }
+        }
+        if (results.armor) {
+          if (!room._ground_loot) room._ground_loot = [];
+          room._ground_loot.push(results.armor);
+          const armorDef = deps.armorData?.[results.armor];
+          if (armorDef) addLine(store, iconLine(ICON.loot, `The enemy drops ${armorDef.name}!`), C.LOOT_COLOR);
+        }
+        if (results.accessory) {
+          if (!room._ground_loot) room._ground_loot = [];
+          room._ground_loot.push(results.accessory);
+          const accDef = deps.accessoryData?.[results.accessory];
+          if (accDef) addLine(store, iconLine(ICON.loot, `The enemy drops a ${accDef.name}!`), C.LOOT_COLOR);
         }
       }
 

@@ -5,7 +5,7 @@
  * chain of rooms with optional branch rooms, scaled enemies, and loot.
  */
 
-import type { RoomDef, EnemyDef, StatusEffectType, WeaponClass, WeaponDef } from './types';
+import type { RoomDef, EnemyDef, StatusEffectType, WeaponClass, WeaponDef, ArmorDef } from './types';
 import { createRng, rngPick } from './rng';
 
 // ---------------------------------------------------------------------------
@@ -56,6 +56,14 @@ const MAGIC_DUNGEON_ELEMENTS: StatusEffectType[] = ['burn', 'poison'];
 // Procedural weapon generator
 // ---------------------------------------------------------------------------
 
+export interface DungeonWeaponResult {
+  id: string;
+  name: string;
+  attack_bonus: number;
+  weapon_class: WeaponClass;
+  status_effect?: { type: StatusEffectType; damage: number; duration: number; chance: number };
+}
+
 /**
  * Generate a procedural weapon dropped by bosses.
  * Attack bonus scales with floor depth.
@@ -63,13 +71,7 @@ const MAGIC_DUNGEON_ELEMENTS: StatusEffectType[] = ['burn', 'poison'];
 export function generateDungeonWeapon(
   floor: number,
   rng: () => number,
-): {
-  id: string;
-  name: string;
-  attack_bonus: number;
-  weapon_class: WeaponClass;
-  status_effect?: { type: StatusEffectType; damage: number; duration: number; chance: number };
-} {
+): DungeonWeaponResult {
   const prefix = rngPick(rng, WEAPON_PREFIXES);
   const suffix = rngPick(rng, WEAPON_SUFFIXES);
   const name = `${prefix} ${suffix}`;
@@ -77,13 +79,7 @@ export function generateDungeonWeapon(
   const attack_bonus = 2 + floor * 2;
   const weapon_class = SUFFIX_CLASS[suffix] ?? 'blade';
 
-  const result: {
-    id: string;
-    name: string;
-    attack_bonus: number;
-    weapon_class: WeaponClass;
-    status_effect?: { type: StatusEffectType; damage: number; duration: number; chance: number };
-  } = { id, name, attack_bonus, weapon_class };
+  const result: DungeonWeaponResult = { id, name, attack_bonus, weapon_class };
 
   if (weapon_class === 'magic') {
     result.status_effect = {
@@ -98,6 +94,42 @@ export function generateDungeonWeapon(
 }
 
 // ---------------------------------------------------------------------------
+// Procedural armor generator
+// ---------------------------------------------------------------------------
+
+const ARMOR_PREFIXES = ['Worn', 'Dark', 'Ancient', 'Rusted', 'Reinforced'];
+const ARMOR_SUFFIXES = ['Mail', 'Plate', 'Guard', 'Shell', 'Vest'];
+
+export interface DungeonArmorResult {
+  id: string;
+  name: string;
+  defense: number;
+}
+
+/**
+ * Generate procedural armor dropped by full bosses.
+ * Defense scales with floor depth.
+ */
+export function generateDungeonArmor(
+  floor: number,
+  rng: () => number,
+): DungeonArmorResult {
+  const prefix = rngPick(rng, ARMOR_PREFIXES);
+  const suffix = rngPick(rng, ARMOR_SUFFIXES);
+  return {
+    id: `dng_armor_f${floor}_${prefix.toLowerCase()}_${suffix.toLowerCase()}`,
+    name: `${prefix} ${suffix}`,
+    defense: 1 + floor,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Vault accessory pool
+// ---------------------------------------------------------------------------
+
+const DUNGEON_ACCESSORIES = ['keen_eye_ring', 'iron_band', 'berserker_tooth'];
+
+// ---------------------------------------------------------------------------
 // Floor generator
 // ---------------------------------------------------------------------------
 
@@ -105,6 +137,7 @@ export interface FloorResult {
   rooms: Record<string, RoomDef>;
   enemies: Record<string, EnemyDef>;
   weapons: Record<string, WeaponDef>;
+  armor: Record<string, ArmorDef>;
   entryRoomId: string;
   exitRoomId: string;
   restRoomId: string;
@@ -121,6 +154,7 @@ export function generateFloor(floor: number, seed: number): FloorResult {
   const rooms: Record<string, RoomDef> = {};
   const enemies: Record<string, EnemyDef> = {};
   const weapons: Record<string, WeaponDef> = {};
+  const armor: Record<string, ArmorDef> = {};
 
   // --- 1. Determine room count (5-8) ---
   const roomCount = 5 + (floor % 4);
@@ -229,6 +263,7 @@ export function generateFloor(floor: number, seed: number): FloorResult {
     // Determine loot
     let loot: string[] = [];
     let lootWeapon: string | undefined;
+    let lootArmor: string | undefined;
 
     if (isFullBoss) {
       loot = ['large_potion'];
@@ -241,6 +276,14 @@ export function generateFloor(floor: number, seed: number): FloorResult {
         region: 'dungeon',
         description: `A dungeon weapon found on floor ${floor}.`,
         ...(weapon.status_effect ? { status_effect: weapon.status_effect } : {}),
+      };
+      const armorResult = generateDungeonArmor(floor, rng);
+      lootArmor = armorResult.id;
+      armor[armorResult.id] = {
+        name: armorResult.name,
+        defense: armorResult.defense,
+        region: 'dungeon',
+        description: `Dungeon armor found on floor ${floor}.`,
       };
     } else if (isMiniBoss) {
       loot = ['potion'];
@@ -259,6 +302,7 @@ export function generateFloor(floor: number, seed: number): FloorResult {
       xp: baseXp,
       loot,
       loot_weapon: lootWeapon,
+      loot_armor: lootArmor,
       region: 'dungeon',
       description: `A creature of the deep dungeon, floor ${floor}.`,
       is_boss: isBoss,
@@ -325,6 +369,10 @@ export function generateFloor(floor: number, seed: number): FloorResult {
       if (!rooms[vaultId].items) rooms[vaultId].items = [];
       rooms[vaultId].items!.push('large_potion');
       if (floor >= 5) rooms[vaultId].items!.push('strength_tonic');
+      // Add a searchable accessory to the vault
+      if (!rooms[vaultId].search_items) rooms[vaultId].search_items = [];
+      rooms[vaultId].search_items!.push(rngPick(rng, DUNGEON_ACCESSORIES));
+      rooms[vaultId].searchable = true;
       // 20% chance of vault guardian
       if (rng() < 0.2) {
         const guardianId = `dng_vault_guard_f${floor}`;
@@ -366,6 +414,7 @@ export function generateFloor(floor: number, seed: number): FloorResult {
     rooms,
     enemies,
     weapons,
+    armor,
     entryRoomId,
     exitRoomId,
     restRoomId,

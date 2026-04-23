@@ -63,18 +63,21 @@ export function startContinue(store: GameStore, slot: number): void {
       score: result.dungeon.score,
       floorEnemies: {},
       floorWeapons: {},
+      floorArmor: {},
       dungeonPerks: result.dungeon.dungeon_perks || [],
     };
-    // Reconstruct weapon definitions from prior boss floors (every 10th)
-    // so carried weapons from earlier floors resolve after load.
+    // Reconstruct weapon/armor definitions from prior boss floors (every 10th)
+    // so carried equipment from earlier floors resolves after load.
     for (let f = 10; f < store.dungeon.floor; f += 10) {
       const prior = generateFloor(f, store.dungeon.seed);
       Object.assign(store.dungeon.floorWeapons, prior.weapons);
+      Object.assign(store.dungeon.floorArmor, prior.armor);
     }
-    // Re-generate the current floor enemies and weapons
+    // Re-generate the current floor enemies, weapons, and armor
     const floorResult = generateFloor(store.dungeon.floor, store.dungeon.seed);
     store.dungeon.floorEnemies = floorResult.enemies;
     Object.assign(store.dungeon.floorWeapons, floorResult.weapons);
+    Object.assign(store.dungeon.floorArmor, floorResult.armor);
     for (const [id, room] of Object.entries(floorResult.rooms)) {
       store.world.rooms[id] = room;
     }
@@ -105,6 +108,7 @@ export function startDungeonMode(store: GameStore, deps: LifecycleDeps, seed?: n
     score: { floorsCleared: 0, enemiesKilled: 0, itemsFound: 0, totalXp: 0 },
     floorEnemies: {},
     floorWeapons: {},
+    floorArmor: {},
     dungeonPerks: [],
   };
   store.combat = null;
@@ -127,6 +131,7 @@ export function loadDungeonFloor(store: GameStore, floor: number): void {
   const result = generateFloor(floor, store.dungeon.seed);
   store.dungeon.floorEnemies = result.enemies;
   store.dungeon.floorWeapons = { ...store.dungeon.floorWeapons, ...result.weapons };
+  store.dungeon.floorArmor = { ...store.dungeon.floorArmor, ...result.armor };
   for (const [id, room] of Object.entries(result.rooms)) {
     store.world.rooms[id] = room;
   }

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { generateFloor, generateDungeonWeapon } from '../../src/engine/dungeon';
 import { createRng } from '../../src/engine/rng';
+import { loadDungeonFloor } from '../../src/engine/state/lifecycle';
+import { createPlayer } from '../../src/engine/player';
+import { createWorld } from '../../src/engine/world';
 import type { WeaponClass } from '../../src/engine/types';
 
 describe('generateDungeonWeapon', () => {
@@ -72,5 +75,46 @@ describe('generateFloor', () => {
     // Floor 1 has no full boss (1 % 10 !== 0, 1 % 5 !== 0)
     const result = generateFloor(1, 42);
     expect(Object.keys(result.weapons)).toHaveLength(0);
+  });
+});
+
+describe('dungeon weapon persistence across floors', () => {
+  it('weapons from floor 10 are still resolvable after advancing to floor 20', () => {
+    const seed = 42;
+    const store = {
+      dungeon: {
+        seed,
+        floor: 10,
+        score: { floorsCleared: 0, enemiesKilled: 0, itemsFound: 0, totalXp: 0 },
+        floorEnemies: {} as Record<string, import('../../src/engine/types').EnemyDef>,
+        floorWeapons: {} as Record<string, import('../../src/engine/types').WeaponDef>,
+        dungeonPerks: [],
+      },
+      world: createWorld(),
+      player: createPlayer('dng_f10_r1'),
+      gameMode: 'dungeon' as const,
+    };
+
+    // Load floor 10 (has a full boss that drops a weapon)
+    loadDungeonFloor(store as import('../../src/engine/types').GameStore, 10);
+    const floor10Weapons = { ...store.dungeon.floorWeapons };
+    const floor10WeaponIds = Object.keys(floor10Weapons);
+    expect(floor10WeaponIds.length).toBeGreaterThan(0);
+
+    // Advance to floor 20
+    store.dungeon.floor = 20;
+    loadDungeonFloor(store as import('../../src/engine/types').GameStore, 20);
+
+    // Floor 10 weapons should still be present
+    for (const id of floor10WeaponIds) {
+      expect(store.dungeon.floorWeapons[id]).toBeDefined();
+      expect(store.dungeon.floorWeapons[id].name).toBe(floor10Weapons[id].name);
+    }
+
+    // Floor 20 weapons should also be present
+    const floor20Result = generateFloor(20, seed);
+    for (const id of Object.keys(floor20Result.weapons)) {
+      expect(store.dungeon.floorWeapons[id]).toBeDefined();
+    }
   });
 });

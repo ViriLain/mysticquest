@@ -1,0 +1,44 @@
+{
+  "keen_eye_ring": {
+    "name": "Keen Eye Ring",
+    "description": "A silver ring set with a hawk's eye stone. Your strikes find weak points more often.",
+    "region": "manor",
+    "match_words": ["keen", "ring", "eye ring"],
+    "modifiers": [{ "type": "crit_chance", "value": 8 }]
+  },
+  "flame_pendant": {
+    "name": "Flame Pendant",
+    "description": "A pendant holding a trapped ember. Status effects you inflict linger longer.",
+    "region": "wilds",
+    "match_words": ["flame", "pendant"],
+    "modifiers": [{ "type": "status_duration", "value": 1 }]
+  },
+  "iron_band": {
+    "name": "Iron Band",
+    "description": "A crude iron ring that dulls incoming blows.",
+    "region": "darkness",
+    "match_words": ["iron", "band"],
+    "modifiers": [{ "type": "damage_reduction", "value": 2 }]
+  },
+  "haste_charm": {
+    "name": "Haste Charm",
+    "description": "A charm that hums with restless energy. Active skills recover faster.",
+    "region": "wastes",
+    "match_words": ["haste", "charm"],
+    "modifiers": [{ "type": "cooldown_reduction", "value": 1 }]
+  },
+  "berserker_tooth": {
+    "name": "Berserker Tooth",
+    "description": "A fang from a beast that never stopped fighting. More power, less protection.",
+    "region": "darkness",
+    "match_words": ["berserker", "tooth", "fang"],
+    "modifiers": [{ "type": "attack", "value": 3 }, { "type": "defense", "value": -1 }]
+  },
+  "mystic_lens": {
+    "name": "Mystic Lens",
+    "description": "A crystalline monocle that amplifies magical resonance. Magic weapons proc more often.",
+    "region": "hidden",
+    "match_words": ["mystic", "lens", "monocle"],
+    "modifiers": [{ "type": "magic_counter_threshold", "value": -1 }]
+  }
+}

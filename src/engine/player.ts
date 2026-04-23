@@ -1,4 +1,4 @@
-import type { PlayerState, ItemDef } from './types';
+import type { ArmorDef, PlayerState, ItemDef } from './types';
 
 export function createPlayer(startRoom = 'manor_entry'): PlayerState {
   return {
@@ -14,6 +14,8 @@ export function createPlayer(startRoom = 'manor_entry'): PlayerState {
     weapons: [],
     equippedWeapon: null,
     equippedShield: null,
+    equippedArmor: null,
+    equippedAccessory: null,
     keyItems: {},
     visitedRooms: {},
     searchedRooms: {},
@@ -37,11 +39,18 @@ export function totalAttack(p: PlayerState): number {
   return p.attack + p.buffAttack;
 }
 
-export function totalDefense(p: PlayerState, itemData: Record<string, ItemDef>): number {
+export function totalDefense(
+  p: PlayerState,
+  itemData: Record<string, ItemDef>,
+  armorData?: Record<string, ArmorDef>,
+): number {
   let def = p.defense;
   if (p.equippedShield && itemData[p.equippedShield]) {
     const shield = itemData[p.equippedShield];
     if (shield.value) def += shield.value;
+  }
+  if (armorData && p.equippedArmor && armorData[p.equippedArmor]) {
+    def += armorData[p.equippedArmor].defense;
   }
   return def;
 }

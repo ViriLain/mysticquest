@@ -1,0 +1,47 @@
+{
+  "leather_vest": {
+    "name": "Leather Vest",
+    "defense": 2,
+    "region": "manor",
+    "description": "A simple leather vest. Offers minimal protection.",
+    "match_words": ["leather", "vest"],
+    "price": 20
+  },
+  "rangers_hide": {
+    "name": "Ranger's Hide",
+    "defense": 3,
+    "region": "wilds",
+    "description": "Tough hide armor favored by forest rangers.",
+    "match_words": ["ranger", "hide"],
+    "price": 45
+  },
+  "chainmail": {
+    "name": "Chainmail",
+    "defense": 4,
+    "region": "wilds",
+    "description": "Interlocking iron rings. Heavy but effective.",
+    "match_words": ["chainmail", "chain", "mail"]
+  },
+  "desert_wrap": {
+    "name": "Desert Wrap",
+    "defense": 5,
+    "region": "wastes",
+    "description": "Layered cloth and leather hardened by the desert sun.",
+    "match_words": ["desert", "wrap"],
+    "price": 80
+  },
+  "shadow_plate": {
+    "name": "Shadow Plate",
+    "defense": 6,
+    "region": "darkness",
+    "description": "Dark metal armor that absorbs light. Unnervingly cold to the touch.",
+    "match_words": ["shadow", "plate"]
+  },
+  "guardian_armor": {
+    "name": "Guardian Armor",
+    "defense": 8,
+    "region": "wastes",
+    "description": "Ancient armor forged by the same hands that made the crown. It remembers how to protect.",
+    "match_words": ["guardian", "armor"]
+  }
+}

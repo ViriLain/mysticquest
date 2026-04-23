@@ -2,7 +2,7 @@ import * as C from '../constants';
 import { findAllMatches, resolveOrDisambiguate } from '../matching';
 import { removeItem } from '../player';
 import { addLine } from '../output';
-import type { GameStore, ItemDef, WeaponDef } from '../types';
+import type { AccessoryDef, ArmorDef, GameStore, ItemDef, WeaponDef } from '../types';
 import { getRoom } from '../world';
 
 export function handleDrop(
@@ -11,6 +11,8 @@ export function handleDrop(
   itemData: Record<string, ItemDef>,
   weaponData: Record<string, WeaponDef>,
   refreshHeader: () => void,
+  armorData?: Record<string, ArmorDef>,
+  accessoryData?: Record<string, AccessoryDef>,
 ): void {
   if (!store.player || !store.world) return;
   if (!target) { addLine(store, 'Drop what?', C.ERROR_COLOR); return; }
@@ -34,6 +36,8 @@ export function handleDrop(
     if (!room._ground_loot) room._ground_loot = [];
     room._ground_loot.push(itemId);
     if (store.player.equippedShield === itemId) store.player.equippedShield = null;
+    if (store.player.equippedArmor === itemId) store.player.equippedArmor = null;
+    if (store.player.equippedAccessory === itemId) store.player.equippedAccessory = null;
     addLine(store, `You drop the ${itemData[itemId]?.name || itemId}.`, C.HELP_COLOR);
     return;
   }
@@ -53,8 +57,48 @@ export function handleDrop(
       store.player.equippedWeapon = null;
       refreshHeader();
     }
-    addLine(store, `You drop the ${weaponData[weaponId]?.name || weaponId}.`, C.HELP_COLOR);
+    const weapon = weaponData[weaponId];
+    const dropColor = weapon?.weapon_class === 'magic' ? C.MAGIC_COLOR : C.HELP_COLOR;
+    addLine(store, `You drop the ${weapon?.name || weaponId}.`, dropColor);
     return;
+  }
+
+  // Armor and accessories live in inventory but may not be in itemData —
+  // match them against their own data tables so "drop chainmail" works.
+  if (armorData) {
+    const armorIds = Object.keys(store.player.inventory).filter(id => armorData[id]);
+    const armorMatches = findAllMatches(target, armorIds, armorData);
+    if (armorMatches.length > 1) {
+      resolveOrDisambiguate(store, armorMatches, armorData, 'armor do you want to drop');
+      return;
+    }
+    if (armorMatches.length === 1) {
+      const armorId = armorMatches[0];
+      removeItem(store.player, armorId);
+      if (!room._ground_loot) room._ground_loot = [];
+      room._ground_loot.push(armorId);
+      if (store.player.equippedArmor === armorId) store.player.equippedArmor = null;
+      addLine(store, `You drop the ${armorData[armorId].name}.`, C.HELP_COLOR);
+      return;
+    }
+  }
+
+  if (accessoryData) {
+    const accIds = Object.keys(store.player.inventory).filter(id => accessoryData[id]);
+    const accMatches = findAllMatches(target, accIds, accessoryData);
+    if (accMatches.length > 1) {
+      resolveOrDisambiguate(store, accMatches, accessoryData, 'accessory do you want to drop');
+      return;
+    }
+    if (accMatches.length === 1) {
+      const accId = accMatches[0];
+      removeItem(store.player, accId);
+      if (!room._ground_loot) room._ground_loot = [];
+      room._ground_loot.push(accId);
+      if (store.player.equippedAccessory === accId) store.player.equippedAccessory = null;
+      addLine(store, `You drop the ${accessoryData[accId].name}.`, C.HELP_COLOR);
+      return;
+    }
   }
 
   addLine(store, "You don't have that.", C.ERROR_COLOR);

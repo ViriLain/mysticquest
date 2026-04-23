@@ -141,6 +141,25 @@ describe('save round-trip', () => {
     expect(loadedWorld.rooms.manor_entry.weapons).toEqual([]);
   });
 
+  it('persists room.armor through save/load cycle', () => {
+    const world = createWorld();
+    loadRegion(world, manorJson as RegionData);
+    const player = createPlayer();
+
+    world.rooms.manor_entry.armor = ['leather_vest'];
+
+    expect(saveToSlot(1, player, world)).toBe(true);
+
+    const loadedWorld = createWorld();
+    loadRegion(loadedWorld, manorJson as RegionData);
+    const loadedPlayer = createPlayer();
+
+    const result = loadFromSlot(1, loadedPlayer, loadedWorld);
+
+    expect(result.success).toBe(true);
+    expect(loadedWorld.rooms.manor_entry.armor).toEqual(['leather_vest']);
+  });
+
   it('saves and reloads gold value', () => {
     const player = createPlayer();
     player.gold = 42;
@@ -234,5 +253,59 @@ describe('save migration v2 → v3', () => {
       the_diner_mystery: 'active',
       defeat_evil_king: 'complete',
     });
+  });
+
+  it('loads a save without equipped_armor and equipped_accessory as null', () => {
+    const v2Blob = JSON.stringify({
+      version: 2,
+      player: {
+        hp: 30, max_hp: 30,
+        attack: 5, defense: 2,
+        level: 1, xp: 0,
+        gold: 0,
+        current_room: 'manor_entry',
+        inventory: {},
+        weapons: [],
+        equipped_weapon: null,
+        equipped_shield: null,
+        key_items: {},
+        visited_rooms: {},
+        searched_rooms: {},
+        fired_events: {},
+        used_items_in_room: {},
+        buff_attack: 0,
+        buff_rounds: 0,
+        route_history: [],
+        skill_points: 0,
+        skills: {},
+      },
+      world_state: { rooms: {} },
+    });
+
+    localStorage.setItem('mysticquest_save_1', v2Blob);
+
+    const player = createPlayer();
+    const world = createStoryWorld();
+    const result = loadFromSlot(1, player, world);
+
+    expect(result.success).toBe(true);
+    expect(player.equippedArmor).toBeNull();
+    expect(player.equippedAccessory).toBeNull();
+  });
+
+  it('round-trips equipped armor and accessory', () => {
+    const player = createPlayer();
+    player.equippedArmor = 'leather_vest';
+    player.equippedAccessory = 'keen_eye_ring';
+    player.inventory.leather_vest = 1;
+    player.inventory.keen_eye_ring = 1;
+    const world = createStoryWorld();
+    saveToSlot(1, player, world);
+
+    const loaded = createPlayer();
+    const result = loadFromSlot(1, loaded, world);
+    expect(result.success).toBe(true);
+    expect(loaded.equippedArmor).toBe('leather_vest');
+    expect(loaded.equippedAccessory).toBe('keen_eye_ring');
   });
 });

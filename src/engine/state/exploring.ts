@@ -1,10 +1,13 @@
-import type { EnemyDef, GameStore, ItemDef, NpcDef, WeaponDef } from '../types';
+import type { AccessoryDef, ArmorDef, EnemyDef, GameStore, ItemDef, NpcDef, WeaponDef } from '../types';
+import * as C from '../constants';
+import { addLine } from '../output';
 import { handleAttack } from '../handlers/attack';
+import { handleAsk } from '../handlers/ask';
 import { handleDrop } from '../handlers/drop';
 import { handleExamine } from '../handlers/examine';
 import { handleHelp } from '../handlers/help';
 import { handleLook } from '../handlers/look';
-import { showAchievements, showInventory, showJournal, showStats } from '../handlers/info';
+import { showAchievements, showInventory, showJournal, showStats, showWeapons } from '../handlers/info';
 import { displaySkillTree } from './skill-tree';
 import { handleLearn } from '../handlers/meta';
 import { handleSearch } from '../handlers/search';
@@ -20,6 +23,8 @@ export interface ExploringDeps {
   itemData: Record<string, ItemDef>;
   weaponData: Record<string, WeaponDef>;
   npcData: Record<string, NpcDef>;
+  armorData?: Record<string, ArmorDef>;
+  accessoryData?: Record<string, AccessoryDef>;
   refreshHeader: () => void;
   emit: (sound: string) => void;
   startCombat: (enemyId: string) => void;
@@ -39,11 +44,11 @@ export interface ExploringDeps {
   printError: (msg: string) => void;
 }
 
-const HANDLED_BY_INFO_VERBS = new Set(['help', 'inventory', 'stats', 'journal', 'score']);
+const HANDLED_BY_INFO_VERBS = new Set(['help', 'inventory', 'weapons', 'stats', 'journal', 'score']);
 const ALL_VERBS = [
   'go', 'look', 'take', 'use', 'drop', 'search', 'attack', 'defend', 'flee',
-  'inventory', 'stats', 'save', 'load', 'help', 'quit', 'talk', 'journal',
-  'map', 'score', 'again', 'examine', 'skills', 'learn', 'achievements', 'settings', 'warp',
+  'inventory', 'weapons', 'stats', 'save', 'load', 'help', 'quit', 'talk', 'ask', 'journal',
+  'map', 'score', 'again', 'examine', 'skill', 'skills', 'learn', 'achievements', 'settings', 'warp',
   'north', 'south', 'east', 'west', 'up', 'down',
 ];
 
@@ -58,9 +63,11 @@ export function handleExploringCommand(
   if (verb === 'go') {
     deps.goDirection(target);
   } else if (verb === 'look') {
-    handleLook(store, target);
+    handleLook(store, target, deps.itemData, deps.weaponData, deps.armorData, deps.accessoryData);
   } else if (verb === 'inventory') {
     showInventory(store);
+  } else if (verb === 'weapons') {
+    showWeapons(store);
   } else if (verb === 'stats') {
     showStats(store);
   } else if (verb === 'take') {
@@ -71,6 +78,8 @@ export function handleExploringCommand(
       deps.weaponData,
       deps.checkItemAchievements,
       deps.refreshHeader,
+      deps.armorData,
+      deps.accessoryData,
     );
   } else if (verb === 'use') {
     const [itemName, count] = parseBatchCount(target);
@@ -82,16 +91,20 @@ export function handleExploringCommand(
         deps.weaponData,
         deps.refreshHeader,
         deps.checkEndingsForItem,
+        deps.armorData,
+        deps.accessoryData,
       );
     }
   } else if (verb === 'drop') {
-    handleDrop(store, target, deps.itemData, deps.weaponData, deps.refreshHeader);
+    handleDrop(store, target, deps.itemData, deps.weaponData, deps.refreshHeader, deps.armorData, deps.accessoryData);
   } else if (verb === 'search') {
-    handleSearch(store, deps.itemData, deps.weaponData);
+    handleSearch(store, deps.itemData, deps.weaponData, deps.armorData, deps.accessoryData);
   } else if (verb === 'attack') {
     handleAttack(store, target, deps.enemyData, deps.startCombat);
   } else if (verb === 'talk') {
     handleTalk(store, target, deps.npcData, deps.checkChatterbox);
+  } else if (verb === 'ask') {
+    handleAsk(store, target, deps.itemData, deps.weaponData, deps.npcData);
   } else if (verb === 'save') {
     deps.doSave();
   } else if (verb === 'load') {
@@ -103,7 +116,7 @@ export function handleExploringCommand(
   } else if (verb === 'score') {
     deps.doScore();
   } else if (verb === 'examine') {
-    handleExamine(store, target, deps.enemyData, deps.itemData, deps.weaponData);
+    handleExamine(store, target, deps.enemyData, deps.itemData, deps.weaponData, deps.armorData, deps.accessoryData);
   } else if (verb === 'skills') {
     store.state = 'skill_tree';
     store.skillTreePrevState = 'exploring';
@@ -111,6 +124,8 @@ export function handleExploringCommand(
     displaySkillTree(store);
   } else if (verb === 'learn') {
     handleLearn(store, target, deps.refreshHeader, deps.emit, deps.checkScholar);
+  } else if (verb === 'skill') {
+    addLine(store, 'Skills can only be used in combat.', C.HELP_COLOR);
   } else if (verb === 'warp') {
     handleWarp(store, target, {
       enterRoom: deps.enterRoom,
@@ -158,6 +173,8 @@ export function getAutocompleteSuggestions(
   itemData: Record<string, ItemDef>,
   weaponData: Record<string, WeaponDef>,
   npcData: Record<string, NpcDef>,
+  armorData?: Record<string, ArmorDef>,
+  accessoryData?: Record<string, AccessoryDef>,
 ): string[] {
   const lower = input.toLowerCase();
   if (!lower) return [];
@@ -181,15 +198,27 @@ export function getAutocompleteSuggestions(
     for (const id of [...(room.items || []), ...(room._ground_loot || [])]) {
       const item = itemData[id];
       if (item) candidates.push(item.name);
+      const armor = armorData?.[id];
+      if (armor) candidates.push(armor.name);
+      const acc = accessoryData?.[id];
+      if (acc) candidates.push(acc.name);
     }
     for (const id of [...(room.weapons || []), ...(room._ground_weapons || [])]) {
       const weapon = weaponData[id];
       if (weapon) candidates.push(weapon.name);
     }
+    for (const id of [...(room.armor || [])]) {
+      const a = armorData?.[id];
+      if (a) candidates.push(a.name);
+    }
   } else if (verb === 'use' || verb === 'drop' || verb === 'examine') {
     for (const id of Object.keys(store.player.inventory)) {
       const item = itemData[id];
       if (item) candidates.push(item.name);
+      const a = armorData?.[id];
+      if (a) candidates.push(a.name);
+      const acc = accessoryData?.[id];
+      if (acc) candidates.push(acc.name);
     }
     for (const id of Object.keys(store.player.keyItems)) {
       const item = itemData[id];
@@ -204,7 +233,7 @@ export function getAutocompleteSuggestions(
       const enemy = enemyData[id];
       if (enemy) candidates.push(enemy.name);
     }
-  } else if (verb === 'talk' && room?.npcs) {
+  } else if ((verb === 'talk' || verb === 'ask') && room?.npcs) {
     for (const id of room.npcs) {
       const npc = npcData[id];
       if (npc) candidates.push(npc.name);
