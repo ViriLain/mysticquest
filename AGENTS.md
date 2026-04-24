@@ -4,7 +4,7 @@ Cross-agent project instructions. If your tool also reads CLAUDE.md, that file h
 
 ## Project
 
-Retro CRT text adventure RPG. Vite 5 + React 18 + TypeScript. No backend — all game content is static JSON, saves live in localStorage, audio is synthesized via Web Audio API.
+Retro CRT text adventure RPG. Vite 8 + React 18 + TypeScript. No backend — all game content is static JSON, saves live in localStorage, audio is synthesized via Web Audio API.
 
 ## Game World
 
@@ -66,7 +66,7 @@ Run `npm test` and `npm run lint` after every change. Fix what they flag before 
 
 ## Key Constraints
 
-- **Vite 5 + Vitest 2 are pinned.** Do not bump without a dedicated PR.
+- **Vite 8 + Vitest 4 are pinned.** Do not bump without a dedicated PR.
 - **React 18.3.1.** Not 19.
 - **Strict TypeScript.** `no-explicit-any` is on. Use `unknown` + narrowing if you need escape hatches.
 - **`gameReducer.ts` stays as the orchestrator.** It owns `enterRoom`, `startCombat`, `startDialogue`, `startEnding`, and the `build*Deps` wiring. Don't try to extract these further.
