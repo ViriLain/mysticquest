@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getAsciiLines, getRegionArtName, getWeaponArtName } from '../../src/engine/asciiArt';
+import { getAsciiLines, getRegionArtName, getRegionAsciiLines, getWeaponArtName } from '../../src/engine/asciiArt';
 
 const REGIONS = ['manor', 'wilds', 'darkness', 'wastes', 'hidden'];
 const MAGIC_WEAPONS = ['hrunting', 'tyrfing', 'excalibur', 'keyblade', 'anduril', 'ragnarok'];
@@ -28,6 +28,25 @@ describe('getRegionArtName', () => {
         expect(line.length).toBeLessThanOrEqual(40);
       }
     }
+  });
+});
+
+describe('getRegionAsciiLines', () => {
+  it('returns null for null or unknown regions', () => {
+    expect(getRegionAsciiLines(null, 0, false)).toBeNull();
+    expect(getRegionAsciiLines('atlantis', 0, false)).toBeNull();
+  });
+
+  it.each(REGIONS)('returns the static region art for initial frame %s', (region) => {
+    expect(getRegionAsciiLines(region, 0, false)).toEqual(getAsciiLines(`region_${region}`));
+  });
+
+  it.each(REGIONS)('keeps static art when reduce motion is enabled for %s', (region) => {
+    expect(getRegionAsciiLines(region, 2, true)).toEqual(getAsciiLines(`region_${region}`));
+  });
+
+  it.each(REGIONS)('provides an animated alternate frame for %s', (region) => {
+    expect(getRegionAsciiLines(region, 1, false)).not.toEqual(getAsciiLines(`region_${region}`));
   });
 });
 

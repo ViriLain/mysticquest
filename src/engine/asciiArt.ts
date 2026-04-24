@@ -57,6 +57,49 @@ export function getRegionArtName(region: string | null): string | null {
   return key in ASCII_MAP ? key : null;
 }
 
+function replaceAt(line: string, index: number, char: string): string {
+  if (index < 0 || index >= line.length) return line;
+  return `${line.slice(0, index)}${char}${line.slice(index + 1)}`;
+}
+
+function animateRegionLine(region: string, line: string, row: number, frame: number): string {
+  if (region === 'manor') {
+    if (frame === 1 && row === 3) return line.replace('[]', '<>');
+    if (frame === 2 && row === 4) return line.replace(/\[\]/g, '..');
+  }
+  if (region === 'wilds') {
+    if (frame === 1 && row === 0) return line.replace('/\\', '//');
+    if (frame === 2 && row === 2) return line.replace('/    \\', '\\    /');
+  }
+  if (region === 'darkness') {
+    if (frame === 1 && row === 1) return replaceAt(line, 16, '.');
+    if (frame === 2 && row === 5) return line.replace('..', '::');
+  }
+  if (region === 'wastes') {
+    if (frame === 1 && row === 4) return line.replace('~~~', '..~');
+    if (frame === 2 && row === 4) return line.replace('~~~~', '~..~');
+  }
+  if (region === 'hidden') {
+    if (frame === 1) return line.replace(/\*/g, 'o');
+    if (frame === 2) return line.replace(/\+/g, 'x');
+  }
+  return line;
+}
+
+export function getRegionAsciiLines(
+  region: string | null,
+  frameIndex: number,
+  reduceMotion: boolean,
+): string[] | null {
+  const artKey = getRegionArtName(region);
+  if (!artKey || !region) return null;
+  const lines = getAsciiLines(artKey);
+  if (!lines) return null;
+  const frame = Math.abs(frameIndex) % 3;
+  if (reduceMotion || frame === 0) return lines;
+  return lines.map((line, row) => animateRegionLine(region, line, row, frame));
+}
+
 export function getWeaponArtName(weaponId: string): string | null {
   const key = `weapon_${weaponId}`;
   return key in ASCII_MAP ? key : null;

@@ -12,7 +12,7 @@ import {
 } from '../engine/audio';
 import type { GameStore, RGBA } from '../engine/types';
 import { loadSettings, fontSizePx, remapColor, typewriterDelay, fontSizeLabel, colorModeLabel, textSpeedLabel } from '../engine/settings';
-import { getAsciiLines, getRegionArtName } from '../engine/asciiArt';
+import { getRegionAsciiLines } from '../engine/asciiArt';
 import Minimap from './Minimap';
 import '../styles/crt.css';
 import '../styles/terminal.css';
@@ -50,6 +50,9 @@ export default function Game() {
   const twTimerRef = useRef(0);
   const lineEffectsRef = useRef<Array<{ offsetX: number; skip: boolean }>>([]);
   const prevRegionRef = useRef<string | null>(null);
+  const prevBannerRegionRef = useRef<string | null>(null);
+  const regionBannerFrameRef = useRef(0);
+  const regionBannerTimerRef = useRef(0);
 
   const forceRender = useCallback(() => setRenderTick(t => t + 1), []);
 
@@ -150,6 +153,25 @@ export default function Game() {
       if (targetRegion !== prevRegionRef.current) {
         prevRegionRef.current = targetRegion;
         setRegionAmbient(frameSettings.ambientEnabled ? targetRegion : null);
+      }
+
+      const bannerRegion = updated.currentRegion;
+      if (bannerRegion !== prevBannerRegionRef.current) {
+        prevBannerRegionRef.current = bannerRegion;
+        regionBannerFrameRef.current = 0;
+        regionBannerTimerRef.current = 0;
+        shouldRender = true;
+      } else if (bannerRegion && !frameSettings.reduceMotion) {
+        regionBannerTimerRef.current += dt;
+        if (regionBannerTimerRef.current >= 0.5) {
+          regionBannerTimerRef.current -= 0.5;
+          regionBannerFrameRef.current = (regionBannerFrameRef.current + 1) % 3;
+          shouldRender = true;
+        }
+      } else if (regionBannerFrameRef.current !== 0 || regionBannerTimerRef.current !== 0) {
+        regionBannerFrameRef.current = 0;
+        regionBannerTimerRef.current = 0;
+        shouldRender = true;
       }
 
       if (didVisualSnapshotChange(beforeVisual, captureVisualSnapshot(updated))) {
@@ -270,8 +292,11 @@ export default function Game() {
 
   const hasSave = store.state === 'menu' ? anySlotHasData() : true;
 
-  const regionArtKey = getRegionArtName(store.currentRegion);
-  const regionBannerLines = regionArtKey ? getAsciiLines(regionArtKey) : null;
+  const regionBannerLines = getRegionAsciiLines(
+    store.currentRegion,
+    regionBannerFrameRef.current,
+    settings.reduceMotion,
+  );
 
   return (
     <div className="crt-container" onClick={focusInput}>
