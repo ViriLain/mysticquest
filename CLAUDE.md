@@ -10,9 +10,9 @@ The engine is deliberately isolated from React: `src/engine/**` is pure game log
 
 ## Tech stack constraints
 
-- **Vite 5 + Vitest 2** are pinned intentionally. Do NOT bump to Vite 6 / Vitest 3 without a dedicated PR — the engine-foundation plan pinned these on purpose.
+- **Vite 8 + Vitest 4** are pinned intentionally. Do NOT bump toolchain majors without a dedicated PR.
 - **React 18.3.1** stable — not 19. Zero runtime vulns.
-- `npm audit` currently reports 6 moderate CVEs in the Vite 5 dev-server chain (esbuild CORS, vite path traversal). Both are dev-server only and require explicit network exposure, which we do not configure. Safe to ignore for now; track for a future dependency-hygiene PR.
+- `npm audit` should report 0 vulnerabilities after the dependency-hygiene PR that upgraded the Vite/Vitest dev-toolchain.
 
 ## Architecture
 
