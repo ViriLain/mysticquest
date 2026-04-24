@@ -492,6 +492,8 @@ export interface EndingCheckContext {
   bossJustDefeated?: string;
   choiceMade?: string;
   itemJustUsed?: string;
+  exitTarget?: string;
+  exitDirection?: string;
 }
 
 export interface CombatResults {

@@ -44,6 +44,13 @@ function checkTrigger(
     if (pct < (ending.rooms_percent ?? 100)) return false;
     if (ending.trigger_exit_target && ending.trigger_room) {
       addDynamicExit(world, ending.trigger_room, ending.trigger_exit_dir || 'down', ending.trigger_exit_target);
+      if (context.exitTarget || context.exitDirection) {
+        return (
+          player.currentRoom === ending.trigger_room &&
+          context.exitTarget === ending.trigger_exit_target &&
+          context.exitDirection === (ending.trigger_exit_dir || 'down')
+        );
+      }
     }
     return player.currentRoom === (ending.trigger_exit_target || ending.trigger_room);
   }

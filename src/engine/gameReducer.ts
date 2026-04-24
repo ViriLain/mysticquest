@@ -331,6 +331,8 @@ function buildExploringDeps(store: GameStore): ExploringDeps {
         addLine(store, '');
         const entered = enterRoom(store, nextRoom);
         if (entered) updateHeader(store);
+      } else if (nextRoom && checkEndingsContext(store, { exitTarget: nextRoom, exitDirection: target })) {
+        return;
       } else {
         addLine(store, "You can't go that way.", C.ERROR_COLOR);
         emitSound(store, 'error');
