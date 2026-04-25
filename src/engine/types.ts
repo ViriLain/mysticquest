@@ -439,6 +439,9 @@ export interface GameStore {
   activeSlot: number | null;
   renamingSlot: boolean;
   renameBuffer: string;
+  // True while the slot picker is asking the player to confirm overwriting
+  // an existing save. Cleared on confirm (Enter) or cancel (Escape).
+  slotPickerOverwriteConfirm: boolean;
 
   // NPC dialogue
   npcDialogue: { npcId: string; currentNode: string } | null;

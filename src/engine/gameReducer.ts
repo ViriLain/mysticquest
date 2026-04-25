@@ -586,6 +586,7 @@ export function createInitialStore(): GameStore {
     activeSlot: null,
     renamingSlot: false,
     renameBuffer: '',
+    slotPickerOverwriteConfirm: false,
     npcDialogue: null,
     shopMenuMode: null,
     shopMenuItems: [],

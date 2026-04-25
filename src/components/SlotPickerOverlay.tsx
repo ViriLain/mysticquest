@@ -50,9 +50,15 @@ function SlotPickerOverlayImpl({ store, colorCSS }: SlotPickerOverlayProps) {
             </div>
           );
         })}
-        <div className="slot-picker-help" style={{ color: colorCSS([0.5, 0.5, 0.5, 0.8]) }}>
-          {'  '}Enter: Select{'  '}R: Rename{'  '}Esc: Back
-        </div>
+        {store.slotPickerOverwriteConfirm ? (
+          <div className="slot-picker-help" style={{ color: colorCSS([1, 0.6, 0.4, 1]) }}>
+            {'  '}This slot has data. Overwrite? Enter: Yes{'  '}Esc: Cancel
+          </div>
+        ) : (
+          <div className="slot-picker-help" style={{ color: colorCSS([0.5, 0.5, 0.5, 0.8]) }}>
+            {'  '}Enter: Select{'  '}R: Rename{'  '}Esc: Back
+          </div>
+        )}
       </div>
     </div>
   );

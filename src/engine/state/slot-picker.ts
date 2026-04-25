@@ -13,7 +13,19 @@ export function openSlotPicker(store: GameStore, mode: 'save' | 'load'): void {
   store.slotManifest = loadManifest();
   store.renamingSlot = false;
   store.renameBuffer = '';
+  store.slotPickerOverwriteConfirm = false;
   store.state = 'slot_picker';
+}
+
+function commitSave(s: GameStore, slot: number): void {
+  if (!s.player || !s.world) return;
+  if (!saveToSlot(slot, s.player, s.world, s.dungeon, s.shopState.runtime)) return;
+  s.activeSlot = slot;
+  emitSound(s, 'save');
+  s.state = 'exploring';
+  s.slotPickerMode = null;
+  s.slotPickerOverwriteConfirm = false;
+  addLine(s, 'Game saved.', C.ITEM_COLOR);
 }
 
 export function handleSlotPickerKey(s: GameStore, key: string, deps: SlotPickerDeps): void {
@@ -35,6 +47,18 @@ export function handleSlotPickerKey(s: GameStore, key: string, deps: SlotPickerD
     return;
   }
 
+  // Overwrite-confirmation prompt: Enter confirms, Escape cancels and stays
+  // in the picker. Other keys (arrows, R) are blocked so the player can't
+  // wander off mid-confirmation.
+  if (s.slotPickerOverwriteConfirm) {
+    if (key === 'Enter') {
+      commitSave(s, s.slotPickerSelected + 1);
+    } else if (key === 'Escape') {
+      s.slotPickerOverwriteConfirm = false;
+    }
+    return;
+  }
+
   if (key === 'ArrowUp') {
     s.slotPickerSelected--;
     if (s.slotPickerSelected < 0) s.slotPickerSelected = s.slotManifest.slots.length - 1;
@@ -46,13 +70,12 @@ export function handleSlotPickerKey(s: GameStore, key: string, deps: SlotPickerD
   } else if (key === 'Enter') {
     const slot = s.slotPickerSelected + 1;
     if (s.slotPickerMode === 'save') {
-      if (s.player && s.world && saveToSlot(slot, s.player, s.world, s.dungeon, s.shopState.runtime)) {
-        s.activeSlot = slot;
-        emitSound(s, 'save');
-        s.state = 'exploring';
-        s.slotPickerMode = null;
-        addLine(s, 'Game saved.', C.ITEM_COLOR);
+      const target = s.slotManifest.slots[s.slotPickerSelected];
+      if (target && !target.isEmpty) {
+        s.slotPickerOverwriteConfirm = true;
+        return;
       }
+      commitSave(s, slot);
     } else if (s.slotPickerMode === 'load') {
       const meta = s.slotManifest.slots[s.slotPickerSelected];
       if (meta.isEmpty) {

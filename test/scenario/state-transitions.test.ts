@@ -175,6 +175,40 @@ describe('state transitions', () => {
     void inventoryBefore;
   });
 
+  it('saving to a slot with existing data prompts before overwriting', () => {
+    let s = newGame();
+
+    // First save populates slot 1.
+    s = input(s, 'save');
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'Enter' });
+    expect(s.activeSlot).toBe(1);
+
+    // Re-open the picker, force save mode (the in-game 'save' command
+    // bypasses the picker when activeSlot is set).
+    s = input(s, 'load');
+    expect(s.state).toBe('slot_picker');
+    s.slotPickerMode = 'save';
+
+    // Enter on the populated slot 1 should NOT save — it should ask for
+    // confirmation instead.
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'Enter' });
+    expect(s.slotPickerOverwriteConfirm).toBe(true);
+    expect(s.state).toBe('slot_picker');
+
+    // Esc cancels the overwrite, leaves us in the picker.
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'Escape' });
+    expect(s.slotPickerOverwriteConfirm).toBe(false);
+    expect(s.state).toBe('slot_picker');
+
+    // Second Enter re-prompts; second Enter (after re-prompting) commits.
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'Enter' });
+    expect(s.slotPickerOverwriteConfirm).toBe(true);
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'Enter' });
+    expect(s.slotPickerOverwriteConfirm).toBe(false);
+    expect(s.state).toBe('exploring');
+    expect(s.activeSlot).toBe(1);
+  });
+
   it('autosaveFlashTime fires on room-entry autosave and decays to 0', () => {
     let s = newGame();
     s.activeSlot = 1; // an active slot is required for autosave to fire
