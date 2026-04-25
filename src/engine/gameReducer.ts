@@ -966,12 +966,19 @@ function submitShopMenuChoice(s: GameStore): void {
   if (s.shopMenuMode === 'sell_confirm' && s.shopSellConfirm) {
     // Confirmation menu: Yes (0) or No (1)
     const confirmed = s.shopMenuSelected === 0;
-    const { id } = s.shopSellConfirm;
+    const { id, type } = s.shopSellConfirm;
     s.shopMenuMode = null;
     s.shopMenuItems = [];
     s.shopMenuSelected = 0;
     s.shopSellConfirm = null;
     if (confirmed) {
+      // Unequip first so handleShopSell doesn't re-trigger the same prompt
+      // when it sees the item is still equipped.
+      if (s.player) {
+        if (type === 'weapon' && s.player.equippedWeapon === id) s.player.equippedWeapon = null;
+        else if (type === 'armor' && s.player.equippedArmor === id) s.player.equippedArmor = null;
+        else if (type === 'item' && s.player.equippedShield === id) s.player.equippedShield = null;
+      }
       handleShopInput(s, 'sell', id, getShopDeps(s));
     } else {
       addLineInstant(s, 'Sale cancelled.', C.HELP_COLOR);
