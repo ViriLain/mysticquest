@@ -18,6 +18,7 @@ import { fireEvent } from './events';
 import { checkEndings, getChoicePrompt, getEffectColor } from './endings';
 import { ICON, iconLine } from './icons';
 import { saveToSlot } from './save';
+import { loadCommandHistory, saveCommandHistory } from './command-history';
 import { notifyObjectiveEvent } from './objectives';
 import { addLine, addLineInstant, applyRegionTint, clearTerminal, displayAscii, emitSound, hideHeader, updateHeader } from './output';
 import type { ShopDef } from './economy';
@@ -583,7 +584,7 @@ export function createInitialStore(): GameStore {
     endingPsychedelicTime: 0,
     gameoverReady: false,
     currentRegion: null,
-    commandHistory: [],
+    commandHistory: loadCommandHistory(),
     historyIndex: -1,
     savedInput: '',
     soundQueue: [],
@@ -895,6 +896,7 @@ function handleKeyPressed(s: GameStore, key: string): void {
       if (!skipHistory && (s.commandHistory.length === 0 || s.commandHistory[s.commandHistory.length - 1] !== input)) {
         s.commandHistory.push(input);
         if (s.commandHistory.length > 50) s.commandHistory.shift(); // cap at 50
+        saveCommandHistory(s.commandHistory);
       }
       s.historyIndex = -1;
       s.savedInput = '';
