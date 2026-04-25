@@ -466,6 +466,18 @@ export interface GameStore {
   skillTreePrevState: GameStateKind;
 }
 
+/**
+ * A `GameStore` once `player` and `world` are populated. Used by engine
+ * internals that only run after `createInitialStore` has handed control to a
+ * gameplay state (exploring/combat/dialogue/shop). Narrow once with
+ * `assertReady` (see `store-ready.ts`) at the dispatch boundary; downstream
+ * code can then drop the `!` postfix on `store.player` / `store.world`.
+ */
+export type ReadyStore = GameStore & {
+  player: PlayerState;
+  world: WorldState;
+};
+
 export interface DungeonScore {
   floorsCleared: number;
   enemiesKilled: number;

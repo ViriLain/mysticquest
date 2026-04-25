@@ -1,8 +1,9 @@
 import type {
-  EndingCheckContext, GameStore, EndingDef,
+  EndingCheckContext, GameStore, EndingDef, ReadyStore,
   WeaponDef, ItemDef, EnemyDef, NpcDef,
   ArmorDef, AccessoryDef,
 } from './types';
+import { assertReady } from './store-ready';
 import * as C from './constants';
 import { parseCommand } from './commands';
 import { visitRoom } from './player';
@@ -64,10 +65,62 @@ function effectiveArmorData(store: GameStore): Record<string, ArmorDef> {
   return armorData;
 }
 
+// ---- Lazy deps cache ----------------------------------------------------
+//
+// Each dispatch through `gameReducer` spreads the incoming store
+// (`s = { ...store }`), so the store reference is stable for the duration of
+// one dispatch. We cache built dep bundles per store so that callbacks fired
+// within a single dispatch (e.g. `doAgain` recursing into the exploring
+// handler, or `openShop` from a dialogue choice) share the same closures
+// instead of rebuilding them.
+
+interface DepsBundle {
+  combat?: CombatDeps;
+  exploring?: ExploringDeps;
+  shop?: ShopDeps;
+  dialogue?: DialogueDeps;
+  skillTree?: SkillTreeDeps;
+}
+const depsCache = new WeakMap<GameStore, DepsBundle>();
+
+function depsBundle(store: GameStore): DepsBundle {
+  let bundle = depsCache.get(store);
+  if (!bundle) {
+    bundle = {};
+    depsCache.set(store, bundle);
+  }
+  return bundle;
+}
+
+function getCombatDeps(store: GameStore): CombatDeps {
+  assertReady(store);
+  const bundle = depsBundle(store);
+  return bundle.combat ??= buildCombatDeps(store);
+}
+function getExploringDeps(store: GameStore): ExploringDeps {
+  assertReady(store);
+  const bundle = depsBundle(store);
+  return bundle.exploring ??= buildExploringDeps(store);
+}
+function getShopDeps(store: GameStore): ShopDeps {
+  assertReady(store);
+  const bundle = depsBundle(store);
+  return bundle.shop ??= buildShopDeps(store);
+}
+function getDialogueDeps(store: GameStore): DialogueDeps {
+  assertReady(store);
+  const bundle = depsBundle(store);
+  return bundle.dialogue ??= buildDialogueDeps(store);
+}
+function getSkillTreeDeps(store: GameStore): SkillTreeDeps {
+  assertReady(store);
+  const bundle = depsBundle(store);
+  return bundle.skillTree ??= buildSkillTreeDeps(store);
+}
+
 // ---- Helpers ----
 
-function enterRoom(store: GameStore, roomId: string): boolean {
-  if (!store.world || !store.player) return false;
+function enterRoom(store: ReadyStore, roomId: string): boolean {
   const room = getRoom(store.world, roomId);
   if (!room) return false;
 
@@ -116,7 +169,7 @@ function enterRoom(store: GameStore, roomId: string): boolean {
   checkEndingsContext(store, {});
 
   // Explorer achievement
-  if (store.world && store.gameMode === 'story') {
+  if (store.gameMode === 'story') {
     const totalRooms = Object.keys(store.world.rooms).filter(id => !id.startsWith('dng_')).length;
     const visited = Object.keys(store.player.visitedRooms).filter(id => !id.startsWith('dng_')).length;
     if (totalRooms > 0 && visited / totalRooms >= 0.8) {
@@ -131,15 +184,14 @@ function enterRoom(store: GameStore, roomId: string): boolean {
   }
 
   // Auto-save on room entry
-  if (store.player && store.world && store.activeSlot !== null) {
+  if (store.activeSlot !== null) {
     saveToSlot(store.activeSlot, store.player, store.world, store.dungeon, store.shopState.runtime);
   }
 
   return true;
 }
 
-function checkEndingsContext(store: GameStore, context: EndingCheckContext): boolean {
-  if (!store.player || !store.world) return false;
+function checkEndingsContext(store: ReadyStore, context: EndingCheckContext): boolean {
   const ending = checkEndings(endingsData, store.player, store.world, context);
   if (ending) {
     startEnding(store, ending);
@@ -148,7 +200,7 @@ function checkEndingsContext(store: GameStore, context: EndingCheckContext): boo
   return false;
 }
 
-function startDialogue(store: GameStore, ending: EndingDef): void {
+function startDialogue(store: ReadyStore, ending: EndingDef): void {
   store.state = 'dialogue';
   store.dialogueEnding = ending;
   store.dialogueOptions = ending.choice_options || [];
@@ -159,7 +211,7 @@ function startDialogue(store: GameStore, ending: EndingDef): void {
   addLine(store, '');
 }
 
-function startEnding(store: GameStore, ending: EndingDef): void {
+function startEnding(store: ReadyStore, ending: EndingDef): void {
   // Track which endings have been seen for all_endings achievement
   const endingIds = Object.keys(endingsData);
   const endingKey = endingIds.find(id => endingsData[id].title === ending.title);
@@ -193,26 +245,26 @@ function startEnding(store: GameStore, ending: EndingDef): void {
 }
 
 function resumeAfterEnding(store: GameStore): void {
-  if (!store.player || !store.world) {
+  if (store.player === null || store.world === null) {
     startMenu(store);
     return;
   }
-  store.endingData = null;
-  store.endingLineIndex = 0;
-  store.endingTimer = 0;
-  store.endingAllTyped = false;
-  store.endingPsychedelicTime = 0;
-  store.baseColor = [...C.BASE_COLOR];
-  store.state = 'exploring';
-  clearTerminal(store);
-  updateHeader(store);
-  displayRoom(store, store.player.currentRoom);
-  const room = getRoom(store.world, store.player.currentRoom);
-  applyRegionTint(store, room?.region);
+  const ready = store as ReadyStore;
+  ready.endingData = null;
+  ready.endingLineIndex = 0;
+  ready.endingTimer = 0;
+  ready.endingAllTyped = false;
+  ready.endingPsychedelicTime = 0;
+  ready.baseColor = [...C.BASE_COLOR];
+  ready.state = 'exploring';
+  clearTerminal(ready);
+  updateHeader(ready);
+  displayRoom(ready, ready.player.currentRoom);
+  const room = getRoom(ready.world, ready.player.currentRoom);
+  applyRegionTint(ready, room?.region);
 }
 
-function startCombat(store: GameStore, enemyId: string): void {
-  if (!store.player) return;
+function startCombat(store: ReadyStore, enemyId: string): void {
   const combinedEnemies = store.gameMode === 'dungeon' && store.dungeon
     ? { ...enemyData, ...store.dungeon.floorEnemies }
     : enemyData;
@@ -244,7 +296,7 @@ function startCombat(store: GameStore, enemyId: string): void {
   addLine(store, 'Commands: attack, defend, flee, use <item>, skill <name>', C.COMBAT_COLOR);
 }
 
-function buildCombatDeps(store: GameStore): CombatDeps {
+function buildCombatDeps(store: ReadyStore): CombatDeps {
   return {
     itemData,
     weaponData: effectiveWeaponData(store),
@@ -257,12 +309,12 @@ function buildCombatDeps(store: GameStore): CombatDeps {
     },
     checkAchievement: id => checkAchievement(store, id),
     startGameover: () => startGameover(store),
-    getRoom: id => getRoom(store.world!, id),
+    getRoom: id => getRoom(store.world, id),
   };
 }
 
 function handleCombatCommand(store: GameStore, verb: string, target: string): void {
-  handleCombatCommandRaw(store, verb, target, buildCombatDeps(store));
+  handleCombatCommandRaw(store, verb, target, getCombatDeps(store));
 
   if (store.state === 'exploring' && store.player && store.world) {
     checkItemAchievements(store);
@@ -280,7 +332,7 @@ function handleCombatCommand(store: GameStore, verb: string, target: string): vo
   }
 }
 
-function buildExploringDeps(store: GameStore): ExploringDeps {
+function buildExploringDeps(store: ReadyStore): ExploringDeps {
   return {
     enemyData,
     itemData,
@@ -297,12 +349,12 @@ function buildExploringDeps(store: GameStore): ExploringDeps {
     },
     checkChatterbox: () => {
       const allNpcIds = Object.keys(npcData);
-      if (allNpcIds.length > 0 && allNpcIds.every(id => store.player!.firedEvents[`talked_${id}`])) {
+      if (allNpcIds.length > 0 && allNpcIds.every(id => store.player.firedEvents[`talked_${id}`])) {
         checkAchievement(store, 'chatterbox');
       }
     },
     checkScholar: () => {
-      const learnedCount = Object.values(store.player!.skills).filter(Boolean).length;
+      const learnedCount = Object.values(store.player.skills).filter(Boolean).length;
       if (learnedCount >= 5) {
         checkAchievement(store, 'scholar');
       }
@@ -310,7 +362,7 @@ function buildExploringDeps(store: GameStore): ExploringDeps {
     checkItemAchievements: () => checkItemAchievements(store),
     goDirection: target => {
       if (target === 'descend' && store.gameMode === 'dungeon' && store.dungeon) {
-        const room = getRoom(store.world!, store.player!.currentRoom);
+        const room = getRoom(store.world, store.player.currentRoom);
         if (room && room.id.startsWith('dng_rest_')) {
           store.dungeon.floor++;
           store.dungeon.score.floorsCleared++;
@@ -320,14 +372,14 @@ function buildExploringDeps(store: GameStore): ExploringDeps {
           clearTerminal(store);
           addLine(store, `--- Floor ${store.dungeon.floor} ---`, C.COMBAT_COLOR);
           addLine(store, '');
-          enterRoom(store, store.player!.currentRoom);
+          enterRoom(store, store.player.currentRoom);
           updateHeader(store);
           return;
         }
       }
 
-      const nextRoom = getAdjacentRoom(store.world!, store.player!.currentRoom, target);
-      if (nextRoom && getRoom(store.world!, nextRoom)) {
+      const nextRoom = getAdjacentRoom(store.world, store.player.currentRoom, target);
+      if (nextRoom && getRoom(store.world, nextRoom)) {
         addLine(store, '');
         const entered = enterRoom(store, nextRoom);
         if (entered) updateHeader(store);
@@ -338,7 +390,7 @@ function buildExploringDeps(store: GameStore): ExploringDeps {
     },
     doSave: () => {
       if (store.activeSlot !== null) {
-        if (store.player && store.world && saveToSlot(store.activeSlot, store.player, store.world, store.dungeon, store.shopState.runtime)) {
+        if (saveToSlot(store.activeSlot, store.player, store.world, store.dungeon, store.shopState.runtime)) {
           addLine(store, 'Game saved.', C.ITEM_COLOR);
           emitSound(store, 'save');
         } else {
@@ -361,7 +413,7 @@ function buildExploringDeps(store: GameStore): ExploringDeps {
         const [verb, target] = parseCommand(store.lastCommand);
         if (verb) {
           addLine(store, `(repeating: ${store.lastCommand})`, C.HELP_COLOR);
-          handleExploringCommandRaw(store, verb, target, buildExploringDeps(store));
+          handleExploringCommandRaw(store, verb, target, getExploringDeps(store));
         }
       } else {
         addLine(store, 'No previous command to repeat.', C.ERROR_COLOR);
@@ -372,12 +424,12 @@ function buildExploringDeps(store: GameStore): ExploringDeps {
 }
 
 function handleExploringCommand(store: GameStore, verb: string, target: string): void {
-  handleExploringCommandRaw(store, verb, target, buildExploringDeps(store));
+  handleExploringCommandRaw(store, verb, target, getExploringDeps(store));
 }
 
 function getAutocompleteSuggestions(store: GameStore, input: string): string[] {
   if (store.state === 'shop') {
-    return getShopAutocompleteSuggestions(store, input, buildShopDeps(store));
+    return getShopAutocompleteSuggestions(store, input, getShopDeps(store));
   }
   if (store.state === 'combat') {
     return getCombatAutocompleteSuggestions(store, input);
@@ -416,7 +468,7 @@ function getCombatAutocompleteSuggestions(store: GameStore, input: string): stri
   return candidates.filter(c => c.toLowerCase().startsWith(partial));
 }
 
-function buildShopDeps(store: GameStore): ShopDeps {
+function buildShopDeps(store: ReadyStore): ShopDeps {
   return {
     shops: shopData,
     itemData,
@@ -427,7 +479,7 @@ function buildShopDeps(store: GameStore): ShopDeps {
   };
 }
 
-function buildDialogueDeps(store: GameStore): DialogueDeps {
+function buildDialogueDeps(store: ReadyStore): DialogueDeps {
   return {
     itemData,
     weaponData: effectiveWeaponData(store),
@@ -439,12 +491,29 @@ function buildDialogueDeps(store: GameStore): DialogueDeps {
     loadDungeonFloor: floor => loadDungeonFloor(store, floor),
     enterRoom: roomId => enterRoom(store, roomId),
     checkAchievement: id => checkAchievement(store, id),
-    openShop: shopId => enterShop(store, shopId, buildShopDeps(store)),
+    openShop: shopId => enterShop(store, shopId, getShopDeps(store)),
+  };
+}
+
+function buildSkillTreeDeps(store: ReadyStore): SkillTreeDeps {
+  return {
+    refreshHeader: () => updateHeader(store),
+    emit: sound => emitSound(store, sound),
+    checkScholar: () => {
+      const learnedCount = Object.values(store.player.skills).filter(Boolean).length;
+      if (learnedCount >= 5) {
+        checkAchievement(store, 'scholar');
+      }
+    },
+    redisplayRoom: () => {
+      clearTerminal(store);
+      displayRoom(store, store.player.currentRoom);
+    },
   };
 }
 
 function handleDialogueInput(store: GameStore, input: string): void {
-  handleDialogueInputRaw(store, input, buildDialogueDeps(store));
+  handleDialogueInputRaw(store, input, getDialogueDeps(store));
 }
 
 function handleGameoverInput(store: GameStore, input: string): void {
@@ -455,8 +524,14 @@ function handleGameoverInput(store: GameStore, input: string): void {
   });
 }
 
+// Lifecycle helpers can't take ReadyStore at the type level — they're called
+// before player+world are populated and populate them as a side effect — but
+// the `enterRoom` callback is only fired after that side effect has happened,
+// so we narrow inside the closure.
 function startNewGame(store: GameStore): void {
-  startNewGameRaw(store, { enterRoom: roomId => enterRoom(store, roomId) });
+  startNewGameRaw(store, {
+    enterRoom: roomId => { assertReady(store); enterRoom(store, roomId); },
+  });
 }
 
 function startContinue(store: GameStore, slot: number): void {
@@ -464,7 +539,9 @@ function startContinue(store: GameStore, slot: number): void {
 }
 
 function startDungeonMode(store: GameStore, seed?: number): void {
-  startDungeonModeRaw(store, { enterRoom: roomId => enterRoom(store, roomId) }, seed);
+  startDungeonModeRaw(store, {
+    enterRoom: roomId => { assertReady(store); enterRoom(store, roomId); },
+  }, seed);
 }
 
 function handleSlotPickerKey(s: GameStore, key: string): void {
@@ -836,7 +913,7 @@ function handleKeyPressed(s: GameStore, key: string): void {
           if (s.state === 'combat') {
             handleCombatCommand(s, verb, target);
           } else if (s.state === 'shop') {
-            handleShopInput(s, verb, target, buildShopDeps(s));
+            handleShopInput(s, verb, target, getShopDeps(s));
           } else {
             handleExploringCommand(s, verb, target);
           }
@@ -859,7 +936,7 @@ function handleKeyPressed(s: GameStore, key: string): void {
         s.shopMenuSelected = 0;
         s.shopSellConfirm = null;
         if (confirmed) {
-          handleShopInput(s, 'sell', id, buildShopDeps(s));
+          handleShopInput(s, 'sell', id, getShopDeps(s));
         } else {
           addLineInstant(s, 'Sale cancelled.', C.HELP_COLOR);
         }
@@ -872,9 +949,9 @@ function handleKeyPressed(s: GameStore, key: string): void {
           s.shopMenuItems = [];
           s.shopMenuSelected = 0;
           if (mode === 'buy') {
-            handleShopInput(s, 'buy', item.label, buildShopDeps(s));
+            handleShopInput(s, 'buy', item.label, getShopDeps(s));
           } else {
-            handleShopInput(s, 'sell', item.id, buildShopDeps(s));
+            handleShopInput(s, 'sell', item.id, getShopDeps(s));
           }
         }
       }
@@ -885,23 +962,7 @@ function handleKeyPressed(s: GameStore, key: string): void {
 }
 
 function handleSkillTreeKey(s: GameStore, key: string): void {
-  const deps: SkillTreeDeps = {
-    refreshHeader: () => updateHeader(s),
-    emit: sound => emitSound(s, sound),
-    checkScholar: () => {
-      const learnedCount = Object.values(s.player!.skills).filter(Boolean).length;
-      if (learnedCount >= 5) {
-        checkAchievement(s, 'scholar');
-      }
-    },
-    redisplayRoom: () => {
-      if (s.player && s.world) {
-        clearTerminal(s);
-        displayRoom(s, s.player.currentRoom);
-      }
-    },
-  };
-  handleSkillTreeKeyRaw(s, key, deps);
+  handleSkillTreeKeyRaw(s, key, getSkillTreeDeps(s));
 }
 
 function handleMenuKey(s: GameStore, key: string): void {
