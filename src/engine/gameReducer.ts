@@ -773,19 +773,7 @@ function handleKeyPressed(s: GameStore, key: string): void {
   }
 
   if (s.state === 'minimap') {
-    const PAN_STEP = 30;
-    if (key === 'Escape') {
-      s.state = 'exploring';
-      s.minimapOpen = false;
-    } else if (key === 'ArrowUp') {
-      s.minimapPan = { x: s.minimapPan.x, y: s.minimapPan.y - PAN_STEP };
-    } else if (key === 'ArrowDown') {
-      s.minimapPan = { x: s.minimapPan.x, y: s.minimapPan.y + PAN_STEP };
-    } else if (key === 'ArrowLeft') {
-      s.minimapPan = { x: s.minimapPan.x - PAN_STEP, y: s.minimapPan.y };
-    } else if (key === 'ArrowRight') {
-      s.minimapPan = { x: s.minimapPan.x + PAN_STEP, y: s.minimapPan.y };
-    }
+    handleMinimapKey(s, key);
     return;
   }
 
@@ -807,27 +795,10 @@ function handleKeyPressed(s: GameStore, key: string): void {
     return;
   }
 
-  // States with text input — allow typing while typewriter runs
+  // ----- Text-input states (exploring/combat/shop/dialogue/gameover) -----
+
   if (key === 'Tab') {
-    // Autocomplete
-    if (s.tabSuggestions.length > 0 && s.tabIndex >= 0) {
-      // Cycle to next suggestion
-      s.tabIndex = (s.tabIndex + 1) % s.tabSuggestions.length;
-    } else {
-      // Start new autocomplete
-      const suggestions = getAutocompleteSuggestions(s, s.input);
-      if (suggestions.length === 0) return;
-      s.tabPrefix = s.input;
-      s.tabSuggestions = suggestions;
-      s.tabIndex = 0;
-    }
-    // Apply the current suggestion
-    const parts = s.tabPrefix.split(/\s+/);
-    if (parts.length <= 1) {
-      s.input = s.tabSuggestions[s.tabIndex];
-    } else {
-      s.input = parts[0] + ' ' + s.tabSuggestions[s.tabIndex];
-    }
+    handleTabKey(s);
     return;
   }
 
@@ -842,124 +813,181 @@ function handleKeyPressed(s: GameStore, key: string): void {
     s.input = s.input.slice(0, -1);
     s.historyIndex = -1; // reset history browsing on edit
   } else if (key === 'ArrowUp') {
-    // Dialogue/shop menu: navigate selection
-    if (s.state === 'dialogue' && s.dialogueOptions.length > 0) {
-      s.dialogueSelected = (s.dialogueSelected - 1 + s.dialogueOptions.length) % s.dialogueOptions.length;
-      emitSound(s, 'menuMove');
-      return;
-    }
-    if (s.state === 'shop' && s.shopMenuMode) {
-      s.shopMenuSelected = (s.shopMenuSelected - 1 + s.shopMenuItems.length) % s.shopMenuItems.length;
-      emitSound(s, 'menuMove');
-      return;
-    }
-    // Browse command history (older)
-    if (s.commandHistory.length === 0) return;
-    if (s.historyIndex === -1) {
-      s.savedInput = s.input;
-      s.historyIndex = s.commandHistory.length - 1;
-    } else if (s.historyIndex > 0) {
-      s.historyIndex--;
-    }
-    s.input = s.commandHistory[s.historyIndex];
+    handleArrowUpKey(s);
   } else if (key === 'ArrowDown') {
-    // Dialogue/shop menu: navigate selection
-    if (s.state === 'dialogue' && s.dialogueOptions.length > 0) {
-      s.dialogueSelected = (s.dialogueSelected + 1) % s.dialogueOptions.length;
-      emitSound(s, 'menuMove');
-      return;
-    }
-    if (s.state === 'shop' && s.shopMenuMode) {
-      s.shopMenuSelected = (s.shopMenuSelected + 1) % s.shopMenuItems.length;
-      emitSound(s, 'menuMove');
-      return;
-    }
-    // Browse command history (newer)
-    if (s.historyIndex === -1) return;
-    if (s.historyIndex < s.commandHistory.length - 1) {
-      s.historyIndex++;
-      s.input = s.commandHistory[s.historyIndex];
-    } else {
-      s.historyIndex = -1;
-      s.input = s.savedInput;
-    }
+    handleArrowDownKey(s);
   } else if (key === 'Enter') {
-    // Skip any remaining typewriter text first
-    if (isTyping(s)) skipTypewriter(s);
+    handleEnterKey(s);
+  }
+}
 
-    const input = s.input;
-    if (input.length > 0) {
-      // Push to command history — but skip dialogue/shop inputs (numbered
-      // choices and buy/sell commands) so that "talk dusty" stays as the
-      // last real command the player typed.
-      const skipHistory = s.state === 'dialogue' || s.state === 'shop';
-      if (!skipHistory && (s.commandHistory.length === 0 || s.commandHistory[s.commandHistory.length - 1] !== input)) {
-        s.commandHistory.push(input);
-        if (s.commandHistory.length > 50) s.commandHistory.shift(); // cap at 50
-        saveCommandHistory(s.commandHistory);
-      }
-      s.historyIndex = -1;
-      s.savedInput = '';
+function handleMinimapKey(s: GameStore, key: string): void {
+  const PAN_STEP = 30;
+  if (key === 'Escape') {
+    s.state = 'exploring';
+    s.minimapOpen = false;
+  } else if (key === 'ArrowUp') {
+    s.minimapPan = { x: s.minimapPan.x, y: s.minimapPan.y - PAN_STEP };
+  } else if (key === 'ArrowDown') {
+    s.minimapPan = { x: s.minimapPan.x, y: s.minimapPan.y + PAN_STEP };
+  } else if (key === 'ArrowLeft') {
+    s.minimapPan = { x: s.minimapPan.x - PAN_STEP, y: s.minimapPan.y };
+  } else if (key === 'ArrowRight') {
+    s.minimapPan = { x: s.minimapPan.x + PAN_STEP, y: s.minimapPan.y };
+  }
+}
 
-      addLineInstant(s, `> ${input}`, C.INPUT_ECHO_COLOR);
-      emitSound(s, 'submit');
-      s.input = '';
+function handleTabKey(s: GameStore): void {
+  // Either cycle through an in-progress suggestion list, or start a new one.
+  if (s.tabSuggestions.length > 0 && s.tabIndex >= 0) {
+    s.tabIndex = (s.tabIndex + 1) % s.tabSuggestions.length;
+  } else {
+    const suggestions = getAutocompleteSuggestions(s, s.input);
+    if (suggestions.length === 0) return;
+    s.tabPrefix = s.input;
+    s.tabSuggestions = suggestions;
+    s.tabIndex = 0;
+  }
+  // Apply the current suggestion to the input buffer.
+  const parts = s.tabPrefix.split(/\s+/);
+  if (parts.length <= 1) {
+    s.input = s.tabSuggestions[s.tabIndex];
+  } else {
+    s.input = parts[0] + ' ' + s.tabSuggestions[s.tabIndex];
+  }
+}
 
-      if (s.state === 'dialogue') {
-        handleDialogueInput(s, input);
-      } else if (s.state === 'gameover') {
-        handleGameoverInput(s, input);
-      } else {
-        const [verb, target] = parseCommand(input);
-        if (verb) {
-          if (s.state === 'combat') {
-            handleCombatCommand(s, verb, target);
-          } else if (s.state === 'shop') {
-            handleShopInput(s, verb, target, getShopDeps(s));
-          } else {
-            handleExploringCommand(s, verb, target);
-          }
-        }
-      }
-    } else if (s.state === 'dialogue' && s.dialogueOptions.length > 0) {
-      // Enter with empty input in dialogue: submit the selected option
-      emitSound(s, 'menuSelect');
-      const selected = String(s.dialogueSelected + 1);
-      handleDialogueInput(s, selected);
-    } else if (s.state === 'shop' && s.shopMenuMode) {
-      // Enter with empty input in shop menu: submit the selected item
-      emitSound(s, 'menuSelect');
-      if (s.shopMenuMode === 'sell_confirm' && s.shopSellConfirm) {
-        // Confirmation menu: Yes (0) or No (1)
-        const confirmed = s.shopMenuSelected === 0;
-        const { id, type } = s.shopSellConfirm;
-        s.shopMenuMode = null;
-        s.shopMenuItems = [];
-        s.shopMenuSelected = 0;
-        s.shopSellConfirm = null;
-        if (confirmed) {
-          handleShopInput(s, 'sell', id, getShopDeps(s));
-        } else {
-          addLineInstant(s, 'Sale cancelled.', C.HELP_COLOR);
-        }
-        void type; // used by the sell handler via the id match
-      } else {
-        const item = s.shopMenuItems[s.shopMenuSelected];
-        if (item) {
-          const mode = s.shopMenuMode;
-          s.shopMenuMode = null;
-          s.shopMenuItems = [];
-          s.shopMenuSelected = 0;
-          if (mode === 'buy') {
-            handleShopInput(s, 'buy', item.label, getShopDeps(s));
-          } else {
-            handleShopInput(s, 'sell', item.id, getShopDeps(s));
-          }
-        }
-      }
-    } else if (isTyping(s)) {
-      // Enter with empty input just skips typewriter
+function handleArrowUpKey(s: GameStore): void {
+  // Dialogue/shop menu: navigate selection
+  if (s.state === 'dialogue' && s.dialogueOptions.length > 0) {
+    s.dialogueSelected = (s.dialogueSelected - 1 + s.dialogueOptions.length) % s.dialogueOptions.length;
+    emitSound(s, 'menuMove');
+    return;
+  }
+  if (s.state === 'shop' && s.shopMenuMode) {
+    s.shopMenuSelected = (s.shopMenuSelected - 1 + s.shopMenuItems.length) % s.shopMenuItems.length;
+    emitSound(s, 'menuMove');
+    return;
+  }
+  // Browse command history (older)
+  if (s.commandHistory.length === 0) return;
+  if (s.historyIndex === -1) {
+    s.savedInput = s.input;
+    s.historyIndex = s.commandHistory.length - 1;
+  } else if (s.historyIndex > 0) {
+    s.historyIndex--;
+  }
+  s.input = s.commandHistory[s.historyIndex];
+}
+
+function handleArrowDownKey(s: GameStore): void {
+  // Dialogue/shop menu: navigate selection
+  if (s.state === 'dialogue' && s.dialogueOptions.length > 0) {
+    s.dialogueSelected = (s.dialogueSelected + 1) % s.dialogueOptions.length;
+    emitSound(s, 'menuMove');
+    return;
+  }
+  if (s.state === 'shop' && s.shopMenuMode) {
+    s.shopMenuSelected = (s.shopMenuSelected + 1) % s.shopMenuItems.length;
+    emitSound(s, 'menuMove');
+    return;
+  }
+  // Browse command history (newer)
+  if (s.historyIndex === -1) return;
+  if (s.historyIndex < s.commandHistory.length - 1) {
+    s.historyIndex++;
+    s.input = s.commandHistory[s.historyIndex];
+  } else {
+    s.historyIndex = -1;
+    s.input = s.savedInput;
+  }
+}
+
+function handleEnterKey(s: GameStore): void {
+  // Skip any remaining typewriter text first
+  if (isTyping(s)) skipTypewriter(s);
+
+  const input = s.input;
+  if (input.length > 0) {
+    submitTypedInput(s, input);
+  } else if (s.state === 'dialogue' && s.dialogueOptions.length > 0) {
+    submitDialogueChoice(s);
+  } else if (s.state === 'shop' && s.shopMenuMode) {
+    submitShopMenuChoice(s);
+  }
+  // Enter with empty input in any other state is a no-op (typewriter was
+  // already skipped above).
+}
+
+function submitTypedInput(s: GameStore, input: string): void {
+  // Push to command history — but skip dialogue/shop inputs (numbered choices
+  // and buy/sell commands) so that "talk dusty" stays as the last real
+  // command the player typed.
+  const skipHistory = s.state === 'dialogue' || s.state === 'shop';
+  if (!skipHistory && (s.commandHistory.length === 0 || s.commandHistory[s.commandHistory.length - 1] !== input)) {
+    s.commandHistory.push(input);
+    if (s.commandHistory.length > 50) s.commandHistory.shift(); // cap at 50
+    saveCommandHistory(s.commandHistory);
+  }
+  s.historyIndex = -1;
+  s.savedInput = '';
+
+  addLineInstant(s, `> ${input}`, C.INPUT_ECHO_COLOR);
+  emitSound(s, 'submit');
+  s.input = '';
+
+  if (s.state === 'dialogue') {
+    handleDialogueInput(s, input);
+    return;
+  }
+  if (s.state === 'gameover') {
+    handleGameoverInput(s, input);
+    return;
+  }
+  const [verb, target] = parseCommand(input);
+  if (!verb) return;
+  if (s.state === 'combat') {
+    handleCombatCommand(s, verb, target);
+  } else if (s.state === 'shop') {
+    handleShopInput(s, verb, target, getShopDeps(s));
+  } else {
+    handleExploringCommand(s, verb, target);
+  }
+}
+
+function submitDialogueChoice(s: GameStore): void {
+  emitSound(s, 'menuSelect');
+  const selected = String(s.dialogueSelected + 1);
+  handleDialogueInput(s, selected);
+}
+
+function submitShopMenuChoice(s: GameStore): void {
+  emitSound(s, 'menuSelect');
+  if (s.shopMenuMode === 'sell_confirm' && s.shopSellConfirm) {
+    // Confirmation menu: Yes (0) or No (1)
+    const confirmed = s.shopMenuSelected === 0;
+    const { id } = s.shopSellConfirm;
+    s.shopMenuMode = null;
+    s.shopMenuItems = [];
+    s.shopMenuSelected = 0;
+    s.shopSellConfirm = null;
+    if (confirmed) {
+      handleShopInput(s, 'sell', id, getShopDeps(s));
+    } else {
+      addLineInstant(s, 'Sale cancelled.', C.HELP_COLOR);
     }
+    return;
+  }
+  const item = s.shopMenuItems[s.shopMenuSelected];
+  if (!item) return;
+  const mode = s.shopMenuMode;
+  s.shopMenuMode = null;
+  s.shopMenuItems = [];
+  s.shopMenuSelected = 0;
+  if (mode === 'buy') {
+    handleShopInput(s, 'buy', item.label, getShopDeps(s));
+  } else {
+    handleShopInput(s, 'sell', item.id, getShopDeps(s));
   }
 }
 
