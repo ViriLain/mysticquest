@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { createInitialStore, gameReducer } from '../engine/gameReducer';
 import { updateEffects } from '../engine/effects';
 import { captureVisualSnapshot, didVisualSnapshotChange, shouldRunReducerTick } from '../engine/frame-loop';
-import { rgbaToCSS, MENU_COLOR, MENU_SELECTED_COLOR, MENU_DISABLED_COLOR, MENU_OPTIONS, CHOICE_COLOR, HELP_COLOR } from '../engine/constants';
+import { rgbaToCSS } from '../engine/constants';
 import { anySlotHasData } from '../engine/save';
 import {
   initAudio, startAmbient, setRegionAmbient, sfxTypewriter, sfxSubmit, sfxPickup, sfxEquip,
@@ -11,9 +11,14 @@ import {
   sfxFleeSuccess, sfxFleeFail, sfxAchievement,
 } from '../engine/audio';
 import type { GameStore, RGBA } from '../engine/types';
-import { loadSettings, fontSizePx, remapColor, typewriterDelay, fontSizeLabel, colorModeLabel, textSpeedLabel } from '../engine/settings';
-import { getAsciiLines, getRegionArtName } from '../engine/asciiArt';
+import { loadSettings, fontSizePx, remapColor, typewriterDelay } from '../engine/settings';
+import MainMenu from './MainMenu';
 import Minimap from './Minimap';
+import SettingsOverlay from './SettingsOverlay';
+import SlotPickerOverlay from './SlotPickerOverlay';
+import TerminalHeader from './TerminalHeader';
+import TerminalInput from './TerminalInput';
+import TerminalLines from './TerminalLines';
 import '../styles/crt.css';
 import '../styles/terminal.css';
 
@@ -270,9 +275,6 @@ export default function Game() {
 
   const hasSave = store.state === 'menu' ? anySlotHasData() : true;
 
-  const regionArtKey = getRegionArtName(store.currentRegion);
-  const regionBannerLines = regionArtKey ? getAsciiLines(regionArtKey) : null;
-
   return (
     <div className="crt-container" onClick={focusInput}>
       {/* Tint overlay */}
@@ -316,217 +318,40 @@ export default function Game() {
           autoFocus
         />
 
-        {/* Header */}
-        {store.header.title && store.header.maxHp > 0 && (
-          <>
-            <div className="terminal-header" style={{ color: headerColor }}>
-              {`${store.header.title}    HP:${store.header.hp}/${store.header.maxHp}  LVL:${store.header.level}  G:${store.header.gold}  ${store.header.weapon}`}
-            </div>
-            {regionBannerLines && (
-              <div className="terminal-region-banner" style={{ color: headerColor }}>
-                {regionBannerLines.join('\n')}
-              </div>
-            )}
-            <div className="terminal-separator" style={{ backgroundColor: dimColor }} />
-          </>
-        )}
+        <TerminalHeader
+          header={store.header}
+          currentRegion={store.currentRegion}
+          headerColor={headerColor}
+          dimColor={dimColor}
+        />
 
-        {/* Content area. role="log" + aria-live="polite" lets screen readers
-            announce new terminal lines without interrupting the user. */}
-        <div
-          className="terminal-content"
+        <TerminalLines
           ref={contentRef}
-          role="log"
-          aria-live="polite"
-          aria-atomic="false"
-          aria-relevant="additions"
-        >
-          {store.lines.map((line, i) => {
-            const fx = lineEffectsRef.current[i];
-            if (fx?.skip) {
-              return <div key={i} className="terminal-line" style={{ height: '1.25em' }} />;
-            }
-            return (
-              <div
-                key={i}
-                className="terminal-line"
-                style={{
-                  color: colorCSS(line.color),
-                  transform: fx?.offsetX ? `translateX(${fx.offsetX}px)` : undefined,
-                }}
-              >
-                {line.text || '\u00A0'}
-              </div>
-            );
-          })}
+          store={store}
+          lineEffects={lineEffectsRef.current}
+          twCharIndex={twCharIndex.current}
+          colorCSS={colorCSS}
+        />
 
-          {/* Typewriter current line */}
-          {store.typewriterQueue.length > 0 && (
-            <div
-              className="terminal-line"
-              style={{ color: colorCSS(store.typewriterQueue[0].color) }}
-            >
-              {store.typewriterQueue[0].text.slice(0, twCharIndex.current) || '\u00A0'}
-            </div>
-          )}
+        <TerminalInput
+          state={store.state}
+          input={store.input}
+          cursorVisible={cursorVisibleRef.current}
+          headerColor={headerColor}
+          dimColor={dimColor}
+        />
 
-          {/* Dialogue selectable options */}
-          {store.state === 'dialogue' && store.dialogueOptions.length > 0 && (
-            <div>
-              <div className="terminal-line">{'\u00A0'}</div>
-              {store.dialogueOptions.map((option, i) => (
-                <div
-                  key={i}
-                  className="terminal-line"
-                  style={{ color: colorCSS(i === store.dialogueSelected ? MENU_SELECTED_COLOR : CHOICE_COLOR) }}
-                >
-                  {i === store.dialogueSelected ? '> ' : '  '}{option}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Shop buy/sell selectable menu */}
-          {store.state === 'shop' && store.shopMenuMode && store.shopMenuItems.length > 0 && (
-            <div>
-              <div className="terminal-line" style={{ color: colorCSS(CHOICE_COLOR) }}>
-                {store.shopMenuMode === 'buy' ? '-- SELECT ITEM TO BUY --' : '-- SELECT ITEM TO SELL --'}
-              </div>
-              {store.shopMenuItems.map((item, i) => (
-                <div
-                  key={i}
-                  className="terminal-line"
-                  style={{ color: colorCSS(i === store.shopMenuSelected ? MENU_SELECTED_COLOR : HELP_COLOR) }}
-                >
-                  {i === store.shopMenuSelected ? '> ' : '  '}{item.label}
-                </div>
-              ))}
-              <div className="terminal-line" style={{ color: colorCSS(HELP_COLOR) }}>
-                {'  '}Enter: Select{'  '}Esc: Back
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Input area (hidden during boot/menu/ending/slot_picker/minimap/settings/quit) */}
-        {store.state !== 'boot' && store.state !== 'menu' && store.state !== 'ending' && store.state !== 'slot_picker' && store.state !== 'minimap' && store.state !== 'settings' && store.state !== 'skill_tree' && store.state !== 'quit' && (
-          <>
-            <div className="terminal-input-separator" style={{ backgroundColor: dimColor }} />
-            <div className="terminal-input-area" style={{ color: headerColor }}>
-              {'> ' + store.input + (cursorVisibleRef.current ? '_' : ' ')}
-            </div>
-          </>
-        )}
-
-        {/* Menu overlay */}
         {store.state === 'menu' && (
-          <div className="menu-overlay">
-            <div className="menu-title">
-              <span style={{ color: colorCSS(MENU_COLOR) }}>MYSTICQUEST</span>
-              <span style={{ color: 'rgba(128, 204, 128, 0.6)' }}>{' '}v1.0</span>
-            </div>
-            {MENU_OPTIONS.map((option, i) => {
-              const isContinue = option === 'CONTINUE';
-              const isSelected = i === store.menuSelected;
-              let color: RGBA;
-              if (isContinue && !hasSave) {
-                color = MENU_DISABLED_COLOR;
-              } else if (isSelected) {
-                color = MENU_SELECTED_COLOR;
-              } else {
-                color = [0.5, 0.8, 0.5, 0.8];
-              }
-
-              return (
-                <div
-                  key={option}
-                  className="menu-option"
-                  style={{ color: colorCSS(color) }}
-                >
-                  {isSelected ? '> ' : '  '}{option}
-                </div>
-              );
-            })}
-          </div>
+          <MainMenu selected={store.menuSelected} hasSave={hasSave} colorCSS={colorCSS} />
         )}
 
-        {/* Slot Picker overlay */}
-        {store.state === 'slot_picker' && store.slotManifest && (
-          <div className="menu-overlay slot-picker-overlay">
-            <div className="menu-title slot-picker-title">
-              <span style={{ color: colorCSS(MENU_COLOR) }}>
-                {store.slotPickerMode === 'save' ? 'SAVE GAME' : 'LOAD GAME'}
-              </span>
-            </div>
-            <div className="slot-picker-panel">
-            {store.slotManifest.slots.map((slot, i) => {
-              const isSelected = i === store.slotPickerSelected;
-              const color = isSelected ? MENU_SELECTED_COLOR : [0.5, 0.8, 0.5, 0.8] as RGBA;
-              const prefix = isSelected ? '> ' : '  ';
-
-              let info: string;
-              if (slot.isEmpty) {
-                info = '(empty)';
-              } else {
-                const date = new Date(slot.timestamp).toLocaleDateString();
-                const time = new Date(slot.timestamp).toLocaleTimeString();
-                const where = slot.region ? `${slot.roomName} (${slot.region})` : slot.roomName;
-                const gold = slot.gold !== undefined ? ` - ${slot.gold}g` : '';
-                info = `LVL ${slot.level}${gold} - ${where} - ${date} ${time}`;
-              }
-
-              const displayName = store.renamingSlot && isSelected
-                ? store.renameBuffer + '_'
-                : slot.name;
-
-              return (
-                <div key={i} className={`menu-option slot-picker-option${isSelected ? ' is-selected' : ''}`} style={{ color: colorCSS(color) }}>
-                  <div>{prefix}{displayName}</div>
-                  <div className="slot-picker-meta">{'   '}{info}</div>
-                </div>
-              );
-            })}
-            <div className="slot-picker-help" style={{ color: colorCSS([0.5, 0.5, 0.5, 0.8] as RGBA) }}>
-              {'  '}Enter: Select{'  '}R: Rename{'  '}Esc: Back
-            </div>
-            </div>
-          </div>
+        {store.state === 'slot_picker' && (
+          <SlotPickerOverlay store={store} colorCSS={colorCSS} />
         )}
 
-        {/* Settings overlay */}
-        {store.state === 'settings' && (() => {
-          const s = loadSettings();
-          const rows = [
-            { label: 'Font Size', value: fontSizeLabel(s.fontSize) },
-            { label: 'Color Mode', value: colorModeLabel(s.colorMode) },
-            { label: 'Text Speed', value: textSpeedLabel(s.textSpeed) },
-            { label: 'Master Volume', value: `${s.masterVolume}%` },
-            { label: 'Sound Effects', value: s.sfxEnabled ? 'ON' : 'OFF' },
-            { label: 'Ambient Music', value: s.ambientEnabled ? 'ON' : 'OFF' },
-            { label: 'Typewriter Clicks', value: s.typewriterSound ? 'ON' : 'OFF' },
-            { label: 'Reduce Motion', value: s.reduceMotion ? 'ON' : 'OFF' },
-          ];
-          return (
-            <div className="menu-overlay">
-              <div className="menu-title">
-                <span style={{ color: colorCSS(MENU_COLOR) }}>SETTINGS</span>
-              </div>
-              {rows.map((row, i) => {
-                const isSelected = i === store.settingsSelected;
-                const c: RGBA = isSelected ? MENU_SELECTED_COLOR : [0.5, 0.8, 0.5, 0.8];
-                const prefix = isSelected ? '> ' : '  ';
-                return (
-                  <div key={i} className="menu-option" style={{ color: colorCSS(c) }}>
-                    {prefix}{row.label.padEnd(20)}{`< ${row.value} >`}
-                  </div>
-                );
-              })}
-              <div style={{ marginTop: '2em', color: colorCSS([0.5, 0.5, 0.5, 0.8] as RGBA) }}>
-                {'  '}Left/Right: Change{'  '}Esc: Back
-              </div>
-            </div>
-          );
-        })()}
+        {store.state === 'settings' && (
+          <SettingsOverlay selected={store.settingsSelected} colorCSS={colorCSS} />
+        )}
       </div>
     </div>
   );
