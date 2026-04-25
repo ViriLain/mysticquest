@@ -312,6 +312,7 @@ export default function Game() {
           ref={inputRef}
           className="terminal-input-hidden"
           onKeyDown={handleKeyDown}
+          aria-label="Game command input"
           autoFocus
         />
 
@@ -330,8 +331,16 @@ export default function Game() {
           </>
         )}
 
-        {/* Content area */}
-        <div className="terminal-content" ref={contentRef}>
+        {/* Content area. role="log" + aria-live="polite" lets screen readers
+            announce new terminal lines without interrupting the user. */}
+        <div
+          className="terminal-content"
+          ref={contentRef}
+          role="log"
+          aria-live="polite"
+          aria-atomic="false"
+          aria-relevant="additions"
+        >
           {store.lines.map((line, i) => {
             const fx = lineEffectsRef.current[i];
             if (fx?.skip) {
@@ -461,7 +470,9 @@ export default function Game() {
               } else {
                 const date = new Date(slot.timestamp).toLocaleDateString();
                 const time = new Date(slot.timestamp).toLocaleTimeString();
-                info = `LVL ${slot.level} - ${slot.roomName} - ${date} ${time}`;
+                const where = slot.region ? `${slot.roomName} (${slot.region})` : slot.roomName;
+                const gold = slot.gold !== undefined ? ` - ${slot.gold}g` : '';
+                info = `LVL ${slot.level}${gold} - ${where} - ${date} ${time}`;
               }
 
               const displayName = store.renamingSlot && isSelected

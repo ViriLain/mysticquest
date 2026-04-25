@@ -86,6 +86,8 @@ describe('save round-trip', () => {
     expect(manifest.slots[0]?.level).toBe(2);
     expect(manifest.slots[0]?.currentRoom).toBe('manor_main_hall');
     expect(manifest.slots[0]?.roomName).toBe('Main Hall');
+    expect(manifest.slots[0]?.region).toBe('manor');
+    expect(manifest.slots[0]?.gold).toBe(player.gold);
 
     const loadedWorld = createWorld();
     loadRegion(loadedWorld, manorJson as RegionData);

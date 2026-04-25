@@ -269,6 +269,9 @@ export interface SaveSlotMeta {
   roomName: string;
   timestamp: number;
   isEmpty: boolean;
+  // Added later — optional so old manifests load cleanly. Populated on next save.
+  region?: string;
+  gold?: number;
 }
 
 export interface SaveManifest {
