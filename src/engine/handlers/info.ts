@@ -1,22 +1,18 @@
 import { getAll as getAllAchievements } from '../achievements';
 import * as C from '../constants';
+import {
+  ACCESSORIES as staticAccessoryData,
+  ARMOR as staticArmorData,
+  ITEMS as itemData,
+  WEAPONS as staticWeaponData,
+} from '../data';
 import { ICON, iconLine } from '../icons';
 import { OBJECTIVES } from '../objectives';
 import { collectModifiers, totalModifier } from '../modifiers';
 import { addLine } from '../output';
 import { visitedCount, xpToNextLevel } from '../player';
 import { SKILL_TREE, canLearnSkill, getSkillsByTier } from '../skills';
-import type { AccessoryDef, ArmorDef, GameStore, ItemDef, ObjectiveDef, ReadyStore, RGBA, WeaponDef } from '../types';
-
-import itemsJson from '../../data/items.json';
-import weaponsJson from '../../data/weapons.json';
-import armorJson from '../../data/armor.json';
-import accessoriesJson from '../../data/accessories.json';
-
-const staticWeaponData = weaponsJson as Record<string, WeaponDef>;
-const itemData = itemsJson as Record<string, ItemDef>;
-const staticArmorData = armorJson as Record<string, ArmorDef>;
-const staticAccessoryData = accessoriesJson as Record<string, AccessoryDef>;
+import type { AccessoryDef, ArmorDef, GameStore, ObjectiveDef, ReadyStore, RGBA, WeaponDef } from '../types';
 
 function weaponLookup(store: GameStore, id: string): WeaponDef | undefined {
   return staticWeaponData[id] ?? store.dungeon?.floorWeapons[id];

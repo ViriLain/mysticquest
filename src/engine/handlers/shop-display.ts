@@ -1,10 +1,8 @@
 import * as C from '../constants';
+import { ARMOR as staticArmorData } from '../data';
 import { getEffectiveStock, type ShopDef } from '../economy';
 import { addLine } from '../output';
 import type { ArmorDef, GameStore, ItemDef, ShopRuntimeState, WeaponDef } from '../types';
-
-import armorJson from '../../data/armor.json';
-const staticArmorData = armorJson as Record<string, ArmorDef>;
 
 // What the dispatcher resolves once and passes to each shop handler.
 export interface ShopHandlerCtx {

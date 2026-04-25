@@ -1,7 +1,6 @@
 import type {
   EndingCheckContext, GameStore, EndingDef, ReadyStore,
-  WeaponDef, ItemDef, EnemyDef, NpcDef,
-  ArmorDef, AccessoryDef,
+  WeaponDef, ArmorDef,
 } from './types';
 import { assertReady } from './store-ready';
 import * as C from './constants';
@@ -21,7 +20,6 @@ import { saveToSlot } from './save';
 import { loadCommandHistory, saveCommandHistory } from './command-history';
 import { notifyObjectiveEvent } from './objectives';
 import { addLine, addLineInstant, applyRegionTint, clearTerminal, displayAscii, emitSound, hideHeader, updateHeader } from './output';
-import type { ShopDef } from './economy';
 import { handleCombatCommand as handleCombatCommandRaw, type CombatDeps } from './state/combat';
 import { handleDialogueInput as handleDialogueInputRaw, handleDungeonSpecialRoom, type DialogueDeps } from './state/dialogue';
 import { startGameover, handleGameoverInput as handleGameoverInputRaw } from './state/gameover';
@@ -32,25 +30,16 @@ import { openSettings, handleSettingsKey } from './state/settings';
 import { handleSkillTreeKey as handleSkillTreeKeyRaw, type SkillTreeDeps } from './state/skill-tree';
 import { enterShop, getShopAutocompleteSuggestions, handleShopInput, type ShopDeps } from './state/shop';
 import { openSlotPicker, handleSlotPickerKey as handleSlotPickerKeyRaw } from './state/slot-picker';
-import npcsJson from '../data/npcs.json';
-import shopsJson from '../data/shops.json';
-const npcData = npcsJson as Record<string, NpcDef>;
-
-// Data imports
-import weaponsJson from '../data/weapons.json';
-import itemsJson from '../data/items.json';
-import enemiesJson from '../data/enemies.json';
-import endingsJson from '../data/endings.json';
-import armorJson from '../data/armor.json';
-import accessoriesJson from '../data/accessories.json';
-
-const weaponData = weaponsJson as Record<string, WeaponDef>;
-const itemData = itemsJson as Record<string, ItemDef>;
-const enemyData = enemiesJson as Record<string, EnemyDef>;
-const endingsData = endingsJson as Record<string, EndingDef>;
-const shopData = shopsJson as Record<string, ShopDef>;
-const armorData = armorJson as Record<string, ArmorDef>;
-const accessoryData = accessoriesJson as Record<string, AccessoryDef>;
+import {
+  ACCESSORIES as accessoryData,
+  ARMOR as armorData,
+  ENEMIES as enemyData,
+  ENDINGS as endingsData,
+  ITEMS as itemData,
+  NPCS as npcData,
+  SHOPS as shopData,
+  WEAPONS as weaponData,
+} from './data';
 
 function effectiveWeaponData(store: GameStore): Record<string, WeaponDef> {
   if (store.gameMode === 'dungeon' && store.dungeon?.floorWeapons) {

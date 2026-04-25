@@ -4,19 +4,17 @@
 // (`displayShop`, `handleShopCommand`) are unchanged.
 
 import * as C from '../constants';
+import { ARMOR as staticArmorData } from '../data';
 import type { ShopDef } from '../economy';
 import { addLine } from '../output';
 import { displayDialogueNode } from './talk';
 import type { ArmorDef, GameStore, ItemDef, NpcDef, ReadyStore, WeaponDef } from '../types';
 import { isReady } from '../store-ready';
 
-import armorJson from '../../data/armor.json';
 import { displayShop, type ShopHandlerCtx } from './shop-display';
 import { handleShopBuy } from './shop-buy';
 import { handleShopSell } from './shop-sell';
 import { handleShopExamine } from './shop-examine';
-
-const staticArmorData = armorJson as Record<string, ArmorDef>;
 
 export { displayShop };
 
