@@ -3,7 +3,7 @@ import { findAllMatches, resolveOrDisambiguate } from '../matching';
 import { notifyObjectiveEvent } from '../objectives';
 import { addItem, addWeapon, hasItem, hasKeyItem, heal as playerHeal, removeItem } from '../player';
 import { addLine } from '../output';
-import type { DialogueCondition, GameStore, ItemDef, NpcDef, PlayerState, WeaponDef } from '../types';
+import type { DialogueCondition, ItemDef, NpcDef, PlayerState, ReadyStore, WeaponDef } from '../types';
 import { getRoom } from '../world';
 
 export function checkDialogueCondition(cond: DialogueCondition, player: PlayerState): boolean {
@@ -18,12 +18,11 @@ export function checkDialogueCondition(cond: DialogueCondition, player: PlayerSt
 }
 
 export function handleTalk(
-  store: GameStore,
+  store: ReadyStore,
   target: string,
   npcData: Record<string, NpcDef>,
   checkChatterbox: () => void,
 ): void {
-  if (!store.player || !store.world) return;
   const room = getRoom(store.world, store.player.currentRoom);
   if (!room || !room.npcs || room.npcs.length === 0) {
     addLine(store, "There's no one to talk to here.", C.ERROR_COLOR);
@@ -65,8 +64,8 @@ export function handleTalk(
   checkChatterbox();
 }
 
-export function displayDialogueNode(store: GameStore, npcData: Record<string, NpcDef>): void {
-  if (!store.npcDialogue || !store.player) return;
+export function displayDialogueNode(store: ReadyStore, npcData: Record<string, NpcDef>): void {
+  if (!store.npcDialogue) return;
   const npc = npcData[store.npcDialogue.npcId];
   if (!npc) return;
   const node = npc.dialogue[store.npcDialogue.currentNode];
@@ -78,7 +77,7 @@ export function displayDialogueNode(store: GameStore, npcData: Record<string, Np
   }
 
   const visibleChoices = node.choices.filter(c =>
-    !c.condition || checkDialogueCondition(c.condition, store.player!)
+    !c.condition || checkDialogueCondition(c.condition, store.player)
   );
 
   store.dialogueOptions = visibleChoices.map(c => c.label);
@@ -86,7 +85,7 @@ export function displayDialogueNode(store: GameStore, npcData: Record<string, Np
 }
 
 export function handleNpcDialogueInput(
-  store: GameStore,
+  store: ReadyStore,
   input: string,
   itemData: Record<string, ItemDef>,
   weaponData: Record<string, WeaponDef>,
@@ -94,7 +93,7 @@ export function handleNpcDialogueInput(
   refreshHeader: () => void,
   openShop: (shopId: string) => void,
 ): void {
-  if (!store.npcDialogue || !store.player || !store.world) return;
+  if (!store.npcDialogue) return;
 
   const npc = npcData[store.npcDialogue.npcId];
   if (!npc) return;
@@ -102,7 +101,7 @@ export function handleNpcDialogueInput(
   if (!node) return;
 
   const visibleChoices = node.choices.filter(c =>
-    !c.condition || checkDialogueCondition(c.condition, store.player!)
+    !c.condition || checkDialogueCondition(c.condition, store.player)
   );
 
   const trimmed = input.trim();

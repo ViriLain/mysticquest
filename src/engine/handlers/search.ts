@@ -2,7 +2,7 @@ import * as C from '../constants';
 import { addLine } from '../output';
 import { notifyObjectiveEvent } from '../objectives';
 import { addDynamicExit, getRoom } from '../world';
-import type { AccessoryDef, ArmorDef, GameStore, ItemDef, WeaponDef } from '../types';
+import type { AccessoryDef, ArmorDef, ItemDef, ReadyStore, WeaponDef } from '../types';
 
 interface RevealOptions {
   announceSearch?: boolean;
@@ -11,14 +11,13 @@ interface RevealOptions {
 }
 
 export function revealSearchables(
-  store: GameStore,
+  store: ReadyStore,
   itemData: Record<string, ItemDef>,
   weaponData: Record<string, WeaponDef>,
   options: RevealOptions = {},
   armorData?: Record<string, ArmorDef>,
   accessoryData?: Record<string, AccessoryDef>,
 ): void {
-  if (!store.player || !store.world) return;
   const room = getRoom(store.world, store.player.currentRoom);
   if (!room) return;
 
@@ -91,7 +90,7 @@ export function revealSearchables(
 }
 
 export function handleSearch(
-  store: GameStore,
+  store: ReadyStore,
   itemData: Record<string, ItemDef>,
   weaponData: Record<string, WeaponDef>,
   armorData?: Record<string, ArmorDef>,

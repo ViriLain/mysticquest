@@ -7,7 +7,8 @@ import * as C from '../constants';
 import type { ShopDef } from '../economy';
 import { addLine } from '../output';
 import { displayDialogueNode } from './talk';
-import type { ArmorDef, GameStore, ItemDef, NpcDef, WeaponDef } from '../types';
+import type { ArmorDef, GameStore, ItemDef, NpcDef, ReadyStore, WeaponDef } from '../types';
+import { isReady } from '../store-ready';
 
 import armorJson from '../../data/armor.json';
 import { displayShop, type ShopHandlerCtx } from './shop-display';
@@ -30,7 +31,7 @@ export function handleShopCommand(
   refreshHeader: () => void,
   armorData?: Record<string, ArmorDef>,
 ): void {
-  if (!store.player || !store.shopState.activeShopId) return;
+  if (!isReady(store) || !store.shopState.activeShopId) return;
   const shopId = store.shopState.activeShopId;
   const shop = shops[shopId];
   const runtime = store.shopState.runtime[shopId];
@@ -69,7 +70,7 @@ export function handleShopCommand(
   addLine(store, 'In the shop: buy <item>, sell <item>, examine <item>, leave', C.CHOICE_COLOR);
 }
 
-function leaveShop(store: GameStore, npcData: Record<string, NpcDef>): void {
+function leaveShop(store: ReadyStore, npcData: Record<string, NpcDef>): void {
   addLine(store, 'You leave the shop.', C.HELP_COLOR);
   store.shopState.activeShopId = null;
   store.shopMenuMode = null;

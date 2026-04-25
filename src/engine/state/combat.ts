@@ -1,4 +1,5 @@
 import type { AccessoryDef, ArmorDef, CombatMessage, EnemyDef, GameStore, ItemDef, RoomDef, StatusEffect, WeaponDef } from '../types';
+import { isReady } from '../store-ready';
 import * as C from '../constants';
 import { notifyObjectiveEvent } from '../objectives';
 import { playerAttack, playerDefend, playerFlee, playerUseItem, playerSkillAttack, enemyDefeated } from '../combat';
@@ -76,7 +77,7 @@ export function handleCombatCommand(
   target: string,
   deps: CombatDeps,
 ): void {
-  if (!store.combat || !store.player || !store.world) {
+  if (!store.combat || !isReady(store)) {
     store.state = 'exploring';
     return;
   }

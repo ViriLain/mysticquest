@@ -1,14 +1,13 @@
 import * as C from '../constants';
 import { addLine, emitSound } from '../output';
-import type { EnemyDef, GameStore } from '../types';
+import type { EnemyDef, ReadyStore } from '../types';
 import { getLivingEnemies } from '../world';
 
 function findEnemyInRoom(
   name: string,
-  store: GameStore,
+  store: ReadyStore,
   enemyData: Record<string, EnemyDef>,
 ): string | null {
-  if (!store.world || !store.player) return null;
   const lower = name.toLowerCase();
   const living = getLivingEnemies(store.world, store.player.currentRoom);
   for (const enemyId of living) {
@@ -21,13 +20,11 @@ function findEnemyInRoom(
 }
 
 export function handleAttack(
-  store: GameStore,
+  store: ReadyStore,
   target: string,
   enemyData: Record<string, EnemyDef>,
   startCombat: (enemyId: string) => void,
 ): void {
-  if (!store.player || !store.world) return;
-
   if (!target) {
     const living = getLivingEnemies(store.world, store.player.currentRoom);
     if (living.length === 1) {

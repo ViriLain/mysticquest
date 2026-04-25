@@ -2,10 +2,10 @@ import * as C from '../constants';
 import { findAllMatches, resolveOrDisambiguate, singularize } from '../matching';
 import { equipWeapon, hasItem, hasKeyItem, hasSkill, heal as playerHeal, removeItem } from '../player';
 import { addLine, emitSound } from '../output';
-import type { AccessoryDef, ArmorDef, GameStore, ItemDef, WeaponDef } from '../types';
+import type { AccessoryDef, ArmorDef, ItemDef, ReadyStore, WeaponDef } from '../types';
 
 export function handleUse(
-  store: GameStore,
+  store: ReadyStore,
   target: string,
   itemData: Record<string, ItemDef>,
   weaponData: Record<string, WeaponDef>,
@@ -14,7 +14,6 @@ export function handleUse(
   armorData?: Record<string, ArmorDef>,
   accessoryData?: Record<string, AccessoryDef>,
 ): void {
-  if (!store.player || !store.world) return;
   if (!target) { addLine(store, 'Use what?', C.ERROR_COLOR); return; }
   const player = store.player;
 

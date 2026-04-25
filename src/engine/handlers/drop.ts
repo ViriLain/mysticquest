@@ -2,11 +2,11 @@ import * as C from '../constants';
 import { findAllMatches, resolveOrDisambiguate } from '../matching';
 import { removeItem } from '../player';
 import { addLine } from '../output';
-import type { AccessoryDef, ArmorDef, GameStore, ItemDef, WeaponDef } from '../types';
+import type { AccessoryDef, ArmorDef, ItemDef, ReadyStore, WeaponDef } from '../types';
 import { getRoom } from '../world';
 
 export function handleDrop(
-  store: GameStore,
+  store: ReadyStore,
   target: string,
   itemData: Record<string, ItemDef>,
   weaponData: Record<string, WeaponDef>,
@@ -14,7 +14,6 @@ export function handleDrop(
   armorData?: Record<string, ArmorDef>,
   accessoryData?: Record<string, AccessoryDef>,
 ): void {
-  if (!store.player || !store.world) return;
   if (!target) { addLine(store, 'Drop what?', C.ERROR_COLOR); return; }
 
   const room = getRoom(store.world, store.player.currentRoom);

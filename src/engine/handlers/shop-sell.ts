@@ -3,16 +3,15 @@ import { sellItem } from '../economy';
 import { ICON, iconLine } from '../icons';
 import { findAllMatches, resolveOrDisambiguate } from '../matching';
 import { addLine, emitSound } from '../output';
-import type { GameStore } from '../types';
+import type { ReadyStore } from '../types';
 import type { ShopHandlerCtx } from './shop-display';
 
 export function handleShopSell(
-  store: GameStore,
+  store: ReadyStore,
   target: string,
   ctx: ShopHandlerCtx,
   refreshHeader: () => void,
 ): void {
-  if (!store.player) return;
   const { shop, itemData, weaponData, armorData } = ctx;
 
   if (!target) {
@@ -76,8 +75,7 @@ export function handleShopSell(
   addLine(store, "You don't have that.", C.ERROR_COLOR);
 }
 
-function openSellMenu(store: GameStore, ctx: ShopHandlerCtx): void {
-  if (!store.player) return;
+function openSellMenu(store: ReadyStore, ctx: ShopHandlerCtx): void {
   const { itemData, weaponData, armorData } = ctx;
 
   const items: typeof store.shopMenuItems = [];
@@ -109,7 +107,7 @@ function openSellMenu(store: GameStore, ctx: ShopHandlerCtx): void {
   }
 }
 
-function promptSellConfirm(store: GameStore, id: string, type: 'item' | 'weapon' | 'armor'): void {
+function promptSellConfirm(store: ReadyStore, id: string, type: 'item' | 'weapon' | 'armor'): void {
   store.shopMenuMode = 'sell_confirm';
   store.shopMenuItems = [
     { label: 'Yes, sell it', id, index: 0 },
@@ -119,10 +117,10 @@ function promptSellConfirm(store: GameStore, id: string, type: 'item' | 'weapon'
   store.shopSellConfirm = { id, type };
 }
 
-function handleSellResult(store: GameStore, result: ReturnType<typeof sellItem>, name: string): void {
+function handleSellResult(store: ReadyStore, result: ReturnType<typeof sellItem>, name: string): void {
   if (result.ok) {
     addLine(store, iconLine(ICON.loot, `Sold ${name} for ${result.price}g.`), C.ITEM_COLOR);
-    addLine(store, `Gold remaining: ${store.player!.gold}g`, C.LOOT_COLOR);
+    addLine(store, `Gold remaining: ${store.player.gold}g`, C.LOOT_COLOR);
     emitSound(store, 'save');
   } else {
     if (result.reason === 'key_item') addLine(store, "You can't sell that.", C.ERROR_COLOR);

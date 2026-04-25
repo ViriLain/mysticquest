@@ -6,7 +6,7 @@ import { collectModifiers, totalModifier } from '../modifiers';
 import { addLine } from '../output';
 import { visitedCount, xpToNextLevel } from '../player';
 import { SKILL_TREE, canLearnSkill, getSkillsByTier } from '../skills';
-import type { AccessoryDef, ArmorDef, GameStore, ItemDef, ObjectiveDef, RGBA, WeaponDef } from '../types';
+import type { AccessoryDef, ArmorDef, GameStore, ItemDef, ObjectiveDef, ReadyStore, RGBA, WeaponDef } from '../types';
 
 import itemsJson from '../../data/items.json';
 import weaponsJson from '../../data/weapons.json';
@@ -46,8 +46,7 @@ function weaponColor(weapon: WeaponDef): RGBA {
   return weapon.weapon_class === 'magic' ? C.MAGIC_COLOR : C.HELP_COLOR;
 }
 
-function sortedWeaponIds(store: GameStore): string[] {
-  if (!store.player) return [];
+function sortedWeaponIds(store: ReadyStore): string[] {
   const equipped = store.player.equippedWeapon;
   const others = store.player.weapons
     .filter(weaponId => weaponId !== equipped)
@@ -71,8 +70,7 @@ function weaponLine(store: GameStore, weaponId: string, options: { equippedPrefi
   };
 }
 
-export function showSkills(store: GameStore): void {
-  if (!store.player) return;
+export function showSkills(store: ReadyStore): void {
   addLine(store, '');
   addLine(store, '=== Skill Tree ===', C.STAT_COLOR);
   addLine(store, `Skill Points: ${store.player.skillPoints}`, C.CHOICE_COLOR);
@@ -95,7 +93,7 @@ export function showSkills(store: GameStore): void {
   addLine(store, "Type 'learn <skill>' to learn a skill.", C.HELP_COLOR);
 }
 
-export function showAchievements(store: GameStore): void {
+export function showAchievements(store: ReadyStore): void {
   addLine(store, '');
   addLine(store, '=== Achievements ===', C.STAT_COLOR);
   const all = getAllAchievements();
@@ -111,8 +109,7 @@ export function showAchievements(store: GameStore): void {
   addLine(store, `${unlocked}/${all.length} unlocked`, C.STAT_COLOR);
 }
 
-export function showInventory(store: GameStore): void {
-  if (!store.player) return;
+export function showInventory(store: ReadyStore): void {
   const inShop = !!store.shopState.activeShopId;
   addLine(store, '');
   addLine(store, '=== Inventory ===', C.STAT_COLOR);
@@ -146,7 +143,7 @@ export function showInventory(store: GameStore): void {
     }
   }
 
-  for (const weaponId of sortedWeaponIds(store).filter(weaponId => weaponId !== store.player!.equippedWeapon)) {
+  for (const weaponId of sortedWeaponIds(store).filter(weaponId => weaponId !== store.player.equippedWeapon)) {
     const line = weaponLine(store, weaponId, { equippedPrefix: false, inShop });
     if (line) addLine(store, line.text, line.color);
   }
@@ -179,8 +176,7 @@ export function showInventory(store: GameStore): void {
   }
 }
 
-export function showWeapons(store: GameStore): void {
-  if (!store.player) return;
+export function showWeapons(store: ReadyStore): void {
   addLine(store, '');
   addLine(store, '=== Weapons ===', C.STAT_COLOR);
   const weaponIds = sortedWeaponIds(store);
@@ -199,36 +195,36 @@ export function showWeapons(store: GameStore): void {
   }
 }
 
-export function showStats(store: GameStore): void {
-  if (!store.player) return;
+export function showStats(store: ReadyStore): void {
+  const player = store.player;
+  if (!player) return;
   addLine(store, '');
   addLine(store, '=== Stats ===', C.STAT_COLOR);
-  addLine(store, `HP: ${store.player.hp}/${store.player.maxHp}`, C.STAT_COLOR);
+  addLine(store, `HP: ${player.hp}/${player.maxHp}`, C.STAT_COLOR);
 
-  const mods = collectModifiers(store.player, allWeaponData(store), allArmorData(store), staticAccessoryData);
-  let totalAtk = store.player.attack + totalModifier(mods, 'attack');
-  const statWeapon = store.player.equippedWeapon ? weaponLookup(store, store.player.equippedWeapon) : undefined;
+  const mods = collectModifiers(player, allWeaponData(store), allArmorData(store), staticAccessoryData);
+  let totalAtk = player.attack + totalModifier(mods, 'attack');
+  const statWeapon = player.equippedWeapon ? weaponLookup(store, player.equippedWeapon) : undefined;
   if (statWeapon) {
     totalAtk += statWeapon.attack_bonus;
   }
   addLine(store, `Attack: ${totalAtk}`, C.STAT_COLOR);
-  const shieldDef = store.player.equippedShield ? itemData[store.player.equippedShield]?.value ?? 0 : 0;
-  addLine(store, `Defense: ${store.player.defense + shieldDef + totalModifier(mods, 'defense')}`, C.STAT_COLOR);
-  addLine(store, `Level: ${store.player.level}`, C.STAT_COLOR);
-  addLine(store, `Gold: ${store.player.gold}`, C.STAT_COLOR);
-  addLine(store, `XP: ${store.player.xp}/${xpToNextLevel(store.player)}`, C.STAT_COLOR);
-  addLine(store, `Rooms visited: ${visitedCount(store.player)}`, C.STAT_COLOR);
-  if (store.player.skillPoints > 0) {
-    addLine(store, `Skill Points: ${store.player.skillPoints}`, C.CHOICE_COLOR);
+  const shieldDef = player.equippedShield ? itemData[player.equippedShield]?.value ?? 0 : 0;
+  addLine(store, `Defense: ${player.defense + shieldDef + totalModifier(mods, 'defense')}`, C.STAT_COLOR);
+  addLine(store, `Level: ${player.level}`, C.STAT_COLOR);
+  addLine(store, `Gold: ${player.gold}`, C.STAT_COLOR);
+  addLine(store, `XP: ${player.xp}/${xpToNextLevel(player)}`, C.STAT_COLOR);
+  addLine(store, `Rooms visited: ${visitedCount(player)}`, C.STAT_COLOR);
+  if (player.skillPoints > 0) {
+    addLine(store, `Skill Points: ${player.skillPoints}`, C.CHOICE_COLOR);
   }
-  const learnedSkills = SKILL_TREE.filter(skill => store.player!.skills[skill.id]);
+  const learnedSkills = SKILL_TREE.filter(skill => player.skills[skill.id]);
   if (learnedSkills.length > 0) {
     addLine(store, `Skills: ${learnedSkills.map(skill => skill.name).join(', ')}`, C.ITEM_COLOR);
   }
 }
 
-export function showJournal(store: GameStore): void {
-  if (!store.player) return;
+export function showJournal(store: ReadyStore): void {
   addLine(store, '');
   addLine(store, '=== Journal ===', C.STAT_COLOR);
 
@@ -267,7 +263,7 @@ export function showJournal(store: GameStore): void {
   }
 }
 
-export function showScore(store: GameStore): void {
+export function showScore(store: ReadyStore): void {
   if (store.gameMode === 'dungeon' && store.dungeon) {
     addLine(store, '');
     addLine(store, '=== Dungeon Score ===', C.STAT_COLOR);
