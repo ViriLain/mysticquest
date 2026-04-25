@@ -329,6 +329,7 @@ export default function Game() {
           currentRegion={store.currentRegion}
           headerColor={headerColor}
           dimColor={dimColor}
+          autosaveFlashing={store.autosaveFlashTime > 0}
         />
 
         <TerminalLines

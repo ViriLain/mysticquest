@@ -7,6 +7,8 @@ export interface TerminalHeaderProps {
   currentRegion: string | null;
   headerColor: string;
   dimColor: string;
+  /** When true, render a brief "[saved]" indicator in the header. */
+  autosaveFlashing: boolean;
 }
 
 /**
@@ -19,7 +21,7 @@ export interface TerminalHeaderProps {
  * change any of its props.
  */
 function TerminalHeaderImpl({
-  header, currentRegion, headerColor, dimColor,
+  header, currentRegion, headerColor, dimColor, autosaveFlashing,
 }: TerminalHeaderProps) {
   if (!header.title || header.maxHp <= 0) return null;
 
@@ -30,6 +32,7 @@ function TerminalHeaderImpl({
     <>
       <div className="terminal-header" style={{ color: headerColor }}>
         {`${header.title}    HP:${header.hp}/${header.maxHp}  LVL:${header.level}  G:${header.gold}  ${header.weapon}`}
+        {autosaveFlashing && <span style={{ marginLeft: '1em', opacity: 0.8 }}>[saved]</span>}
       </div>
       {regionBannerLines && (
         <div className="terminal-region-banner" style={{ color: headerColor }}>

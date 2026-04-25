@@ -173,9 +173,11 @@ function enterRoom(store: ReadyStore, roomId: string): boolean {
     startDialogue(store, choiceEnding);
   }
 
-  // Auto-save on room entry
+  // Auto-save on room entry. Briefly flash a "[saved]" indicator so the
+  // player can see autosave fire — otherwise it's invisible.
   if (store.activeSlot !== null) {
     saveToSlot(store.activeSlot, store.player, store.world, store.dungeon, store.shopState.runtime);
+    store.autosaveFlashTime = 1.5;
   }
 
   return true;
@@ -573,6 +575,7 @@ export function createInitialStore(): GameStore {
     endingPsychedelicTime: 0,
     gameoverReady: false,
     currentRegion: null,
+    autosaveFlashTime: 0,
     commandHistory: loadCommandHistory(),
     historyIndex: -1,
     savedInput: '',
@@ -660,6 +663,11 @@ function handleTick(s: GameStore, dt: number): GameStore {
   // Gameover ready
   if (s.state === 'gameover' && !isTyping(s)) {
     s.gameoverReady = true;
+  }
+
+  // Decay the autosave indicator timer
+  if (s.autosaveFlashTime > 0) {
+    s.autosaveFlashTime = Math.max(0, s.autosaveFlashTime - dt);
   }
 
   // Trim line buffer

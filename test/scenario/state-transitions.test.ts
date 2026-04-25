@@ -175,6 +175,22 @@ describe('state transitions', () => {
     void inventoryBefore;
   });
 
+  it('autosaveFlashTime fires on room-entry autosave and decays to 0', () => {
+    let s = newGame();
+    s.activeSlot = 1; // an active slot is required for autosave to fire
+
+    // The autosave only fires on enterRoom — pick a direction and walk.
+    expect(s.autosaveFlashTime).toBe(0);
+    s = input(s, 'go north');
+    expect(s.autosaveFlashTime).toBeGreaterThan(0);
+
+    // Tick forward past the flash duration; the timer should clamp to 0.
+    for (let i = 0; i < 40 && s.autosaveFlashTime > 0; i++) {
+      s = tick(s, 0.1);
+    }
+    expect(s.autosaveFlashTime).toBe(0);
+  });
+
   it('killing the final boss transitions combat → ending → exploring', () => {
     // Set up: drop the player into combat with the evil king (the boss whose
     // defeat triggers the_hero ending).

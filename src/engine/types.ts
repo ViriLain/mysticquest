@@ -421,6 +421,9 @@ export interface GameStore {
   endingPsychedelicTime: number;
   gameoverReady: boolean;
   currentRegion: string | null;
+  // Seconds remaining for the "[saved]" autosave indicator. Set to a small
+  // positive number when an autosave fires; decays to 0 in the tick handler.
+  autosaveFlashTime: number;
   commandHistory: string[];
   historyIndex: number; // -1 = not browsing, 0..n = browsing
   savedInput: string;   // input before user started browsing history
