@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { MENU_COLOR, MENU_SELECTED_COLOR } from '../engine/constants';
 import type { GameStore, RGBA } from '../engine/types';
 
@@ -9,9 +10,9 @@ export interface SlotPickerOverlayProps {
 /**
  * Save/Load slot selector overlay. Shown while state === 'slot_picker'.
  * Each slot row surfaces level / gold / room / region / timestamp so players
- * can identify slots at a glance before committing.
+ * can identify slots at a glance before committing. Memoized.
  */
-export default function SlotPickerOverlay({ store, colorCSS }: SlotPickerOverlayProps) {
+function SlotPickerOverlayImpl({ store, colorCSS }: SlotPickerOverlayProps) {
   if (!store.slotManifest) return null;
 
   return (
@@ -56,3 +57,5 @@ export default function SlotPickerOverlay({ store, colorCSS }: SlotPickerOverlay
     </div>
   );
 }
+
+export default memo(SlotPickerOverlayImpl);

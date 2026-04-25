@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { HeaderState } from '../engine/types';
 import { getAsciiLines, getRegionArtName } from '../engine/asciiArt';
 
@@ -13,9 +14,11 @@ export interface TerminalHeaderProps {
  * plus the per-region ASCII banner. Hidden until the engine has populated
  * `header.maxHp` (i.e. once the player exists).
  *
- * Pure presentational — depends only on props, no store access.
+ * Pure presentational — depends only on props, no store access. Memoized:
+ * skips re-rendering on cursor blinks / typewriter ticks since those don't
+ * change any of its props.
  */
-export default function TerminalHeader({
+function TerminalHeaderImpl({
   header, currentRegion, headerColor, dimColor,
 }: TerminalHeaderProps) {
   if (!header.title || header.maxHp <= 0) return null;
@@ -37,3 +40,5 @@ export default function TerminalHeader({
     </>
   );
 }
+
+export default memo(TerminalHeaderImpl);

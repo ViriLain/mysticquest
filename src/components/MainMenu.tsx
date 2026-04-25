@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { MENU_COLOR, MENU_DISABLED_COLOR, MENU_OPTIONS, MENU_SELECTED_COLOR } from '../engine/constants';
 import type { RGBA } from '../engine/types';
 
@@ -9,9 +10,9 @@ export interface MainMenuProps {
 
 /**
  * Title screen with NEW GAME / CONTINUE / DUNGEON / SETTINGS / QUIT options.
- * CONTINUE is greyed out when no slot has data.
+ * CONTINUE is greyed out when no slot has data. Memoized.
  */
-export default function MainMenu({ selected, hasSave, colorCSS }: MainMenuProps) {
+function MainMenuImpl({ selected, hasSave, colorCSS }: MainMenuProps) {
   return (
     <div className="menu-overlay">
       <div className="menu-title">
@@ -42,3 +43,5 @@ export default function MainMenu({ selected, hasSave, colorCSS }: MainMenuProps)
     </div>
   );
 }
+
+export default memo(MainMenuImpl);

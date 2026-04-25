@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { MENU_COLOR, MENU_SELECTED_COLOR } from '../engine/constants';
 import { colorModeLabel, fontSizeLabel, loadSettings, textSpeedLabel } from '../engine/settings';
 import type { RGBA } from '../engine/types';
@@ -10,9 +11,11 @@ export interface SettingsOverlayProps {
 /**
  * Settings menu overlay. Reads from `loadSettings()` directly each render so
  * it always reflects the latest persisted values (the engine writes settings
- * synchronously on each Left/Right tweak).
+ * synchronously on each Left/Right tweak). Memoized — re-renders only when
+ * `selected` changes (so arrow keys still work but cursor blinks don't
+ * trigger a re-render here).
  */
-export default function SettingsOverlay({ selected, colorCSS }: SettingsOverlayProps) {
+function SettingsOverlayImpl({ selected, colorCSS }: SettingsOverlayProps) {
   const s = loadSettings();
   const rows: Array<{ label: string; value: string }> = [
     { label: 'Font Size', value: fontSizeLabel(s.fontSize) },
@@ -46,3 +49,5 @@ export default function SettingsOverlay({ selected, colorCSS }: SettingsOverlayP
     </div>
   );
 }
+
+export default memo(SettingsOverlayImpl);

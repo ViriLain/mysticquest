@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { GameStateKind } from '../engine/types';
 
 export interface TerminalInputProps {
@@ -16,9 +17,10 @@ const STATES_WITHOUT_INPUT: ReadonlySet<GameStateKind> = new Set([
 /**
  * The "> input_" prompt at the bottom of the terminal. Hidden during
  * non-text-input states (boot/menu/ending/slot_picker/minimap/settings/
- * skill_tree/quit).
+ * skill_tree/quit). Memoized so cursor blinks only re-render this one
+ * subtree, not the whole terminal.
  */
-export default function TerminalInput({
+function TerminalInputImpl({
   state, input, cursorVisible, headerColor, dimColor,
 }: TerminalInputProps) {
   if (STATES_WITHOUT_INPUT.has(state)) return null;
@@ -32,3 +34,5 @@ export default function TerminalInput({
     </>
   );
 }
+
+export default memo(TerminalInputImpl);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { createInitialStore, gameReducer } from '../engine/gameReducer';
 import { updateEffects } from '../engine/effects';
 import { captureVisualSnapshot, didVisualSnapshotChange, shouldRunReducerTick } from '../engine/frame-loop';
@@ -254,11 +254,17 @@ export default function Game() {
     }
   }, [forceRender]);
 
-  // Settings-aware rendering
+  // Settings-aware rendering. `colorCSS` is wrapped in useCallback so its
+  // identity is stable across renders that share the same colorMode — that
+  // way subcomponents wrapped in React.memo can skip re-rendering on
+  // unrelated state changes (cursor blinks, typewriter ticks, etc.).
   const settings = loadSettings();
   const fontSize = fontSizePx(settings.fontSize);
   const colorMode = settings.colorMode;
-  const colorCSS = (c: RGBA) => rgbaToCSS(remapColor(c, colorMode));
+  const colorCSS = useCallback(
+    (c: RGBA) => rgbaToCSS(remapColor(c, colorMode)),
+    [colorMode],
+  );
 
   const headerColor = colorCSS(store.baseColor);
   const dimColor = colorCSS([
@@ -268,10 +274,10 @@ export default function Game() {
     1,
   ]);
 
-  const terminalStyle = {
+  const terminalStyle = useMemo(() => ({
     fontSize: `${fontSize}px`,
     lineHeight: '1.25',
-  };
+  }), [fontSize]);
 
   const hasSave = store.state === 'menu' ? anySlotHasData() : true;
 

@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, memo } from 'react';
 import { CHOICE_COLOR, HELP_COLOR, MENU_SELECTED_COLOR } from '../engine/constants';
 import type { GameStore, RGBA } from '../engine/types';
 
@@ -104,4 +104,4 @@ const TerminalLines = forwardRef<HTMLDivElement, TerminalLinesProps>(
   },
 );
 
-export default TerminalLines;
+export default memo(TerminalLines);
