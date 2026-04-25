@@ -14,6 +14,7 @@ import type { GameStore, RGBA } from '../engine/types';
 import { loadSettings, fontSizePx, remapColor, typewriterDelay } from '../engine/settings';
 import MainMenu from './MainMenu';
 import Minimap from './Minimap';
+import CombatStatusBar from './CombatStatusBar';
 import SettingsOverlay from './SettingsOverlay';
 import SlotPickerOverlay from './SlotPickerOverlay';
 import TerminalHeader from './TerminalHeader';
@@ -330,6 +331,12 @@ export default function Game() {
           headerColor={headerColor}
           dimColor={dimColor}
           autosaveFlashing={store.autosaveFlashTime > 0}
+        />
+
+        <CombatStatusBar
+          combat={store.combat}
+          enemyName={store.combat?.enemy.name ?? null}
+          colorCSS={colorCSS}
         />
 
         <TerminalLines
