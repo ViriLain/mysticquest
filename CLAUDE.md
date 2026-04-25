@@ -30,7 +30,10 @@ gameReducer.ts          Public API: createInitialStore, gameReducer, GameAction
 
 handlers/               One file per player command. Pure functions that take
                         (store, target, deps) and mutate the store.
-  look, help, drop, use, take, attack, search, examine, talk, shop
+  look, help, drop, use, take, attack, search, examine, talk
+  shop.ts               Thin verb dispatcher; per-verb logic lives in
+                        shop-buy.ts, shop-sell.ts, shop-examine.ts, and
+                        shop-display.ts. Public exports unchanged.
   info.ts               Display functions: showSkills, showAchievements,
                         showInventory, showStats, showJournal, showScore.
                         This is the DISPLAY layer — do not put action logic here.
@@ -52,8 +55,9 @@ combat.ts               Pure turn-based combat with optional injected RNG.
                         stun. Applied by weapons (on hit) and enemies
                         (regular: every hit; boss: special attack only).
                         Cure items clear effects via cure_effects field.
-save.ts                 Multi-slot localStorage persistence. v1→v2 format
-                        migration (v2 added gold).
+save.ts                 Multi-slot localStorage persistence. v1→v2→v3 format
+                        migration (v2 added gold, v3 added objectives).
+                        Schema validated at load + integrity checks at boot.
 economy.ts              Shop stock management.
 achievements.ts         Global achievement tracking across saves.
                         checkAchievement(store, id) is the store-aware wrapper;
@@ -92,7 +96,7 @@ Handler and state modules are **pure** — they take a `Deps` object containing 
 
 Do not collapse this indirection. It is what keeps handlers testable in isolation and allows `enterRoom`/`startCombat`/`startDialogue`/`startEnding` to live in one place (they're called from handlers, state dispatchers, AND initialization — extracting them further breaks the boundary).
 
-`gameReducer.ts` sits at ~750 lines after the engine-foundation extraction. The original plan targeted ~250, but further extraction isn't clean — documented in `docs/superpowers/specs/2026-04-06-engine-foundation-design.md`.
+`gameReducer.ts` sits at ~925 lines after the engine-foundation extraction. The original plan targeted ~250, but further extraction isn't clean — documented in `docs/superpowers/specs/2026-04-06-engine-foundation-design.md`.
 
 ### Rendering perf — the snapshot invariant
 
@@ -109,7 +113,7 @@ The guard test in `frame-loop.test.ts` enumerates every field and fails if any m
 
 ### Game data (`src/data/`)
 
-All content is JSON. There is no content DSL, no schema validation — types in `src/engine/types.ts` are the contract. When changing JSON shape, update the corresponding TS type.
+All content is JSON. There is no content DSL, but `src/engine/contentValidation.ts` performs runtime integrity checks on load (referential checks across rooms/items/weapons/enemies/shops/endings). Types in `src/engine/types.ts` are still the source of truth for shape — when changing JSON shape, update the corresponding TS type AND extend the validator.
 
 ```
 regions/*.json   Room definitions by region (manor, wilds, darkness, wastes, hidden).
@@ -146,7 +150,7 @@ npm run test:coverage  # coverage report (coverage/ is gitignored)
 npm run lint           # eslint .
 ```
 
-Always run `npm run lint` and `npm test` after changes. Both are fast (<2s lint, <3s tests). The test count as of the engine-foundation PR is 125 passing.
+Always run `npm run lint` and `npm test` after changes. Both are fast (<2s lint, <5s tests). The test count is currently 43 files / 348 passing.
 
 ## Testing
 
@@ -174,7 +178,7 @@ When adding a new engine module, add a matching unit test file. When adding a ne
 - **Don't put action logic in `handlers/info.ts`.** That file is display-only. Action handlers go in `handlers/meta.ts` or a dedicated handler file.
 - **Don't re-enable deleted boot/ending extraction.** `updateBoot` and `updateEnding` live inside `gameReducer.ts::handleTick` deliberately — they're small, tick-coupled, and extracting them adds indirection without benefit.
 - **Don't touch the snapshot diff without updating the guard test.** See "Rendering perf" above.
-- **Saves have a format version.** v1 saves don't have `gold` — `save.ts` migrates them on load. Don't break forward/backward compat silently.
+- **Saves have a format version.** v1 saves don't have `gold`, v2 saves don't have `objectives` — `save.ts` migrates them on load. Don't break forward/backward compat silently. Bump the version and add a migration.
 - **Achievements are global.** They persist across all saves and across new-game resets. That's intentional.
 - **The engine has no React imports.** Keep it that way. If you find yourself wanting to `import` from `react` inside `src/engine/`, stop and rethink — the state change belongs on the store, and `Game.tsx` should react to it.
 
@@ -185,5 +189,5 @@ When adding a new engine module, add a matching unit test file. When adding a ne
 
 ## Spec & plan documents
 
-- `docs/superpowers/specs/2026-04-06-engine-foundation-design.md` — architecture design, including the documented tradeoff for why `gameReducer.ts` stays at ~750 lines instead of the original ~250 target
+- `docs/superpowers/specs/2026-04-06-engine-foundation-design.md` — architecture design, including the documented tradeoff for why `gameReducer.ts` stays at ~925 lines instead of the original ~250 target
 - `docs/superpowers/plans/2026-04-06-engine-foundation.md` — the 8-phase implementation plan
