@@ -4,7 +4,7 @@ import type {
   ArmorDef, AccessoryDef,
 } from './types';
 import * as C from './constants';
-import { parseCommand } from './commands';
+import { MAX_COMMAND_INPUT_LENGTH, MAX_SLOT_NAME_LENGTH, parseCommand } from './commands';
 import { visitRoom } from './player';
 import { checkAchievement, checkItemAchievements, isUnlocked, tryUnlock } from './achievements';
 import { createCombat } from './combat';
@@ -916,10 +916,10 @@ function handleMenuKey(s: GameStore, key: string): void {
 function handleTextInput(s: GameStore, text: string): void {
   if (s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'minimap' || s.state === 'settings' || s.state === 'skill_tree' || s.state === 'quit') return;
   if (s.state === 'slot_picker' && s.renamingSlot) {
-    s.renameBuffer += text;
+    s.renameBuffer = (s.renameBuffer + text).slice(0, MAX_SLOT_NAME_LENGTH);
     return;
   }
   if (s.state === 'slot_picker') return;
   // Allow typing at any time, even while typewriter is running
-  s.input += text;
+  s.input = (s.input + text).slice(0, MAX_COMMAND_INPUT_LENGTH);
 }

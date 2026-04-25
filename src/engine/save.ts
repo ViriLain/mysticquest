@@ -4,6 +4,9 @@ const MANIFEST_KEY = 'mysticquest_saves_manifest';
 const SLOT_KEY_PREFIX = 'mysticquest_save_';
 const OLD_SAVE_KEY = 'mysticquest_save';
 const NUM_SLOTS = 3;
+const MAX_RECORD_KEYS = 1000;
+const MAX_LIST_ITEMS = 500;
+const MAX_SLOT_NAME_LENGTH = 32;
 
 interface RoomState {
   dead_enemies?: Record<string, boolean>;
@@ -66,6 +69,259 @@ type SaveLoadResult = {
 
 function slotKey(slot: number): string {
   return `${SLOT_KEY_PREFIX}${slot}`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function finiteNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function boundedString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' ? value.slice(0, 120) : fallback;
+}
+
+function nullableString(value: unknown): string | null {
+  return typeof value === 'string' ? value.slice(0, 120) : null;
+}
+
+function stringArray(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null;
+  return value.filter((item): item is string => typeof item === 'string').slice(0, MAX_LIST_ITEMS);
+}
+
+function booleanRecord(value: unknown): Record<string, boolean> | null {
+  if (!isRecord(value)) return null;
+  const result: Record<string, boolean> = {};
+  for (const [key, entry] of Object.entries(value).slice(0, MAX_RECORD_KEYS)) {
+    if (typeof entry === 'boolean') result[key] = entry;
+  }
+  return result;
+}
+
+function numberRecord(value: unknown): Record<string, number> | null {
+  if (!isRecord(value)) return null;
+  const result: Record<string, number> = {};
+  for (const [key, entry] of Object.entries(value).slice(0, MAX_RECORD_KEYS)) {
+    const parsed = finiteNumber(entry);
+    if (parsed !== null) result[key] = clamp(Math.floor(parsed), 0, 999);
+  }
+  return result;
+}
+
+function nestedBooleanRecord(value: unknown): Record<string, Record<string, boolean>> | null {
+  if (!isRecord(value)) return null;
+  const result: Record<string, Record<string, boolean>> = {};
+  for (const [key, entry] of Object.entries(value).slice(0, MAX_RECORD_KEYS)) {
+    const parsed = booleanRecord(entry);
+    if (parsed) result[key] = parsed;
+  }
+  return result;
+}
+
+function objectiveRecord(value: unknown): Record<string, 'active' | 'complete'> | null {
+  if (!isRecord(value)) return null;
+  const result: Record<string, 'active' | 'complete'> = {};
+  for (const [key, entry] of Object.entries(value).slice(0, MAX_RECORD_KEYS)) {
+    if (entry === 'active' || entry === 'complete') result[key] = entry;
+  }
+  return result;
+}
+
+function roomStateRecord(value: unknown, world: WorldState): Record<string, RoomState> | null {
+  if (!isRecord(value)) return null;
+  const result: Record<string, RoomState> = {};
+  for (const [roomId, rawRoom] of Object.entries(value).slice(0, MAX_RECORD_KEYS)) {
+    if (!world.rooms[roomId] || !isRecord(rawRoom)) continue;
+    const roomState: RoomState = {};
+
+    const deadEnemies = booleanRecord(rawRoom.dead_enemies);
+    if (deadEnemies && Object.keys(deadEnemies).length > 0) roomState.dead_enemies = deadEnemies;
+
+    if (isRecord(rawRoom.dynamic_exits)) {
+      const dynamicExits: Record<string, string> = {};
+      for (const [direction, targetRoom] of Object.entries(rawRoom.dynamic_exits).slice(0, MAX_RECORD_KEYS)) {
+        if (typeof targetRoom === 'string') dynamicExits[direction] = targetRoom.slice(0, 120);
+      }
+      if (Object.keys(dynamicExits).length > 0) roomState.dynamic_exits = dynamicExits;
+    }
+
+    const items = stringArray(rawRoom.items);
+    if (items) roomState.items = items;
+    const weapons = stringArray(rawRoom.weapons);
+    if (weapons) roomState.weapons = weapons;
+    const armor = stringArray(rawRoom.armor);
+    if (armor) roomState.armor = armor;
+    const groundLoot = stringArray(rawRoom.ground_loot);
+    if (groundLoot) roomState.ground_loot = groundLoot;
+    const groundWeapons = stringArray(rawRoom.ground_weapons);
+    if (groundWeapons) roomState.ground_weapons = groundWeapons;
+
+    result[roomId] = roomState;
+  }
+  return result;
+}
+
+function isDungeonRoomForFloor(roomId: string, floor: number): boolean {
+  return roomId.startsWith(`dng_f${floor}_r`) ||
+    roomId.startsWith(`dng_f${floor}_b`) ||
+    roomId === `dng_rest_${floor}`;
+}
+
+function normalizeDungeon(value: unknown): SaveData['dungeon'] | undefined {
+  if (!isRecord(value) || !isRecord(value.score)) return undefined;
+  const seed = finiteNumber(value.seed);
+  const floor = finiteNumber(value.floor);
+  const floorsCleared = finiteNumber(value.score.floorsCleared);
+  const enemiesKilled = finiteNumber(value.score.enemiesKilled);
+  const itemsFound = finiteNumber(value.score.itemsFound);
+  const totalXp = finiteNumber(value.score.totalXp);
+  const dungeonPerks = stringArray(value.dungeon_perks);
+  if (seed === null || floor === null || floorsCleared === null || enemiesKilled === null || itemsFound === null || totalXp === null || !dungeonPerks) {
+    return undefined;
+  }
+
+  return {
+    seed,
+    floor: clamp(Math.floor(floor), 1, 999),
+    score: {
+      floorsCleared: clamp(Math.floor(floorsCleared), 0, 9999),
+      enemiesKilled: clamp(Math.floor(enemiesKilled), 0, 999999),
+      itemsFound: clamp(Math.floor(itemsFound), 0, 999999),
+      totalXp: clamp(Math.floor(totalXp), 0, 9999999),
+    },
+    dungeon_perks: dungeonPerks,
+  };
+}
+
+function normalizeSaveData(value: unknown, world: WorldState): SaveData | null {
+  if (!isRecord(value)) return null;
+  const version = finiteNumber(value.version);
+  if (version !== 1 && version !== 2 && version !== 3) return null;
+  if (!isRecord(value.player)) return null;
+  const dungeon = normalizeDungeon(value.dungeon);
+
+  const p = value.player;
+  const hp = finiteNumber(p.hp);
+  const maxHp = finiteNumber(p.max_hp);
+  const attack = finiteNumber(p.attack);
+  const defense = finiteNumber(p.defense);
+  const level = finiteNumber(p.level);
+  const xp = finiteNumber(p.xp);
+  const currentRoom = typeof p.current_room === 'string' ? p.current_room : null;
+  const inventory = numberRecord(p.inventory);
+  const weapons = stringArray(p.weapons);
+  const keyItems = booleanRecord(p.key_items);
+  const visitedRooms = booleanRecord(p.visited_rooms);
+  const searchedRooms = booleanRecord(p.searched_rooms);
+  const firedEvents = booleanRecord(p.fired_events);
+  const usedItemsInRoom = nestedBooleanRecord(p.used_items_in_room);
+  const buffAttack = finiteNumber(p.buff_attack);
+  const buffRounds = finiteNumber(p.buff_rounds);
+  const routeHistory = stringArray(p.route_history);
+  const skillPoints = finiteNumber(p.skill_points);
+  const skills = booleanRecord(p.skills);
+  const hasValidCurrentRoom = !!currentRoom && (
+    !!world.rooms[currentRoom] ||
+    (dungeon !== undefined && isDungeonRoomForFloor(currentRoom, dungeon.floor))
+  );
+
+  if (
+    hp === null || maxHp === null || attack === null || defense === null || level === null || xp === null ||
+    !hasValidCurrentRoom || !inventory || !weapons || !keyItems || !visitedRooms ||
+    !searchedRooms || !firedEvents || !usedItemsInRoom || buffAttack === null || buffRounds === null ||
+    !routeHistory || skillPoints === null || !skills
+  ) {
+    return null;
+  }
+
+  const worldState = isRecord(value.world_state) ? value.world_state : {};
+  let rooms: Record<string, RoomState> | undefined;
+  if (worldState.rooms !== undefined) {
+    const parsedRooms = roomStateRecord(worldState.rooms, world);
+    if (!parsedRooms) return null;
+    rooms = parsedRooms;
+  }
+  let deadEnemies: Record<string, Record<string, boolean>> | undefined;
+  if (worldState.dead_enemies !== undefined) {
+    const parsedDeadEnemies = nestedBooleanRecord(worldState.dead_enemies);
+    if (!parsedDeadEnemies) return null;
+    deadEnemies = parsedDeadEnemies;
+  }
+
+  let shops: SaveData['shops'];
+  if (isRecord(value.shops)) {
+    shops = {};
+    for (const [shopId, rawShop] of Object.entries(value.shops).slice(0, MAX_RECORD_KEYS)) {
+      if (!isRecord(rawShop)) continue;
+      const remainingStock = numberRecord(rawShop.remainingStock);
+      if (remainingStock) shops[shopId] = { remainingStock };
+    }
+  }
+
+  return {
+    version,
+    player: {
+      hp: clamp(Math.floor(hp), 0, 9999),
+      max_hp: clamp(Math.floor(maxHp), 1, 9999),
+      attack: clamp(Math.floor(attack), 0, 999),
+      defense: clamp(Math.floor(defense), 0, 999),
+      level: clamp(Math.floor(level), 1, 99),
+      xp: clamp(Math.floor(xp), 0, 9999999),
+      gold: clamp(Math.floor(finiteNumber(p.gold) ?? 0), 0, 9999999),
+      current_room: currentRoom,
+      inventory,
+      weapons,
+      equipped_weapon: nullableString(p.equipped_weapon),
+      equipped_shield: nullableString(p.equipped_shield),
+      equipped_armor: nullableString(p.equipped_armor),
+      equipped_accessory: nullableString(p.equipped_accessory),
+      key_items: keyItems,
+      visited_rooms: visitedRooms,
+      searched_rooms: searchedRooms,
+      fired_events: firedEvents,
+      used_items_in_room: usedItemsInRoom,
+      buff_attack: clamp(Math.floor(buffAttack), 0, 999),
+      buff_rounds: clamp(Math.floor(buffRounds), 0, 999),
+      route_history: routeHistory.filter(roomId => world.rooms[roomId]),
+      objectives: objectiveRecord(p.objectives) ?? {},
+      skill_points: clamp(Math.floor(skillPoints), 0, 999),
+      skills,
+    },
+    world_state: {
+      rooms,
+      dead_enemies: deadEnemies,
+    },
+    shops,
+    dungeon,
+  };
+}
+
+function normalizeManifest(value: unknown): SaveManifest | null {
+  if (!isRecord(value) || finiteNumber(value.version) !== 1 || !Array.isArray(value.slots)) return null;
+  if (value.slots.length !== NUM_SLOTS) return null;
+
+  const slots: SaveSlotMeta[] = [];
+  for (let i = 0; i < NUM_SLOTS; i++) {
+    const rawSlot = value.slots[i];
+    if (!isRecord(rawSlot)) return null;
+    slots.push({
+      name: boundedString(rawSlot.name, `Slot ${i + 1}`).slice(0, MAX_SLOT_NAME_LENGTH) || `Slot ${i + 1}`,
+      level: clamp(Math.floor(finiteNumber(rawSlot.level) ?? 0), 0, 99),
+      currentRoom: boundedString(rawSlot.currentRoom),
+      roomName: boundedString(rawSlot.roomName),
+      timestamp: clamp(Math.floor(finiteNumber(rawSlot.timestamp) ?? 0), 0, Number.MAX_SAFE_INTEGER),
+      isEmpty: typeof rawSlot.isEmpty === 'boolean' ? rawSlot.isEmpty : true,
+    });
+  }
+
+  return { version: 1, slots };
 }
 
 function serialize(
@@ -163,10 +419,8 @@ function deserialize(
   world: WorldState,
 ): SaveLoadResult {
   try {
-    const data: SaveData = JSON.parse(jsonString);
-    if (!data || (data.version !== 1 && data.version !== 2 && data.version !== 3)) {
-      return { success: false };
-    }
+    const data = normalizeSaveData(JSON.parse(jsonString), world);
+    if (!data) return { success: false };
     const p = data.player;
     player.hp = p.hp;
     player.maxHp = p.max_hp;
@@ -256,7 +510,8 @@ export function loadManifest(): SaveManifest {
   const raw = localStorage.getItem(MANIFEST_KEY);
   if (raw) {
     try {
-      return JSON.parse(raw) as SaveManifest;
+      const manifest = normalizeManifest(JSON.parse(raw));
+      if (manifest) return manifest;
     } catch {
       // Corrupt manifest — fall through
     }

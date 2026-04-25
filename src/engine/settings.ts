@@ -28,12 +28,47 @@ export const DEFAULT_SETTINGS: GameSettings = {
   reduceMotion: false,
 };
 
+function isFontSize(value: unknown): value is FontSize {
+  return value === 'small' || value === 'normal' || value === 'large';
+}
+
+function isColorMode(value: unknown): value is ColorMode {
+  return value === 'normal' || value === 'high_contrast' || value === 'colorblind';
+}
+
+function isTextSpeed(value: unknown): value is TextSpeed {
+  return value === 'instant' || value === 'fast' || value === 'normal' || value === 'slow';
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function clampVolume(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return DEFAULT_SETTINGS.masterVolume;
+  return Math.max(0, Math.min(100, value));
+}
+
+function normalizeSettings(value: unknown): GameSettings {
+  if (!isRecord(value)) return { ...DEFAULT_SETTINGS };
+
+  return {
+    fontSize: isFontSize(value.fontSize) ? value.fontSize : DEFAULT_SETTINGS.fontSize,
+    colorMode: isColorMode(value.colorMode) ? value.colorMode : DEFAULT_SETTINGS.colorMode,
+    textSpeed: isTextSpeed(value.textSpeed) ? value.textSpeed : DEFAULT_SETTINGS.textSpeed,
+    masterVolume: clampVolume(value.masterVolume),
+    sfxEnabled: typeof value.sfxEnabled === 'boolean' ? value.sfxEnabled : DEFAULT_SETTINGS.sfxEnabled,
+    ambientEnabled: typeof value.ambientEnabled === 'boolean' ? value.ambientEnabled : DEFAULT_SETTINGS.ambientEnabled,
+    typewriterSound: typeof value.typewriterSound === 'boolean' ? value.typewriterSound : DEFAULT_SETTINGS.typewriterSound,
+    reduceMotion: typeof value.reduceMotion === 'boolean' ? value.reduceMotion : DEFAULT_SETTINGS.reduceMotion,
+  };
+}
+
 export function loadSettings(): GameSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw);
-      return { ...DEFAULT_SETTINGS, ...parsed };
+      return normalizeSettings(JSON.parse(raw));
     }
   } catch { /* ignore */ }
   return { ...DEFAULT_SETTINGS };

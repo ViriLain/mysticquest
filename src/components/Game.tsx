@@ -219,7 +219,10 @@ export default function Game() {
   useEffect(() => {
     if (store.state !== 'quit') return;
     if (import.meta.env.DEV) {
-      try { navigator.sendBeacon('/__shutdown'); } catch { /* ignore */ }
+      try {
+        const token = encodeURIComponent(__MYSTICQUEST_DEV_SHUTDOWN_TOKEN__);
+        navigator.sendBeacon(`/__shutdown?token=${token}`);
+      } catch { /* ignore */ }
     }
     try { window.close(); } catch { /* ignore */ }
   }, [store.state]);

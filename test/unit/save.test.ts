@@ -2,10 +2,93 @@ import { describe, expect, it } from 'vitest';
 import manorJson from '../../src/data/regions/manor.json';
 import { createPlayer } from '../../src/engine/player';
 import { anySlotHasData, loadFromSlot, loadManifest, saveToSlot } from '../../src/engine/save';
+import { generateFloor } from '../../src/engine/dungeon';
 import type { RegionData } from '../../src/engine/types';
 import { createStoryWorld, createWorld, loadRegion } from '../../src/engine/world';
 
 describe('save round-trip', () => {
+  it('falls back to a default manifest when persisted manifest shape is invalid', () => {
+    localStorage.setItem('mysticquest_saves_manifest', JSON.stringify({ version: 1, slots: null }));
+
+    const manifest = loadManifest();
+
+    expect(manifest.slots).toHaveLength(3);
+    expect(manifest.slots.every(slot => slot.isEmpty)).toBe(true);
+    expect(anySlotHasData()).toBe(false);
+  });
+
+  it('rejects saves whose essential player fields are invalid', () => {
+    const invalidSave = {
+      version: 3,
+      player: {
+        hp: Number.NaN,
+        max_hp: 30,
+        attack: 5,
+        defense: 2,
+        level: 1,
+        xp: 0,
+        gold: 0,
+        current_room: 'not_a_room',
+        inventory: {},
+        weapons: 'not-an-array',
+        equipped_weapon: null,
+        equipped_shield: null,
+        equipped_armor: null,
+        equipped_accessory: null,
+        key_items: {},
+        visited_rooms: {},
+        searched_rooms: {},
+        fired_events: {},
+        used_items_in_room: {},
+        buff_attack: 0,
+        buff_rounds: 0,
+        route_history: [],
+        objectives: {},
+        skill_points: 0,
+        skills: {},
+      },
+      world_state: { rooms: {} },
+    };
+    localStorage.setItem('mysticquest_save_1', JSON.stringify(invalidSave));
+
+    const player = createPlayer();
+    const world = createWorld();
+    loadRegion(world, manorJson as RegionData);
+    const result = loadFromSlot(1, player, world);
+
+    expect(result.success).toBe(false);
+    expect(player.currentRoom).toBe('manor_entry');
+  });
+
+  it('loads dungeon saves before generated dungeon rooms are rebuilt', () => {
+    const seed = 42;
+    const floor = generateFloor(1, seed);
+    const dungeonWorld = createWorld();
+    for (const [roomId, room] of Object.entries(floor.rooms)) {
+      dungeonWorld.rooms[roomId] = room;
+    }
+    const player = createPlayer('dng_f1_r1');
+    const dungeon = {
+      seed,
+      floor: 1,
+      score: { floorsCleared: 0, enemiesKilled: 0, itemsFound: 0, totalXp: 0 },
+      floorEnemies: floor.enemies,
+      floorWeapons: floor.weapons,
+      floorArmor: floor.armor,
+      dungeonPerks: [],
+    };
+
+    expect(saveToSlot(1, player, dungeonWorld, dungeon)).toBe(true);
+
+    const loadedPlayer = createPlayer();
+    const storyWorld = createStoryWorld();
+    const result = loadFromSlot(1, loadedPlayer, storyWorld);
+
+    expect(result.success).toBe(true);
+    expect(result.dungeon?.floor).toBe(1);
+    expect(loadedPlayer.currentRoom).toBe('dng_f1_r1');
+  });
+
   it('migrates v1 save to v2 with gold defaulted to 0', () => {
     const v1Data = {
       version: 1,

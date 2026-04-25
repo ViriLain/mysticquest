@@ -3,6 +3,10 @@ const DIR_SHORTCUTS: Record<string, string> = {
   north: 'north', south: 'south', east: 'east', west: 'west', up: 'up', down: 'down',
 };
 
+export const MAX_COMMAND_INPUT_LENGTH = 256;
+export const MAX_SLOT_NAME_LENGTH = 32;
+const MAX_FUZZY_VERB_LENGTH = 32;
+
 const VERB_ALIASES: Record<string, string> = {
   move: 'go', get: 'take', 'pick up': 'take',
   fight: 'attack', hit: 'attack',
@@ -42,6 +46,7 @@ function levenshtein(a: string, b: string): number {
 
 function fuzzyMatchVerb(verb: string): string | null {
   if (verb.length < 3) return null; // too short for reliable fuzzy
+  if (verb.length > MAX_FUZZY_VERB_LENGTH) return null;
   for (const known of KNOWN_VERBS) {
     if (levenshtein(verb, known) === 1) return known;
   }
