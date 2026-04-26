@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { MENU_COLOR, MENU_SELECTED_COLOR } from '../engine/constants';
+import { MENU_COLOR, MENU_HINT_COLOR, MENU_SELECTED_COLOR, MENU_UNSELECTED_COLOR } from '../engine/constants';
 import { colorModeLabel, fontSizeLabel, loadSettings, textSpeedLabel } from '../engine/settings';
 import type { RGBA } from '../engine/types';
 
@@ -35,7 +35,7 @@ function SettingsOverlayImpl({ selected, colorCSS }: SettingsOverlayProps) {
       </div>
       {rows.map((row, i) => {
         const isSelected = i === selected;
-        const c: RGBA = isSelected ? MENU_SELECTED_COLOR : [0.5, 0.8, 0.5, 0.8];
+        const c: RGBA = isSelected ? MENU_SELECTED_COLOR : MENU_UNSELECTED_COLOR;
         const prefix = isSelected ? '> ' : '  ';
         return (
           <div key={i} className="menu-option" style={{ color: colorCSS(c) }}>
@@ -43,7 +43,7 @@ function SettingsOverlayImpl({ selected, colorCSS }: SettingsOverlayProps) {
           </div>
         );
       })}
-      <div style={{ marginTop: '2em', color: colorCSS([0.5, 0.5, 0.5, 0.8]) }}>
+      <div style={{ marginTop: '2em', color: colorCSS(MENU_HINT_COLOR) }}>
         {'  '}Left/Right: Change{'  '}Esc: Back
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { MENU_COLOR } from '../engine/constants';
+import { MENU_COLOR, MENU_HINT_COLOR, MENU_UNSELECTED_COLOR } from '../engine/constants';
 import type { RGBA } from '../engine/types';
 
 export interface HelpOverlayProps {
@@ -58,12 +58,12 @@ function HelpOverlayImpl({ colorCSS }: HelpOverlayProps) {
           );
         }
         return (
-          <div key={i} className="menu-option" style={{ color: colorCSS([0.5, 0.8, 0.5, 0.8]) }}>
+          <div key={i} className="menu-option" style={{ color: colorCSS(MENU_UNSELECTED_COLOR) }}>
             {'  '}{(row.key ?? '').padEnd(18)}{row.desc}
           </div>
         );
       })}
-      <div style={{ marginTop: '1.5em', color: colorCSS([0.5, 0.5, 0.5, 0.8]) }}>
+      <div style={{ marginTop: '1.5em', color: colorCSS(MENU_HINT_COLOR) }}>
         {'  '}Press any key to close.
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { MENU_COLOR, MENU_DISABLED_COLOR, MENU_OPTIONS, MENU_SELECTED_COLOR } from '../engine/constants';
+import { MENU_COLOR, MENU_DISABLED_COLOR, MENU_OPTIONS, MENU_SELECTED_COLOR, MENU_UNSELECTED_COLOR } from '../engine/constants';
 import type { RGBA } from '../engine/types';
 
 export interface MainMenuProps {
@@ -28,7 +28,7 @@ function MainMenuImpl({ selected, hasSave, colorCSS }: MainMenuProps) {
         } else if (isSelected) {
           color = MENU_SELECTED_COLOR;
         } else {
-          color = [0.5, 0.8, 0.5, 0.8];
+          color = MENU_UNSELECTED_COLOR;
         }
         return (
           <div

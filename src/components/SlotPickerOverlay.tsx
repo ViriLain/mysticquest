@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { MENU_COLOR, MENU_SELECTED_COLOR } from '../engine/constants';
+import { MENU_COLOR, MENU_HINT_COLOR, MENU_SELECTED_COLOR, MENU_UNSELECTED_COLOR } from '../engine/constants';
 import type { GameStore, RGBA } from '../engine/types';
 
 export interface SlotPickerOverlayProps {
@@ -25,7 +25,7 @@ function SlotPickerOverlayImpl({ store, colorCSS }: SlotPickerOverlayProps) {
       <div className="slot-picker-panel">
         {store.slotManifest.slots.map((slot, i) => {
           const isSelected = i === store.slotPickerSelected;
-          const color: RGBA = isSelected ? MENU_SELECTED_COLOR : [0.5, 0.8, 0.5, 0.8];
+          const color: RGBA = isSelected ? MENU_SELECTED_COLOR : MENU_UNSELECTED_COLOR;
           const prefix = isSelected ? '> ' : '  ';
 
           let info: string;
@@ -55,7 +55,7 @@ function SlotPickerOverlayImpl({ store, colorCSS }: SlotPickerOverlayProps) {
             {'  '}This slot has data. Overwrite? Enter: Yes{'  '}Esc: Cancel
           </div>
         ) : (
-          <div className="slot-picker-help" style={{ color: colorCSS([0.5, 0.5, 0.5, 0.8]) }}>
+          <div className="slot-picker-help" style={{ color: colorCSS(MENU_HINT_COLOR) }}>
             {'  '}Enter: Select{'  '}R: Rename{'  '}Esc: Back
           </div>
         )}

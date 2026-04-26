@@ -96,7 +96,7 @@ Handler and state modules are **pure** — they take a `Deps` object containing 
 
 Do not collapse this indirection. It is what keeps handlers testable in isolation and allows `enterRoom`/`startCombat`/`startDialogue`/`startEnding` to live in one place (they're called from handlers, state dispatchers, AND initialization — extracting them further breaks the boundary).
 
-`gameReducer.ts` sits at ~925 lines after the engine-foundation extraction. The original plan targeted ~250, but further extraction isn't clean — documented in `docs/superpowers/specs/2026-04-06-engine-foundation-design.md`.
+`gameReducer.ts` sits at ~1050 lines after the engine-foundation extraction. The original plan targeted ~250, but further extraction isn't clean — documented in `docs/superpowers/specs/2026-04-06-engine-foundation-design.md`.
 
 ### Rendering perf — the snapshot invariant
 
@@ -150,7 +150,7 @@ npm run test:coverage  # coverage report (coverage/ is gitignored)
 npm run lint           # eslint .
 ```
 
-Always run `npm run lint` and `npm test` after changes. Both are fast (<2s lint, <5s tests). The test count is currently 43 files / 348 passing.
+Always run `npm run lint` and `npm test` after changes. Both are fast (<2s lint, <5s tests). The test count is currently 48 files / 399 passing.
 
 ## Testing
 
@@ -189,5 +189,5 @@ When adding a new engine module, add a matching unit test file. When adding a ne
 
 ## Spec & plan documents
 
-- `docs/superpowers/specs/2026-04-06-engine-foundation-design.md` — architecture design, including the documented tradeoff for why `gameReducer.ts` stays at ~925 lines instead of the original ~250 target
+- `docs/superpowers/specs/2026-04-06-engine-foundation-design.md` — architecture design, including the documented tradeoff for why `gameReducer.ts` stays at ~1050 lines instead of the original ~250 target
 - `docs/superpowers/plans/2026-04-06-engine-foundation.md` — the 8-phase implementation plan
