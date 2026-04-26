@@ -27,6 +27,7 @@ import { startGameover, handleGameoverInput as handleGameoverInputRaw } from './
 import { getAutocompleteSuggestions as getAutocompleteSuggestionsRaw, handleExploringCommand as handleExploringCommandRaw, type ExploringDeps } from './state/exploring';
 import { loadDungeonFloor, startContinue as startContinueRaw, startDungeonMode as startDungeonModeRaw, startMenu, startNewGame as startNewGameRaw } from './state/lifecycle';
 import { handleMenuKey as handleMenuKeyRaw } from './state/menu';
+import { handlePauseMenuKey, openPauseMenu, type PauseMenuDeps } from './state/pause-menu';
 import { openSettings, handleSettingsKey } from './state/settings';
 import { handleSkillTreeKey as handleSkillTreeKeyRaw, type SkillTreeDeps } from './state/skill-tree';
 import { enterShop, getShopAutocompleteSuggestions, handleShopInput, type ShopDeps } from './state/shop';
@@ -608,6 +609,7 @@ export function createInitialStore(): GameStore {
     skillTreeSelected: { tier: 1, index: 0 },
     skillTreePrevState: 'exploring',
     helpOverlayPrevState: 'menu',
+    pauseMenuSelected: 0,
   };
   return store;
 }
@@ -798,6 +800,23 @@ function handleKeyPressed(s: GameStore, key: string): void {
 
   if (s.state === 'skill_tree') {
     handleSkillTreeKey(s, key);
+    return;
+  }
+
+  if (s.state === 'paused') {
+    const deps: PauseMenuDeps = {
+      startMenu: () => startMenu(s),
+      openSettings: () => openSettings(s, 'paused'),
+      openSlotPicker: mode => openSlotPicker(s, mode),
+    };
+    handlePauseMenuKey(s, key, deps);
+    return;
+  }
+
+  // Esc in exploring opens the pause menu (text-input states have no other
+  // use for Esc). Other states handle Esc themselves above.
+  if (s.state === 'exploring' && key === 'Escape') {
+    openPauseMenu(s);
     return;
   }
 
@@ -1026,7 +1045,7 @@ function handleMenuKey(s: GameStore, key: string): void {
 }
 
 function handleTextInput(s: GameStore, text: string): void {
-  if (s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'minimap' || s.state === 'settings' || s.state === 'skill_tree' || s.state === 'help_overlay' || s.state === 'quit') return;
+  if (s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'minimap' || s.state === 'settings' || s.state === 'skill_tree' || s.state === 'help_overlay' || s.state === 'paused' || s.state === 'quit') return;
   if (s.state === 'slot_picker' && s.renamingSlot) {
     s.renameBuffer += text;
     return;

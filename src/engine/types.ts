@@ -284,7 +284,7 @@ export interface SaveManifest {
 // imports from types.ts continue to work.
 export type { SkillId, SkillDef } from './skills';
 
-export type GameStateKind = 'boot' | 'menu' | 'exploring' | 'combat' | 'dialogue' | 'ending' | 'gameover' | 'slot_picker' | 'minimap' | 'settings' | 'shop' | 'skill_tree' | 'help_overlay' | 'quit';
+export type GameStateKind = 'boot' | 'menu' | 'exploring' | 'combat' | 'dialogue' | 'ending' | 'gameover' | 'slot_picker' | 'minimap' | 'settings' | 'shop' | 'skill_tree' | 'help_overlay' | 'paused' | 'quit';
 
 export type RGBA = [number, number, number, number];
 
@@ -476,6 +476,11 @@ export interface GameStore {
 
   // Help overlay (F1 from any state). Stores the state to return to on close.
   helpOverlayPrevState: GameStateKind;
+
+  // Pause menu (Esc in exploring) — selection index for Resume/Save/Settings/
+  // Quit. Resume returns to exploring; the others are routed via the
+  // existing openSettings / openSlotPicker / startMenu paths.
+  pauseMenuSelected: number;
 }
 
 /**

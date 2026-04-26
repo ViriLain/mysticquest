@@ -11,7 +11,7 @@ export interface TerminalInputProps {
 
 const STATES_WITHOUT_INPUT: ReadonlySet<GameStateKind> = new Set([
   'boot', 'menu', 'ending', 'slot_picker', 'minimap',
-  'settings', 'skill_tree', 'quit',
+  'settings', 'skill_tree', 'help_overlay', 'paused', 'quit',
 ]);
 
 /**

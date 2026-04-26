@@ -16,6 +16,7 @@ import HelpOverlay from './HelpOverlay';
 import MainMenu from './MainMenu';
 import Minimap from './Minimap';
 import CombatStatusBar from './CombatStatusBar';
+import PauseMenu from './PauseMenu';
 import SettingsOverlay from './SettingsOverlay';
 import SlotPickerOverlay from './SlotPickerOverlay';
 import TerminalHeader from './TerminalHeader';
@@ -243,7 +244,7 @@ export default function Game() {
 
     const s = storeRef.current;
     const isSpecialKey = ['ArrowUp', 'ArrowDown', 'Enter', 'Backspace', 'Escape', 'F1'].includes(e.key);
-    const isNonTextState = s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'slot_picker' || s.state === 'minimap' || s.state === 'settings' || s.state === 'skill_tree' || s.state === 'help_overlay' || s.state === 'quit';
+    const isNonTextState = s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'slot_picker' || s.state === 'minimap' || s.state === 'settings' || s.state === 'skill_tree' || s.state === 'help_overlay' || s.state === 'paused' || s.state === 'quit';
 
     if (isSpecialKey || isNonTextState) {
       e.preventDefault();
@@ -370,6 +371,10 @@ export default function Game() {
 
         {store.state === 'help_overlay' && (
           <HelpOverlay colorCSS={colorCSS} />
+        )}
+
+        {store.state === 'paused' && (
+          <PauseMenu selected={store.pauseMenuSelected} colorCSS={colorCSS} />
         )}
       </div>
     </div>

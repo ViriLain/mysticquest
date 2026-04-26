@@ -209,6 +209,66 @@ describe('state transitions', () => {
     expect(s.activeSlot).toBe(1);
   });
 
+  it('Esc in exploring opens pause menu; Resume returns to exploring', () => {
+    let s = newGame();
+    expect(s.state).toBe('exploring');
+
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'Escape' });
+    expect(s.state).toBe('paused');
+    expect(s.pauseMenuSelected).toBe(0); // Resume
+
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'Enter' });
+    expect(s.state).toBe('exploring');
+  });
+
+  it('Pause → Esc resumes immediately without confirming', () => {
+    let s = newGame();
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'Escape' });
+    expect(s.state).toBe('paused');
+
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'Escape' });
+    expect(s.state).toBe('exploring');
+  });
+
+  it('Pause → Quit to Title returns to the main menu', () => {
+    let s = newGame();
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'Escape' });
+    expect(s.state).toBe('paused');
+
+    // Down 3 times to highlight Quit (Resume/Save/Settings/Quit).
+    for (let i = 0; i < 3; i++) {
+      s = gameReducer(s, { type: 'KEY_PRESSED', key: 'ArrowDown' });
+    }
+    expect(s.pauseMenuSelected).toBe(3);
+
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'Enter' });
+    expect(s.state).toBe('menu');
+  });
+
+  it('Pause → Save with active slot writes silently and resumes', () => {
+    let s = newGame();
+    s.activeSlot = 1;
+
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'Escape' });
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'ArrowDown' });
+    expect(s.pauseMenuSelected).toBe(1); // Save
+
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'Enter' });
+    expect(s.state).toBe('exploring');
+  });
+
+  it('Pause → Save without active slot opens the slot picker', () => {
+    let s = newGame();
+    expect(s.activeSlot).toBe(null);
+
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'Escape' });
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'ArrowDown' });
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'Enter' });
+
+    expect(s.state).toBe('slot_picker');
+    expect(s.slotPickerMode).toBe('save');
+  });
+
   it('F1 toggles the help overlay and any key returns to the previous state', () => {
     let s = newGame();
     expect(s.state).toBe('exploring');
