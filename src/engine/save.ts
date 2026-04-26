@@ -311,14 +311,19 @@ function normalizeManifest(value: unknown): SaveManifest | null {
   for (let i = 0; i < NUM_SLOTS; i++) {
     const rawSlot = value.slots[i];
     if (!isRecord(rawSlot)) return null;
-    slots.push({
+    const slot: SaveSlotMeta = {
       name: boundedString(rawSlot.name, `Slot ${i + 1}`).slice(0, MAX_SLOT_NAME_LENGTH) || `Slot ${i + 1}`,
       level: clamp(Math.floor(finiteNumber(rawSlot.level) ?? 0), 0, 99),
       currentRoom: boundedString(rawSlot.currentRoom),
       roomName: boundedString(rawSlot.roomName),
       timestamp: clamp(Math.floor(finiteNumber(rawSlot.timestamp) ?? 0), 0, Number.MAX_SAFE_INTEGER),
       isEmpty: typeof rawSlot.isEmpty === 'boolean' ? rawSlot.isEmpty : true,
-    });
+    };
+    const region = boundedString(rawSlot.region);
+    const gold = finiteNumber(rawSlot.gold);
+    if (region) slot.region = region;
+    if (gold !== null) slot.gold = clamp(Math.floor(gold), 0, 9999999);
+    slots.push(slot);
   }
 
   return { version: 1, slots };
