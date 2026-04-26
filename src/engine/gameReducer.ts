@@ -607,6 +607,7 @@ export function createInitialStore(): GameStore {
     settingsPrevState: 'menu',
     skillTreeSelected: { tier: 1, index: 0 },
     skillTreePrevState: 'exploring',
+    helpOverlayPrevState: 'menu',
   };
   return store;
 }
@@ -744,6 +745,18 @@ function updateEnding(s: GameStore, dt: number): void {
 function handleKeyPressed(s: GameStore, key: string): void {
   if (s.state === 'boot') {
     if (isTyping(s)) skipTypewriter(s);
+    return;
+  }
+
+  // Help overlay: F1 toggles open from any non-boot state; once open, any
+  // key dismisses and returns to the previous state.
+  if (s.state === 'help_overlay') {
+    s.state = s.helpOverlayPrevState;
+    return;
+  }
+  if (key === 'F1') {
+    s.helpOverlayPrevState = s.state;
+    s.state = 'help_overlay';
     return;
   }
 
@@ -1013,7 +1026,7 @@ function handleMenuKey(s: GameStore, key: string): void {
 }
 
 function handleTextInput(s: GameStore, text: string): void {
-  if (s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'minimap' || s.state === 'settings' || s.state === 'skill_tree' || s.state === 'quit') return;
+  if (s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'minimap' || s.state === 'settings' || s.state === 'skill_tree' || s.state === 'help_overlay' || s.state === 'quit') return;
   if (s.state === 'slot_picker' && s.renamingSlot) {
     s.renameBuffer += text;
     return;

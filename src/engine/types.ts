@@ -284,7 +284,7 @@ export interface SaveManifest {
 // imports from types.ts continue to work.
 export type { SkillId, SkillDef } from './skills';
 
-export type GameStateKind = 'boot' | 'menu' | 'exploring' | 'combat' | 'dialogue' | 'ending' | 'gameover' | 'slot_picker' | 'minimap' | 'settings' | 'shop' | 'skill_tree' | 'quit';
+export type GameStateKind = 'boot' | 'menu' | 'exploring' | 'combat' | 'dialogue' | 'ending' | 'gameover' | 'slot_picker' | 'minimap' | 'settings' | 'shop' | 'skill_tree' | 'help_overlay' | 'quit';
 
 export type RGBA = [number, number, number, number];
 
@@ -473,6 +473,9 @@ export interface GameStore {
   // Skill tree
   skillTreeSelected: { tier: number; index: number };
   skillTreePrevState: GameStateKind;
+
+  // Help overlay (F1 from any state). Stores the state to return to on close.
+  helpOverlayPrevState: GameStateKind;
 }
 
 /**

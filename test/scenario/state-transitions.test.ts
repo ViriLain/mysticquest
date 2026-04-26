@@ -209,6 +209,27 @@ describe('state transitions', () => {
     expect(s.activeSlot).toBe(1);
   });
 
+  it('F1 toggles the help overlay and any key returns to the previous state', () => {
+    let s = newGame();
+    expect(s.state).toBe('exploring');
+
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'F1' });
+    expect(s.state).toBe('help_overlay');
+    expect(s.helpOverlayPrevState).toBe('exploring');
+
+    // Any key dismisses — try Escape first.
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'Escape' });
+    expect(s.state).toBe('exploring');
+
+    // F1 from menu should return to menu on dismiss.
+    s.state = 'menu';
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'F1' });
+    expect(s.state).toBe('help_overlay');
+    expect(s.helpOverlayPrevState).toBe('menu');
+    s = gameReducer(s, { type: 'KEY_PRESSED', key: 'Enter' });
+    expect(s.state).toBe('menu');
+  });
+
   it('autosaveFlashTime fires on room-entry autosave and decays to 0', () => {
     let s = newGame();
     s.activeSlot = 1; // an active slot is required for autosave to fire

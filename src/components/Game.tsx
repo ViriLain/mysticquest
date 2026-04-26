@@ -12,6 +12,7 @@ import {
 } from '../engine/audio';
 import type { GameStore, RGBA } from '../engine/types';
 import { loadSettings, fontSizePx, remapColor, typewriterDelay } from '../engine/settings';
+import HelpOverlay from './HelpOverlay';
 import MainMenu from './MainMenu';
 import Minimap from './Minimap';
 import CombatStatusBar from './CombatStatusBar';
@@ -241,8 +242,8 @@ export default function Game() {
     }
 
     const s = storeRef.current;
-    const isSpecialKey = ['ArrowUp', 'ArrowDown', 'Enter', 'Backspace', 'Escape'].includes(e.key);
-    const isNonTextState = s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'slot_picker' || s.state === 'minimap' || s.state === 'settings' || s.state === 'skill_tree' || s.state === 'quit';
+    const isSpecialKey = ['ArrowUp', 'ArrowDown', 'Enter', 'Backspace', 'Escape', 'F1'].includes(e.key);
+    const isNonTextState = s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'slot_picker' || s.state === 'minimap' || s.state === 'settings' || s.state === 'skill_tree' || s.state === 'help_overlay' || s.state === 'quit';
 
     if (isSpecialKey || isNonTextState) {
       e.preventDefault();
@@ -365,6 +366,10 @@ export default function Game() {
 
         {store.state === 'settings' && (
           <SettingsOverlay selected={store.settingsSelected} colorCSS={colorCSS} />
+        )}
+
+        {store.state === 'help_overlay' && (
+          <HelpOverlay colorCSS={colorCSS} />
         )}
       </div>
     </div>
