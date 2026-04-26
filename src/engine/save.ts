@@ -315,9 +315,12 @@ export function saveToSlot(
     const manifest = loadManifest();
     const idx = slot - 1;
     if (idx >= 0 && idx < manifest.slots.length) {
+      const room = world.rooms[player.currentRoom];
       manifest.slots[idx].level = player.level;
       manifest.slots[idx].currentRoom = player.currentRoom;
       manifest.slots[idx].roomName = getRoomDisplayName(player.currentRoom, world);
+      manifest.slots[idx].region = room?.region;
+      manifest.slots[idx].gold = player.gold;
       manifest.slots[idx].timestamp = Date.now();
       manifest.slots[idx].isEmpty = false;
       // name stays unchanged

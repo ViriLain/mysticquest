@@ -269,6 +269,9 @@ export interface SaveSlotMeta {
   roomName: string;
   timestamp: number;
   isEmpty: boolean;
+  // Added later — optional so old manifests load cleanly. Populated on next save.
+  region?: string;
+  gold?: number;
 }
 
 export interface SaveManifest {
@@ -281,7 +284,7 @@ export interface SaveManifest {
 // imports from types.ts continue to work.
 export type { SkillId, SkillDef } from './skills';
 
-export type GameStateKind = 'boot' | 'menu' | 'exploring' | 'combat' | 'dialogue' | 'ending' | 'gameover' | 'slot_picker' | 'minimap' | 'settings' | 'shop' | 'skill_tree' | 'quit';
+export type GameStateKind = 'boot' | 'menu' | 'exploring' | 'combat' | 'dialogue' | 'ending' | 'gameover' | 'slot_picker' | 'minimap' | 'settings' | 'shop' | 'skill_tree' | 'help_overlay' | 'paused' | 'quit';
 
 export type RGBA = [number, number, number, number];
 
@@ -418,6 +421,9 @@ export interface GameStore {
   endingPsychedelicTime: number;
   gameoverReady: boolean;
   currentRegion: string | null;
+  // Seconds remaining for the "[saved]" autosave indicator. Set to a small
+  // positive number when an autosave fires; decays to 0 in the tick handler.
+  autosaveFlashTime: number;
   commandHistory: string[];
   historyIndex: number; // -1 = not browsing, 0..n = browsing
   savedInput: string;   // input before user started browsing history
@@ -433,6 +439,9 @@ export interface GameStore {
   activeSlot: number | null;
   renamingSlot: boolean;
   renameBuffer: string;
+  // True while the slot picker is asking the player to confirm overwriting
+  // an existing save. Cleared on confirm (Enter) or cancel (Escape).
+  slotPickerOverwriteConfirm: boolean;
 
   // NPC dialogue
   npcDialogue: { npcId: string; currentNode: string } | null;
@@ -464,7 +473,27 @@ export interface GameStore {
   // Skill tree
   skillTreeSelected: { tier: number; index: number };
   skillTreePrevState: GameStateKind;
+
+  // Help overlay (F1 from any state). Stores the state to return to on close.
+  helpOverlayPrevState: GameStateKind;
+
+  // Pause menu (Esc in exploring) — selection index for Resume/Save/Settings/
+  // Quit. Resume returns to exploring; the others are routed via the
+  // existing openSettings / openSlotPicker / startMenu paths.
+  pauseMenuSelected: number;
 }
+
+/**
+ * A `GameStore` once `player` and `world` are populated. Used by engine
+ * internals that only run after `createInitialStore` has handed control to a
+ * gameplay state (exploring/combat/dialogue/shop). Narrow once with
+ * `assertReady` (see `store-ready.ts`) at the dispatch boundary; downstream
+ * code can then drop the `!` postfix on `store.player` / `store.world`.
+ */
+export type ReadyStore = GameStore & {
+  player: PlayerState;
+  world: WorldState;
+};
 
 export interface DungeonScore {
   floorsCleared: number;

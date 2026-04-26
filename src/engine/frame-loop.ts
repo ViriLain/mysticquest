@@ -34,6 +34,7 @@ export interface VisualSnapshot {
   tint: string;
   glitch: number;
   jitter: number;
+  autosaveFlashing: boolean;
 }
 
 function colorSig(values: number[]): string {
@@ -62,6 +63,7 @@ export function captureVisualSnapshot(store: GameStore): VisualSnapshot {
     tint: colorSig([store.effects.tint.r, store.effects.tint.g, store.effects.tint.b, store.effects.tint.a]),
     glitch: store.effects.glitch,
     jitter: store.effects.jitter,
+    autosaveFlashing: store.autosaveFlashTime > 0,
   };
 }
 
@@ -76,6 +78,7 @@ export function shouldRunReducerTick(store: GameStore): boolean {
     (store.state === 'gameover' && !store.gameoverReady) ||
     (store.state === 'exploring' && store.currentRegion === 'hidden') ||
     store.effects.active.length > 0 ||
+    store.autosaveFlashTime > 0 ||
     store.lines.length > 500
   );
 }

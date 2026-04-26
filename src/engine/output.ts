@@ -1,10 +1,8 @@
-import weaponsJson from '../data/weapons.json';
 import { getAsciiLines } from './asciiArt';
 import * as C from './constants';
+import { WEAPONS as weaponData } from './data';
 import { clearRegionTint, setRegionTint, updateRainbowTint } from './effects';
-import type { GameStore, RGBA, WeaponDef } from './types';
-
-const weaponData = weaponsJson as Record<string, WeaponDef>;
+import type { GameStore, RGBA } from './types';
 
 export function addLine(store: GameStore, text: string, color?: RGBA): void {
   store.typewriterQueue.push({ text, color: color || store.baseColor });

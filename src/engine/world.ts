@@ -1,9 +1,5 @@
 import type { WorldState, RoomDef, RegionData } from './types';
-import manorJson from '../data/regions/manor.json';
-import wildsJson from '../data/regions/wilds.json';
-import darknessJson from '../data/regions/darkness.json';
-import wastesJson from '../data/regions/wastes.json';
-import hiddenJson from '../data/regions/hidden.json';
+import { STORY_REGIONS } from './data';
 
 export function createWorld(): WorldState {
   return { rooms: {}, regions: {} };
@@ -12,11 +8,9 @@ export function createWorld(): WorldState {
 // Build a fresh story-mode world with every region loaded.
 export function createStoryWorld(): WorldState {
   const world = createWorld();
-  loadRegion(world, manorJson as unknown as RegionData);
-  loadRegion(world, wildsJson as unknown as RegionData);
-  loadRegion(world, darknessJson as unknown as RegionData);
-  loadRegion(world, wastesJson as unknown as RegionData);
-  loadRegion(world, hiddenJson as unknown as RegionData);
+  for (const region of STORY_REGIONS) {
+    loadRegion(world, region);
+  }
   return world;
 }
 

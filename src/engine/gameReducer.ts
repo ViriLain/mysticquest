@@ -1,8 +1,8 @@
 import type {
-  EndingCheckContext, GameStore, EndingDef,
-  WeaponDef, ItemDef, EnemyDef, NpcDef,
-  ArmorDef, AccessoryDef,
+  EndingCheckContext, GameStore, EndingDef, ReadyStore,
+  WeaponDef, ArmorDef,
 } from './types';
+import { assertReady } from './store-ready';
 import * as C from './constants';
 import { parseCommand } from './commands';
 import { visitRoom } from './player';
@@ -17,38 +17,31 @@ import { fireEvent } from './events';
 import { checkEndings, getChoicePrompt, getEffectColor } from './endings';
 import { ICON, iconLine } from './icons';
 import { saveToSlot } from './save';
+import { bumpEndingReached } from './statistics';
+import { loadCommandHistory, saveCommandHistory } from './command-history';
 import { notifyObjectiveEvent } from './objectives';
 import { addLine, addLineInstant, applyRegionTint, clearTerminal, displayAscii, emitSound, hideHeader, updateHeader } from './output';
-import type { ShopDef } from './economy';
 import { handleCombatCommand as handleCombatCommandRaw, type CombatDeps } from './state/combat';
 import { handleDialogueInput as handleDialogueInputRaw, handleDungeonSpecialRoom, type DialogueDeps } from './state/dialogue';
 import { startGameover, handleGameoverInput as handleGameoverInputRaw } from './state/gameover';
 import { getAutocompleteSuggestions as getAutocompleteSuggestionsRaw, handleExploringCommand as handleExploringCommandRaw, type ExploringDeps } from './state/exploring';
 import { loadDungeonFloor, startContinue as startContinueRaw, startDungeonMode as startDungeonModeRaw, startMenu, startNewGame as startNewGameRaw } from './state/lifecycle';
 import { handleMenuKey as handleMenuKeyRaw } from './state/menu';
+import { handlePauseMenuKey, openPauseMenu, type PauseMenuDeps } from './state/pause-menu';
 import { openSettings, handleSettingsKey } from './state/settings';
 import { handleSkillTreeKey as handleSkillTreeKeyRaw, type SkillTreeDeps } from './state/skill-tree';
 import { enterShop, getShopAutocompleteSuggestions, handleShopInput, type ShopDeps } from './state/shop';
 import { openSlotPicker, handleSlotPickerKey as handleSlotPickerKeyRaw } from './state/slot-picker';
-import npcsJson from '../data/npcs.json';
-import shopsJson from '../data/shops.json';
-const npcData = npcsJson as Record<string, NpcDef>;
-
-// Data imports
-import weaponsJson from '../data/weapons.json';
-import itemsJson from '../data/items.json';
-import enemiesJson from '../data/enemies.json';
-import endingsJson from '../data/endings.json';
-import armorJson from '../data/armor.json';
-import accessoriesJson from '../data/accessories.json';
-
-const weaponData = weaponsJson as Record<string, WeaponDef>;
-const itemData = itemsJson as Record<string, ItemDef>;
-const enemyData = enemiesJson as Record<string, EnemyDef>;
-const endingsData = endingsJson as Record<string, EndingDef>;
-const shopData = shopsJson as Record<string, ShopDef>;
-const armorData = armorJson as Record<string, ArmorDef>;
-const accessoryData = accessoriesJson as Record<string, AccessoryDef>;
+import {
+  ACCESSORIES as accessoryData,
+  ARMOR as armorData,
+  ENEMIES as enemyData,
+  ENDINGS as endingsData,
+  ITEMS as itemData,
+  NPCS as npcData,
+  SHOPS as shopData,
+  WEAPONS as weaponData,
+} from './data';
 
 function effectiveWeaponData(store: GameStore): Record<string, WeaponDef> {
   if (store.gameMode === 'dungeon' && store.dungeon?.floorWeapons) {
@@ -64,10 +57,62 @@ function effectiveArmorData(store: GameStore): Record<string, ArmorDef> {
   return armorData;
 }
 
+// ---- Lazy deps cache ----------------------------------------------------
+//
+// Each dispatch through `gameReducer` spreads the incoming store
+// (`s = { ...store }`), so the store reference is stable for the duration of
+// one dispatch. We cache built dep bundles per store so that callbacks fired
+// within a single dispatch (e.g. `doAgain` recursing into the exploring
+// handler, or `openShop` from a dialogue choice) share the same closures
+// instead of rebuilding them.
+
+interface DepsBundle {
+  combat?: CombatDeps;
+  exploring?: ExploringDeps;
+  shop?: ShopDeps;
+  dialogue?: DialogueDeps;
+  skillTree?: SkillTreeDeps;
+}
+const depsCache = new WeakMap<GameStore, DepsBundle>();
+
+function depsBundle(store: GameStore): DepsBundle {
+  let bundle = depsCache.get(store);
+  if (!bundle) {
+    bundle = {};
+    depsCache.set(store, bundle);
+  }
+  return bundle;
+}
+
+function getCombatDeps(store: GameStore): CombatDeps {
+  assertReady(store);
+  const bundle = depsBundle(store);
+  return bundle.combat ??= buildCombatDeps(store);
+}
+function getExploringDeps(store: GameStore): ExploringDeps {
+  assertReady(store);
+  const bundle = depsBundle(store);
+  return bundle.exploring ??= buildExploringDeps(store);
+}
+function getShopDeps(store: GameStore): ShopDeps {
+  assertReady(store);
+  const bundle = depsBundle(store);
+  return bundle.shop ??= buildShopDeps(store);
+}
+function getDialogueDeps(store: GameStore): DialogueDeps {
+  assertReady(store);
+  const bundle = depsBundle(store);
+  return bundle.dialogue ??= buildDialogueDeps(store);
+}
+function getSkillTreeDeps(store: GameStore): SkillTreeDeps {
+  assertReady(store);
+  const bundle = depsBundle(store);
+  return bundle.skillTree ??= buildSkillTreeDeps(store);
+}
+
 // ---- Helpers ----
 
-function enterRoom(store: GameStore, roomId: string): boolean {
-  if (!store.world || !store.player) return false;
+function enterRoom(store: ReadyStore, roomId: string): boolean {
   const room = getRoom(store.world, roomId);
   if (!room) return false;
 
@@ -116,7 +161,7 @@ function enterRoom(store: GameStore, roomId: string): boolean {
   checkEndingsContext(store, {});
 
   // Explorer achievement
-  if (store.world && store.gameMode === 'story') {
+  if (store.gameMode === 'story') {
     const totalRooms = Object.keys(store.world.rooms).filter(id => !id.startsWith('dng_')).length;
     const visited = Object.keys(store.player.visitedRooms).filter(id => !id.startsWith('dng_')).length;
     if (totalRooms > 0 && visited / totalRooms >= 0.8) {
@@ -130,16 +175,17 @@ function enterRoom(store: GameStore, roomId: string): boolean {
     startDialogue(store, choiceEnding);
   }
 
-  // Auto-save on room entry
-  if (store.player && store.world && store.activeSlot !== null) {
+  // Auto-save on room entry. Briefly flash a "[saved]" indicator so the
+  // player can see autosave fire — otherwise it's invisible.
+  if (store.activeSlot !== null) {
     saveToSlot(store.activeSlot, store.player, store.world, store.dungeon, store.shopState.runtime);
+    store.autosaveFlashTime = 1.5;
   }
 
   return true;
 }
 
-function checkEndingsContext(store: GameStore, context: EndingCheckContext): boolean {
-  if (!store.player || !store.world) return false;
+function checkEndingsContext(store: ReadyStore, context: EndingCheckContext): boolean {
   const ending = checkEndings(endingsData, store.player, store.world, context);
   if (ending) {
     startEnding(store, ending);
@@ -148,7 +194,7 @@ function checkEndingsContext(store: GameStore, context: EndingCheckContext): boo
   return false;
 }
 
-function startDialogue(store: GameStore, ending: EndingDef): void {
+function startDialogue(store: ReadyStore, ending: EndingDef): void {
   store.state = 'dialogue';
   store.dialogueEnding = ending;
   store.dialogueOptions = ending.choice_options || [];
@@ -159,7 +205,9 @@ function startDialogue(store: GameStore, ending: EndingDef): void {
   addLine(store, '');
 }
 
-function startEnding(store: GameStore, ending: EndingDef): void {
+function startEnding(store: ReadyStore, ending: EndingDef): void {
+  bumpEndingReached();
+
   // Track which endings have been seen for all_endings achievement
   const endingIds = Object.keys(endingsData);
   const endingKey = endingIds.find(id => endingsData[id].title === ending.title);
@@ -193,26 +241,26 @@ function startEnding(store: GameStore, ending: EndingDef): void {
 }
 
 function resumeAfterEnding(store: GameStore): void {
-  if (!store.player || !store.world) {
+  if (store.player === null || store.world === null) {
     startMenu(store);
     return;
   }
-  store.endingData = null;
-  store.endingLineIndex = 0;
-  store.endingTimer = 0;
-  store.endingAllTyped = false;
-  store.endingPsychedelicTime = 0;
-  store.baseColor = [...C.BASE_COLOR];
-  store.state = 'exploring';
-  clearTerminal(store);
-  updateHeader(store);
-  displayRoom(store, store.player.currentRoom);
-  const room = getRoom(store.world, store.player.currentRoom);
-  applyRegionTint(store, room?.region);
+  const ready = store as ReadyStore;
+  ready.endingData = null;
+  ready.endingLineIndex = 0;
+  ready.endingTimer = 0;
+  ready.endingAllTyped = false;
+  ready.endingPsychedelicTime = 0;
+  ready.baseColor = [...C.BASE_COLOR];
+  ready.state = 'exploring';
+  clearTerminal(ready);
+  updateHeader(ready);
+  displayRoom(ready, ready.player.currentRoom);
+  const room = getRoom(ready.world, ready.player.currentRoom);
+  applyRegionTint(ready, room?.region);
 }
 
-function startCombat(store: GameStore, enemyId: string): void {
-  if (!store.player) return;
+function startCombat(store: ReadyStore, enemyId: string): void {
   const combinedEnemies = store.gameMode === 'dungeon' && store.dungeon
     ? { ...enemyData, ...store.dungeon.floorEnemies }
     : enemyData;
@@ -244,7 +292,7 @@ function startCombat(store: GameStore, enemyId: string): void {
   addLine(store, 'Commands: attack, defend, flee, use <item>, skill <name>', C.COMBAT_COLOR);
 }
 
-function buildCombatDeps(store: GameStore): CombatDeps {
+function buildCombatDeps(store: ReadyStore): CombatDeps {
   return {
     itemData,
     weaponData: effectiveWeaponData(store),
@@ -257,12 +305,12 @@ function buildCombatDeps(store: GameStore): CombatDeps {
     },
     checkAchievement: id => checkAchievement(store, id),
     startGameover: () => startGameover(store),
-    getRoom: id => getRoom(store.world!, id),
+    getRoom: id => getRoom(store.world, id),
   };
 }
 
 function handleCombatCommand(store: GameStore, verb: string, target: string): void {
-  handleCombatCommandRaw(store, verb, target, buildCombatDeps(store));
+  handleCombatCommandRaw(store, verb, target, getCombatDeps(store));
 
   if (store.state === 'exploring' && store.player && store.world) {
     checkItemAchievements(store);
@@ -280,7 +328,7 @@ function handleCombatCommand(store: GameStore, verb: string, target: string): vo
   }
 }
 
-function buildExploringDeps(store: GameStore): ExploringDeps {
+function buildExploringDeps(store: ReadyStore): ExploringDeps {
   return {
     enemyData,
     itemData,
@@ -297,12 +345,12 @@ function buildExploringDeps(store: GameStore): ExploringDeps {
     },
     checkChatterbox: () => {
       const allNpcIds = Object.keys(npcData);
-      if (allNpcIds.length > 0 && allNpcIds.every(id => store.player!.firedEvents[`talked_${id}`])) {
+      if (allNpcIds.length > 0 && allNpcIds.every(id => store.player.firedEvents[`talked_${id}`])) {
         checkAchievement(store, 'chatterbox');
       }
     },
     checkScholar: () => {
-      const learnedCount = Object.values(store.player!.skills).filter(Boolean).length;
+      const learnedCount = Object.values(store.player.skills).filter(Boolean).length;
       if (learnedCount >= 5) {
         checkAchievement(store, 'scholar');
       }
@@ -310,7 +358,7 @@ function buildExploringDeps(store: GameStore): ExploringDeps {
     checkItemAchievements: () => checkItemAchievements(store),
     goDirection: target => {
       if (target === 'descend' && store.gameMode === 'dungeon' && store.dungeon) {
-        const room = getRoom(store.world!, store.player!.currentRoom);
+        const room = getRoom(store.world, store.player.currentRoom);
         if (room && room.id.startsWith('dng_rest_')) {
           store.dungeon.floor++;
           store.dungeon.score.floorsCleared++;
@@ -320,14 +368,14 @@ function buildExploringDeps(store: GameStore): ExploringDeps {
           clearTerminal(store);
           addLine(store, `--- Floor ${store.dungeon.floor} ---`, C.COMBAT_COLOR);
           addLine(store, '');
-          enterRoom(store, store.player!.currentRoom);
+          enterRoom(store, store.player.currentRoom);
           updateHeader(store);
           return;
         }
       }
 
-      const nextRoom = getAdjacentRoom(store.world!, store.player!.currentRoom, target);
-      if (nextRoom && getRoom(store.world!, nextRoom)) {
+      const nextRoom = getAdjacentRoom(store.world, store.player.currentRoom, target);
+      if (nextRoom && getRoom(store.world, nextRoom)) {
         addLine(store, '');
         const entered = enterRoom(store, nextRoom);
         if (entered) updateHeader(store);
@@ -338,7 +386,7 @@ function buildExploringDeps(store: GameStore): ExploringDeps {
     },
     doSave: () => {
       if (store.activeSlot !== null) {
-        if (store.player && store.world && saveToSlot(store.activeSlot, store.player, store.world, store.dungeon, store.shopState.runtime)) {
+        if (saveToSlot(store.activeSlot, store.player, store.world, store.dungeon, store.shopState.runtime)) {
           addLine(store, 'Game saved.', C.ITEM_COLOR);
           emitSound(store, 'save');
         } else {
@@ -361,7 +409,7 @@ function buildExploringDeps(store: GameStore): ExploringDeps {
         const [verb, target] = parseCommand(store.lastCommand);
         if (verb) {
           addLine(store, `(repeating: ${store.lastCommand})`, C.HELP_COLOR);
-          handleExploringCommandRaw(store, verb, target, buildExploringDeps(store));
+          handleExploringCommandRaw(store, verb, target, getExploringDeps(store));
         }
       } else {
         addLine(store, 'No previous command to repeat.', C.ERROR_COLOR);
@@ -372,12 +420,12 @@ function buildExploringDeps(store: GameStore): ExploringDeps {
 }
 
 function handleExploringCommand(store: GameStore, verb: string, target: string): void {
-  handleExploringCommandRaw(store, verb, target, buildExploringDeps(store));
+  handleExploringCommandRaw(store, verb, target, getExploringDeps(store));
 }
 
 function getAutocompleteSuggestions(store: GameStore, input: string): string[] {
   if (store.state === 'shop') {
-    return getShopAutocompleteSuggestions(store, input, buildShopDeps(store));
+    return getShopAutocompleteSuggestions(store, input, getShopDeps(store));
   }
   if (store.state === 'combat') {
     return getCombatAutocompleteSuggestions(store, input);
@@ -416,7 +464,7 @@ function getCombatAutocompleteSuggestions(store: GameStore, input: string): stri
   return candidates.filter(c => c.toLowerCase().startsWith(partial));
 }
 
-function buildShopDeps(store: GameStore): ShopDeps {
+function buildShopDeps(store: ReadyStore): ShopDeps {
   return {
     shops: shopData,
     itemData,
@@ -427,7 +475,7 @@ function buildShopDeps(store: GameStore): ShopDeps {
   };
 }
 
-function buildDialogueDeps(store: GameStore): DialogueDeps {
+function buildDialogueDeps(store: ReadyStore): DialogueDeps {
   return {
     itemData,
     weaponData: effectiveWeaponData(store),
@@ -439,12 +487,29 @@ function buildDialogueDeps(store: GameStore): DialogueDeps {
     loadDungeonFloor: floor => loadDungeonFloor(store, floor),
     enterRoom: roomId => enterRoom(store, roomId),
     checkAchievement: id => checkAchievement(store, id),
-    openShop: shopId => enterShop(store, shopId, buildShopDeps(store)),
+    openShop: shopId => enterShop(store, shopId, getShopDeps(store)),
+  };
+}
+
+function buildSkillTreeDeps(store: ReadyStore): SkillTreeDeps {
+  return {
+    refreshHeader: () => updateHeader(store),
+    emit: sound => emitSound(store, sound),
+    checkScholar: () => {
+      const learnedCount = Object.values(store.player.skills).filter(Boolean).length;
+      if (learnedCount >= 5) {
+        checkAchievement(store, 'scholar');
+      }
+    },
+    redisplayRoom: () => {
+      clearTerminal(store);
+      displayRoom(store, store.player.currentRoom);
+    },
   };
 }
 
 function handleDialogueInput(store: GameStore, input: string): void {
-  handleDialogueInputRaw(store, input, buildDialogueDeps(store));
+  handleDialogueInputRaw(store, input, getDialogueDeps(store));
 }
 
 function handleGameoverInput(store: GameStore, input: string): void {
@@ -455,8 +520,14 @@ function handleGameoverInput(store: GameStore, input: string): void {
   });
 }
 
+// Lifecycle helpers can't take ReadyStore at the type level — they're called
+// before player+world are populated and populate them as a side effect — but
+// the `enterRoom` callback is only fired after that side effect has happened,
+// so we narrow inside the closure.
 function startNewGame(store: GameStore): void {
-  startNewGameRaw(store, { enterRoom: roomId => enterRoom(store, roomId) });
+  startNewGameRaw(store, {
+    enterRoom: roomId => { assertReady(store); enterRoom(store, roomId); },
+  });
 }
 
 function startContinue(store: GameStore, slot: number): void {
@@ -464,7 +535,9 @@ function startContinue(store: GameStore, slot: number): void {
 }
 
 function startDungeonMode(store: GameStore, seed?: number): void {
-  startDungeonModeRaw(store, { enterRoom: roomId => enterRoom(store, roomId) }, seed);
+  startDungeonModeRaw(store, {
+    enterRoom: roomId => { assertReady(store); enterRoom(store, roomId); },
+  }, seed);
 }
 
 function handleSlotPickerKey(s: GameStore, key: string): void {
@@ -506,7 +579,8 @@ export function createInitialStore(): GameStore {
     endingPsychedelicTime: 0,
     gameoverReady: false,
     currentRegion: null,
-    commandHistory: [],
+    autosaveFlashTime: 0,
+    commandHistory: loadCommandHistory(),
     historyIndex: -1,
     savedInput: '',
     soundQueue: [],
@@ -516,6 +590,7 @@ export function createInitialStore(): GameStore {
     activeSlot: null,
     renamingSlot: false,
     renameBuffer: '',
+    slotPickerOverwriteConfirm: false,
     npcDialogue: null,
     shopMenuMode: null,
     shopMenuItems: [],
@@ -533,6 +608,8 @@ export function createInitialStore(): GameStore {
     settingsPrevState: 'menu',
     skillTreeSelected: { tier: 1, index: 0 },
     skillTreePrevState: 'exploring',
+    helpOverlayPrevState: 'menu',
+    pauseMenuSelected: 0,
   };
   return store;
 }
@@ -593,6 +670,11 @@ function handleTick(s: GameStore, dt: number): GameStore {
   // Gameover ready
   if (s.state === 'gameover' && !isTyping(s)) {
     s.gameoverReady = true;
+  }
+
+  // Decay the autosave indicator timer
+  if (s.autosaveFlashTime > 0) {
+    s.autosaveFlashTime = Math.max(0, s.autosaveFlashTime - dt);
   }
 
   // Trim line buffer
@@ -668,6 +750,18 @@ function handleKeyPressed(s: GameStore, key: string): void {
     return;
   }
 
+  // Help overlay: F1 toggles open from any non-boot state; once open, any
+  // key dismisses and returns to the previous state.
+  if (s.state === 'help_overlay') {
+    s.state = s.helpOverlayPrevState;
+    return;
+  }
+  if (key === 'F1') {
+    s.helpOverlayPrevState = s.state;
+    s.state = 'help_overlay';
+    return;
+  }
+
   if (s.state === 'quit') {
     // Game is over — ignore all input.
     return;
@@ -695,19 +789,7 @@ function handleKeyPressed(s: GameStore, key: string): void {
   }
 
   if (s.state === 'minimap') {
-    const PAN_STEP = 30;
-    if (key === 'Escape') {
-      s.state = 'exploring';
-      s.minimapOpen = false;
-    } else if (key === 'ArrowUp') {
-      s.minimapPan = { x: s.minimapPan.x, y: s.minimapPan.y - PAN_STEP };
-    } else if (key === 'ArrowDown') {
-      s.minimapPan = { x: s.minimapPan.x, y: s.minimapPan.y + PAN_STEP };
-    } else if (key === 'ArrowLeft') {
-      s.minimapPan = { x: s.minimapPan.x - PAN_STEP, y: s.minimapPan.y };
-    } else if (key === 'ArrowRight') {
-      s.minimapPan = { x: s.minimapPan.x + PAN_STEP, y: s.minimapPan.y };
-    }
+    handleMinimapKey(s, key);
     return;
   }
 
@@ -721,6 +803,23 @@ function handleKeyPressed(s: GameStore, key: string): void {
     return;
   }
 
+  if (s.state === 'paused') {
+    const deps: PauseMenuDeps = {
+      startMenu: () => startMenu(s),
+      openSettings: () => openSettings(s, 'paused'),
+      openSlotPicker: mode => openSlotPicker(s, mode),
+    };
+    handlePauseMenuKey(s, key, deps);
+    return;
+  }
+
+  // Esc in exploring opens the pause menu (text-input states have no other
+  // use for Esc). Other states handle Esc themselves above.
+  if (s.state === 'exploring' && key === 'Escape') {
+    openPauseMenu(s);
+    return;
+  }
+
   // Escape exits shop menu mode back to regular shop input
   if (s.state === 'shop' && s.shopMenuMode && key === 'Escape') {
     s.shopMenuMode = null;
@@ -729,27 +828,10 @@ function handleKeyPressed(s: GameStore, key: string): void {
     return;
   }
 
-  // States with text input — allow typing while typewriter runs
+  // ----- Text-input states (exploring/combat/shop/dialogue/gameover) -----
+
   if (key === 'Tab') {
-    // Autocomplete
-    if (s.tabSuggestions.length > 0 && s.tabIndex >= 0) {
-      // Cycle to next suggestion
-      s.tabIndex = (s.tabIndex + 1) % s.tabSuggestions.length;
-    } else {
-      // Start new autocomplete
-      const suggestions = getAutocompleteSuggestions(s, s.input);
-      if (suggestions.length === 0) return;
-      s.tabPrefix = s.input;
-      s.tabSuggestions = suggestions;
-      s.tabIndex = 0;
-    }
-    // Apply the current suggestion
-    const parts = s.tabPrefix.split(/\s+/);
-    if (parts.length <= 1) {
-      s.input = s.tabSuggestions[s.tabIndex];
-    } else {
-      s.input = parts[0] + ' ' + s.tabSuggestions[s.tabIndex];
-    }
+    handleTabKey(s);
     return;
   }
 
@@ -764,144 +846,193 @@ function handleKeyPressed(s: GameStore, key: string): void {
     s.input = s.input.slice(0, -1);
     s.historyIndex = -1; // reset history browsing on edit
   } else if (key === 'ArrowUp') {
-    // Dialogue/shop menu: navigate selection
-    if (s.state === 'dialogue' && s.dialogueOptions.length > 0) {
-      s.dialogueSelected = (s.dialogueSelected - 1 + s.dialogueOptions.length) % s.dialogueOptions.length;
-      emitSound(s, 'menuMove');
-      return;
-    }
-    if (s.state === 'shop' && s.shopMenuMode) {
-      s.shopMenuSelected = (s.shopMenuSelected - 1 + s.shopMenuItems.length) % s.shopMenuItems.length;
-      emitSound(s, 'menuMove');
-      return;
-    }
-    // Browse command history (older)
-    if (s.commandHistory.length === 0) return;
-    if (s.historyIndex === -1) {
-      s.savedInput = s.input;
-      s.historyIndex = s.commandHistory.length - 1;
-    } else if (s.historyIndex > 0) {
-      s.historyIndex--;
-    }
-    s.input = s.commandHistory[s.historyIndex];
+    handleArrowUpKey(s);
   } else if (key === 'ArrowDown') {
-    // Dialogue/shop menu: navigate selection
-    if (s.state === 'dialogue' && s.dialogueOptions.length > 0) {
-      s.dialogueSelected = (s.dialogueSelected + 1) % s.dialogueOptions.length;
-      emitSound(s, 'menuMove');
-      return;
-    }
-    if (s.state === 'shop' && s.shopMenuMode) {
-      s.shopMenuSelected = (s.shopMenuSelected + 1) % s.shopMenuItems.length;
-      emitSound(s, 'menuMove');
-      return;
-    }
-    // Browse command history (newer)
-    if (s.historyIndex === -1) return;
-    if (s.historyIndex < s.commandHistory.length - 1) {
-      s.historyIndex++;
-      s.input = s.commandHistory[s.historyIndex];
-    } else {
-      s.historyIndex = -1;
-      s.input = s.savedInput;
-    }
+    handleArrowDownKey(s);
   } else if (key === 'Enter') {
-    // Skip any remaining typewriter text first
-    if (isTyping(s)) skipTypewriter(s);
+    handleEnterKey(s);
+  }
+}
 
-    const input = s.input;
-    if (input.length > 0) {
-      // Push to command history — but skip dialogue/shop inputs (numbered
-      // choices and buy/sell commands) so that "talk dusty" stays as the
-      // last real command the player typed.
-      const skipHistory = s.state === 'dialogue' || s.state === 'shop';
-      if (!skipHistory && (s.commandHistory.length === 0 || s.commandHistory[s.commandHistory.length - 1] !== input)) {
-        s.commandHistory.push(input);
-        if (s.commandHistory.length > 50) s.commandHistory.shift(); // cap at 50
-      }
-      s.historyIndex = -1;
-      s.savedInput = '';
+function handleMinimapKey(s: GameStore, key: string): void {
+  const PAN_STEP = 30;
+  if (key === 'Escape') {
+    s.state = 'exploring';
+    s.minimapOpen = false;
+  } else if (key === 'ArrowUp') {
+    s.minimapPan = { x: s.minimapPan.x, y: s.minimapPan.y - PAN_STEP };
+  } else if (key === 'ArrowDown') {
+    s.minimapPan = { x: s.minimapPan.x, y: s.minimapPan.y + PAN_STEP };
+  } else if (key === 'ArrowLeft') {
+    s.minimapPan = { x: s.minimapPan.x - PAN_STEP, y: s.minimapPan.y };
+  } else if (key === 'ArrowRight') {
+    s.minimapPan = { x: s.minimapPan.x + PAN_STEP, y: s.minimapPan.y };
+  }
+}
 
-      addLineInstant(s, `> ${input}`, C.INPUT_ECHO_COLOR);
-      emitSound(s, 'submit');
-      s.input = '';
+function handleTabKey(s: GameStore): void {
+  // Either cycle through an in-progress suggestion list, or start a new one.
+  if (s.tabSuggestions.length > 0 && s.tabIndex >= 0) {
+    s.tabIndex = (s.tabIndex + 1) % s.tabSuggestions.length;
+  } else {
+    const suggestions = getAutocompleteSuggestions(s, s.input);
+    if (suggestions.length === 0) return;
+    s.tabPrefix = s.input;
+    s.tabSuggestions = suggestions;
+    s.tabIndex = 0;
+  }
+  // Apply the current suggestion to the input buffer.
+  const parts = s.tabPrefix.split(/\s+/);
+  if (parts.length <= 1) {
+    s.input = s.tabSuggestions[s.tabIndex];
+  } else {
+    s.input = parts[0] + ' ' + s.tabSuggestions[s.tabIndex];
+  }
+}
 
-      if (s.state === 'dialogue') {
-        handleDialogueInput(s, input);
-      } else if (s.state === 'gameover') {
-        handleGameoverInput(s, input);
-      } else {
-        const [verb, target] = parseCommand(input);
-        if (verb) {
-          if (s.state === 'combat') {
-            handleCombatCommand(s, verb, target);
-          } else if (s.state === 'shop') {
-            handleShopInput(s, verb, target, buildShopDeps(s));
-          } else {
-            handleExploringCommand(s, verb, target);
-          }
-        }
+function handleArrowUpKey(s: GameStore): void {
+  // Dialogue/shop menu: navigate selection
+  if (s.state === 'dialogue' && s.dialogueOptions.length > 0) {
+    s.dialogueSelected = (s.dialogueSelected - 1 + s.dialogueOptions.length) % s.dialogueOptions.length;
+    emitSound(s, 'menuMove');
+    return;
+  }
+  if (s.state === 'shop' && s.shopMenuMode) {
+    s.shopMenuSelected = (s.shopMenuSelected - 1 + s.shopMenuItems.length) % s.shopMenuItems.length;
+    emitSound(s, 'menuMove');
+    return;
+  }
+  // Browse command history (older)
+  if (s.commandHistory.length === 0) return;
+  if (s.historyIndex === -1) {
+    s.savedInput = s.input;
+    s.historyIndex = s.commandHistory.length - 1;
+  } else if (s.historyIndex > 0) {
+    s.historyIndex--;
+  }
+  s.input = s.commandHistory[s.historyIndex];
+}
+
+function handleArrowDownKey(s: GameStore): void {
+  // Dialogue/shop menu: navigate selection
+  if (s.state === 'dialogue' && s.dialogueOptions.length > 0) {
+    s.dialogueSelected = (s.dialogueSelected + 1) % s.dialogueOptions.length;
+    emitSound(s, 'menuMove');
+    return;
+  }
+  if (s.state === 'shop' && s.shopMenuMode) {
+    s.shopMenuSelected = (s.shopMenuSelected + 1) % s.shopMenuItems.length;
+    emitSound(s, 'menuMove');
+    return;
+  }
+  // Browse command history (newer)
+  if (s.historyIndex === -1) return;
+  if (s.historyIndex < s.commandHistory.length - 1) {
+    s.historyIndex++;
+    s.input = s.commandHistory[s.historyIndex];
+  } else {
+    s.historyIndex = -1;
+    s.input = s.savedInput;
+  }
+}
+
+function handleEnterKey(s: GameStore): void {
+  // Skip any remaining typewriter text first
+  if (isTyping(s)) skipTypewriter(s);
+
+  const input = s.input;
+  if (input.length > 0) {
+    submitTypedInput(s, input);
+  } else if (s.state === 'dialogue' && s.dialogueOptions.length > 0) {
+    submitDialogueChoice(s);
+  } else if (s.state === 'shop' && s.shopMenuMode) {
+    submitShopMenuChoice(s);
+  }
+  // Enter with empty input in any other state is a no-op (typewriter was
+  // already skipped above).
+}
+
+function submitTypedInput(s: GameStore, input: string): void {
+  // Push to command history — but skip dialogue/shop inputs (numbered choices
+  // and buy/sell commands) so that "talk dusty" stays as the last real
+  // command the player typed.
+  const skipHistory = s.state === 'dialogue' || s.state === 'shop';
+  if (!skipHistory && (s.commandHistory.length === 0 || s.commandHistory[s.commandHistory.length - 1] !== input)) {
+    s.commandHistory.push(input);
+    if (s.commandHistory.length > 50) s.commandHistory.shift(); // cap at 50
+    saveCommandHistory(s.commandHistory);
+  }
+  s.historyIndex = -1;
+  s.savedInput = '';
+
+  addLineInstant(s, `> ${input}`, C.INPUT_ECHO_COLOR);
+  emitSound(s, 'submit');
+  s.input = '';
+
+  if (s.state === 'dialogue') {
+    handleDialogueInput(s, input);
+    return;
+  }
+  if (s.state === 'gameover') {
+    handleGameoverInput(s, input);
+    return;
+  }
+  const [verb, target] = parseCommand(input);
+  if (!verb) return;
+  if (s.state === 'combat') {
+    handleCombatCommand(s, verb, target);
+  } else if (s.state === 'shop') {
+    handleShopInput(s, verb, target, getShopDeps(s));
+  } else {
+    handleExploringCommand(s, verb, target);
+  }
+}
+
+function submitDialogueChoice(s: GameStore): void {
+  emitSound(s, 'menuSelect');
+  const selected = String(s.dialogueSelected + 1);
+  handleDialogueInput(s, selected);
+}
+
+function submitShopMenuChoice(s: GameStore): void {
+  emitSound(s, 'menuSelect');
+  if (s.shopMenuMode === 'sell_confirm' && s.shopSellConfirm) {
+    // Confirmation menu: Yes (0) or No (1)
+    const confirmed = s.shopMenuSelected === 0;
+    const { id, type } = s.shopSellConfirm;
+    s.shopMenuMode = null;
+    s.shopMenuItems = [];
+    s.shopMenuSelected = 0;
+    s.shopSellConfirm = null;
+    if (confirmed) {
+      // Unequip first so handleShopSell doesn't re-trigger the same prompt
+      // when it sees the item is still equipped.
+      if (s.player) {
+        if (type === 'weapon' && s.player.equippedWeapon === id) s.player.equippedWeapon = null;
+        else if (type === 'armor' && s.player.equippedArmor === id) s.player.equippedArmor = null;
+        else if (type === 'item' && s.player.equippedShield === id) s.player.equippedShield = null;
       }
-    } else if (s.state === 'dialogue' && s.dialogueOptions.length > 0) {
-      // Enter with empty input in dialogue: submit the selected option
-      emitSound(s, 'menuSelect');
-      const selected = String(s.dialogueSelected + 1);
-      handleDialogueInput(s, selected);
-    } else if (s.state === 'shop' && s.shopMenuMode) {
-      // Enter with empty input in shop menu: submit the selected item
-      emitSound(s, 'menuSelect');
-      if (s.shopMenuMode === 'sell_confirm' && s.shopSellConfirm) {
-        // Confirmation menu: Yes (0) or No (1)
-        const confirmed = s.shopMenuSelected === 0;
-        const { id, type } = s.shopSellConfirm;
-        s.shopMenuMode = null;
-        s.shopMenuItems = [];
-        s.shopMenuSelected = 0;
-        s.shopSellConfirm = null;
-        if (confirmed) {
-          handleShopInput(s, 'sell', id, buildShopDeps(s));
-        } else {
-          addLineInstant(s, 'Sale cancelled.', C.HELP_COLOR);
-        }
-        void type; // used by the sell handler via the id match
-      } else {
-        const item = s.shopMenuItems[s.shopMenuSelected];
-        if (item) {
-          const mode = s.shopMenuMode;
-          s.shopMenuMode = null;
-          s.shopMenuItems = [];
-          s.shopMenuSelected = 0;
-          if (mode === 'buy') {
-            handleShopInput(s, 'buy', item.label, buildShopDeps(s));
-          } else {
-            handleShopInput(s, 'sell', item.id, buildShopDeps(s));
-          }
-        }
-      }
-    } else if (isTyping(s)) {
-      // Enter with empty input just skips typewriter
+      handleShopInput(s, 'sell', id, getShopDeps(s));
+    } else {
+      addLineInstant(s, 'Sale cancelled.', C.HELP_COLOR);
     }
+    return;
+  }
+  const item = s.shopMenuItems[s.shopMenuSelected];
+  if (!item) return;
+  const mode = s.shopMenuMode;
+  s.shopMenuMode = null;
+  s.shopMenuItems = [];
+  s.shopMenuSelected = 0;
+  if (mode === 'buy') {
+    handleShopInput(s, 'buy', item.label, getShopDeps(s));
+  } else {
+    handleShopInput(s, 'sell', item.id, getShopDeps(s));
   }
 }
 
 function handleSkillTreeKey(s: GameStore, key: string): void {
-  const deps: SkillTreeDeps = {
-    refreshHeader: () => updateHeader(s),
-    emit: sound => emitSound(s, sound),
-    checkScholar: () => {
-      const learnedCount = Object.values(s.player!.skills).filter(Boolean).length;
-      if (learnedCount >= 5) {
-        checkAchievement(s, 'scholar');
-      }
-    },
-    redisplayRoom: () => {
-      if (s.player && s.world) {
-        clearTerminal(s);
-        displayRoom(s, s.player.currentRoom);
-      }
-    },
-  };
-  handleSkillTreeKeyRaw(s, key, deps);
+  handleSkillTreeKeyRaw(s, key, getSkillTreeDeps(s));
 }
 
 function handleMenuKey(s: GameStore, key: string): void {
@@ -914,7 +1045,7 @@ function handleMenuKey(s: GameStore, key: string): void {
 }
 
 function handleTextInput(s: GameStore, text: string): void {
-  if (s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'minimap' || s.state === 'settings' || s.state === 'skill_tree' || s.state === 'quit') return;
+  if (s.state === 'boot' || s.state === 'menu' || s.state === 'ending' || s.state === 'minimap' || s.state === 'settings' || s.state === 'skill_tree' || s.state === 'help_overlay' || s.state === 'paused' || s.state === 'quit') return;
   if (s.state === 'slot_picker' && s.renamingSlot) {
     s.renameBuffer += text;
     return;

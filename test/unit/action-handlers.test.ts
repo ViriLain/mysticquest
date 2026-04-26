@@ -397,4 +397,45 @@ describe('action handlers', () => {
     expect(lines.some(l => l.includes('[Magic]'))).toBe(true);
     expect(lines.some(l => l.includes('Magic:') && l.includes('every third strike'))).toBe(true);
   });
+
+  // ---- consumable variants (heal capping, buff_attack, cure refusal) ---
+
+  it('use heal item caps at maxHp instead of overheal', () => {
+    const store = makeStoryStore();
+    store.player!.maxHp = 30;
+    store.player!.hp = 28;
+    store.player!.inventory = { potion: 1 };
+
+    handleUse(store, 'potion', itemData, weaponData, () => {}, () => {});
+
+    expect(store.player!.hp).toBe(30);
+    expect(store.player!.inventory.potion).toBeUndefined();
+    const lines = store.typewriterQueue.map(line => line.text);
+    expect(lines.some(l => l.includes('restore 2 HP'))).toBe(true);
+  });
+
+  it('use buff tonic outside combat applies attack buff and consumes the item', () => {
+    const store = makeStoryStore();
+    store.player!.inventory = { strength_tonic: 1 };
+    store.player!.buffAttack = 0;
+    store.player!.buffRounds = 0;
+
+    handleUse(store, 'strength tonic', itemData, weaponData, () => {}, () => {});
+
+    expect(store.player!.buffAttack).toBe(3);
+    expect(store.player!.buffRounds).toBeGreaterThan(0);
+    expect(store.player!.inventory.strength_tonic).toBeUndefined();
+  });
+
+  it('use cure item outside combat is refused and does not consume the item', () => {
+    const store = makeStoryStore();
+    store.player!.inventory = { antidote: 2 };
+
+    handleUse(store, 'antidote', itemData, weaponData, () => {}, () => {});
+
+    // Item stays in inventory — the player is told to use it in combat.
+    expect(store.player!.inventory.antidote).toBe(2);
+    const lines = store.typewriterQueue.map(line => line.text);
+    expect(lines.some(l => l.toLowerCase().includes('combat'))).toBe(true);
+  });
 });

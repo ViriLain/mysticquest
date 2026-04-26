@@ -3,6 +3,7 @@ import * as C from '../constants';
 import { pushEffect } from '../effects';
 import { anySlotHasData } from '../save';
 import { addLine, clearTerminal, displayAscii, emitSound, hideHeader } from '../output';
+import { bumpDeath } from '../statistics';
 
 export interface GameoverDeps {
   startMenu: () => void;
@@ -13,6 +14,7 @@ export interface GameoverDeps {
 export function startGameover(store: GameStore): void {
   store.state = 'gameover';
   store.gameoverReady = false;
+  bumpDeath();
   emitSound(store, 'death');
 
   pushEffect(store.effects, 'shake', 0.5, { intensity: 8 });
