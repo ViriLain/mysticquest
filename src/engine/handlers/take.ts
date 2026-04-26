@@ -4,7 +4,7 @@ import { findAllMatches, resolveOrDisambiguate, singularize } from '../matching'
 import { notifyObjectiveEvent } from '../objectives';
 import { addItem, addWeapon, equipWeapon } from '../player';
 import { addLine, displayAscii, emitSound } from '../output';
-import type { AccessoryDef, ArmorDef, GameStore, ItemDef, RoomDef, WeaponDef } from '../types';
+import type { AccessoryDef, ArmorDef, ItemDef, ReadyStore, RoomDef, WeaponDef } from '../types';
 import { getRoom } from '../world';
 
 function removeFromRoom(room: RoomDef, itemId: string): string | null {
@@ -23,7 +23,7 @@ function removeFromRoom(room: RoomDef, itemId: string): string | null {
 }
 
 export function handleTake(
-  store: GameStore,
+  store: ReadyStore,
   target: string,
   itemData: Record<string, ItemDef>,
   weaponData: Record<string, WeaponDef>,
@@ -32,7 +32,6 @@ export function handleTake(
   armorData?: Record<string, ArmorDef>,
   accessoryData?: Record<string, AccessoryDef>,
 ): void {
-  if (!store.player || !store.world) return;
   if (!target) { addLine(store, 'Take what?', C.ERROR_COLOR); return; }
 
   const room = getRoom(store.world, store.player.currentRoom);

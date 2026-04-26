@@ -33,6 +33,12 @@
   margin-bottom: 6px;
 }
 
+.combat-status-bar {
+  flex-shrink: 0;
+  padding: 2px 0 6px;
+  white-space: pre-wrap;
+}
+
 .terminal-content {
   flex: 1;
   overflow-y: auto;

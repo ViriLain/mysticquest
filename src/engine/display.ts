@@ -1,22 +1,17 @@
-import accessoriesJson from '../data/accessories.json';
-import armorJson from '../data/armor.json';
-import enemiesJson from '../data/enemies.json';
-import itemsJson from '../data/items.json';
-import npcsJson from '../data/npcs.json';
-import weaponsJson from '../data/weapons.json';
 import * as C from './constants';
+import {
+  ACCESSORIES as accessoryData,
+  ARMOR as armorData,
+  ENEMIES as enemyData,
+  ITEMS as itemData,
+  NPCS as npcData,
+  WEAPONS as weaponData,
+} from './data';
 import { pickDescription } from './descriptions';
 import { ICON, iconLine } from './icons';
 import { addLine } from './output';
-import type { AccessoryDef, ArmorDef, EnemyDef, GameStore, ItemDef, NpcDef, RGBA, WeaponDef } from './types';
+import type { GameStore, RGBA, WeaponDef } from './types';
 import { getExits, getLivingEnemies, getRoom } from './world';
-
-const weaponData = weaponsJson as Record<string, WeaponDef>;
-const itemData = itemsJson as Record<string, ItemDef>;
-const enemyData = enemiesJson as Record<string, EnemyDef>;
-const npcData = npcsJson as Record<string, NpcDef>;
-const armorData = armorJson as Record<string, ArmorDef>;
-const accessoryData = accessoriesJson as Record<string, AccessoryDef>;
 
 function weaponColor(weapon: WeaponDef, fallback: RGBA = C.ITEM_COLOR): RGBA {
   return weapon.weapon_class === 'magic' ? C.MAGIC_COLOR : fallback;

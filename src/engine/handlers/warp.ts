@@ -1,7 +1,7 @@
 import * as C from '../constants';
 import { addLine } from '../output';
 import { bfsDistance, getWarpTargets, warpCost } from '../warp';
-import type { GameStore, WorldState } from '../types';
+import type { ReadyStore, WorldState } from '../types';
 
 export interface WarpDeps {
   enterRoom: (roomId: string) => boolean;
@@ -35,12 +35,10 @@ function findWarpTarget(
 }
 
 export function handleWarp(
-  store: GameStore,
+  store: ReadyStore,
   target: string,
   deps: WarpDeps,
 ): void {
-  if (!store.player || !store.world) return;
-
   if (store.gameMode === 'dungeon') {
     addLine(store, 'Warp is not available in the dungeon.', C.ERROR_COLOR);
     return;

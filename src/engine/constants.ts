@@ -13,6 +13,11 @@ export const ENEMY_COLOR: RGBA = [1.0, 0.3, 0.3, 1.0];
 export const MENU_COLOR: RGBA = [0.2, 1.0, 0.2, 1.0];
 export const MENU_SELECTED_COLOR: RGBA = [0.4, 1.0, 0.4, 1.0];
 export const MENU_DISABLED_COLOR: RGBA = [0.3, 0.3, 0.3, 1.0];
+// Dim-green for the unselected option rows in any overlay (main menu, pause
+// menu, settings, slot picker, help). Backed off from MENU_SELECTED_COLOR.
+export const MENU_UNSELECTED_COLOR: RGBA = [0.5, 0.8, 0.5, 0.8];
+// Even dimmer grey for help footers / hint lines beneath the option rows.
+export const MENU_HINT_COLOR: RGBA = [0.5, 0.5, 0.5, 0.8];
 export const CHOICE_COLOR: RGBA = [1.0, 0.85, 0.2, 1.0];
 export const DEV_NOTE_COLOR: RGBA = [0.6, 0.5, 0.2, 0.8];
 export const ASCII_COLOR: RGBA = [1.0, 1.0, 1.0, 0.9];

@@ -1,4 +1,5 @@
 import type { GameStore, ItemDef, NpcDef, RoomDef, WeaponDef } from '../types';
+import { isReady } from '../store-ready';
 import * as C from '../constants';
 import { addLine, clearTerminal, emitSound } from '../output';
 import { handleNpcDialogueInput } from '../handlers/talk';
@@ -20,7 +21,7 @@ export interface DialogueDeps {
 }
 
 export function handleDialogueInput(store: GameStore, input: string, deps: DialogueDeps): void {
-  if (!store.player || !store.world) return;
+  if (!isReady(store)) return;
 
   if (store.gameMode === 'dungeon') {
     const room = getRoom(store.world, store.player.currentRoom);

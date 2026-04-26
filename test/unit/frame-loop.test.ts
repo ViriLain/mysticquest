@@ -59,6 +59,7 @@ describe('frame-loop helpers', () => {
       ['tint',            s => { s.effects.tint.a = 0.5; }],
       ['glitch',         s => { s.effects.glitch = 0.2; }],
       ['jitter',         s => { s.effects.jitter = 0.2; }],
+      ['autosaveFlashing', s => { s.autosaveFlashTime = 1.0; }],
     ];
 
     // Every key in VisualSnapshot must have a corresponding mutation case.

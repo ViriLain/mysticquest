@@ -2,7 +2,7 @@ import * as C from '../constants';
 import { ICON, iconLine } from '../icons';
 import { collectModifiers, totalModifier } from '../modifiers';
 import { addLine } from '../output';
-import type { AccessoryDef, ArmorDef, EnemyDef, GameStore, ItemDef, WeaponClass, WeaponDef } from '../types';
+import type { AccessoryDef, ArmorDef, EnemyDef, GameStore, ItemDef, ReadyStore, WeaponClass, WeaponDef } from '../types';
 import { getLivingEnemies, getRoom } from '../world';
 
 function classTag(weapon: WeaponDef): string {
@@ -31,7 +31,7 @@ const CLASS_BLURB: Record<WeaponClass, string> = {
 };
 
 export function handleExamine(
-  store: GameStore,
+  store: ReadyStore,
   target: string,
   enemyData: Record<string, EnemyDef>,
   itemData: Record<string, ItemDef>,
@@ -39,7 +39,6 @@ export function handleExamine(
   armorData?: Record<string, ArmorDef>,
   accessoryData?: Record<string, AccessoryDef>,
 ): void {
-  if (!store.player || !store.world) return;
   if (!target) { addLine(store, 'Examine what?', C.ERROR_COLOR); return; }
 
   const room = getRoom(store.world, store.player.currentRoom);

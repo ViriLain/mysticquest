@@ -1,4 +1,5 @@
 import type { AccessoryDef, ArmorDef, CombatMessage, EnemyDef, GameStore, ItemDef, RoomDef, StatusEffect, WeaponDef } from '../types';
+import { isReady } from '../store-ready';
 import * as C from '../constants';
 import { notifyObjectiveEvent } from '../objectives';
 import { playerAttack, playerDefend, playerFlee, playerUseItem, playerSkillAttack, enemyDefeated } from '../combat';
@@ -10,6 +11,7 @@ import { addLine, emitSound } from '../output';
 import { pushEffect } from '../effects';
 import { markEnemyDead } from '../world';
 import { ACTIVE_SKILLS, getSkill, findSkillByName } from '../skills';
+import { bumpBossDefeated } from '../statistics';
 
 export interface CombatDeps {
   itemData: Record<string, ItemDef>;
@@ -76,7 +78,7 @@ export function handleCombatCommand(
   target: string,
   deps: CombatDeps,
 ): void {
-  if (!store.combat || !store.player || !store.world) {
+  if (!store.combat || !isReady(store)) {
     store.state = 'exploring';
     return;
   }
@@ -188,6 +190,7 @@ export function handleCombatCommand(
       processCombatMessages(store, results.messages);
 
       const wasBoss = store.combat.enemy.isBoss;
+      if (wasBoss) bumpBossDefeated();
       markEnemyDead(store.world, store.player.currentRoom, defeatedEnemyId);
       notifyObjectiveEvent(store, { type: 'defeated_enemy', enemy: defeatedEnemyId });
       if (store.gameMode === 'dungeon' && store.dungeon) {

@@ -1,7 +1,7 @@
 import * as C from '../constants';
 import { findAllMatches, resolveOrDisambiguate } from '../matching';
 import { addLine } from '../output';
-import type { GameStore, ItemDef, NpcDef, WeaponDef } from '../types';
+import type { ItemDef, NpcDef, ReadyStore, WeaponDef } from '../types';
 import { getRoom } from '../world';
 
 type TopicData = Record<string, ItemDef | WeaponDef>;
@@ -89,13 +89,12 @@ function answerLines(answer: string | string[] | undefined): string[] {
 }
 
 export function handleAsk(
-  store: GameStore,
+  store: ReadyStore,
   target: string,
   itemData: Record<string, ItemDef>,
   weaponData: Record<string, WeaponDef>,
   npcData: Record<string, NpcDef>,
 ): void {
-  if (!store.player || !store.world) return;
   const room = getRoom(store.world, store.player.currentRoom);
   if (!room?.npcs || room.npcs.length === 0) {
     addLine(store, "There's no one here to ask.", C.ERROR_COLOR);

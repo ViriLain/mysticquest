@@ -1,4 +1,5 @@
 import type { AccessoryDef, ArmorDef, EnemyDef, GameStore, ItemDef, NpcDef, WeaponDef } from '../types';
+import { isReady } from '../store-ready';
 import * as C from '../constants';
 import { addLine } from '../output';
 import { handleAttack } from '../handlers/attack';
@@ -58,7 +59,7 @@ export function handleExploringCommand(
   target: string,
   deps: ExploringDeps,
 ): void {
-  if (!store.player || !store.world) return;
+  if (!isReady(store)) return;
 
   if (verb === 'go') {
     deps.goDirection(target);
@@ -191,7 +192,7 @@ export function getAutocompleteSuggestions(
   const partial = parts.slice(1).join(' ');
   const candidates: string[] = [];
 
-  if (!store.player || !store.world) return [];
+  if (!isReady(store)) return [];
   const room = getRoom(store.world, store.player.currentRoom);
 
   if (verb === 'take' && room) {

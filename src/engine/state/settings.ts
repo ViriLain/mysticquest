@@ -51,7 +51,12 @@ export function handleSettingsKey(s: GameStore, key: string): void {
     }
 
     saveSettings(settings);
-    emitSound(s, 'menuMove');
+    // Preview cue: changing volume or toggling SFX plays a distinctive blip
+    // at the new level so the player can calibrate without leaving the menu.
+    // Other rows keep the quieter menuMove tone.
+    const playPreview = (row === 3 && settings.sfxEnabled)
+      || (row === 4 && settings.sfxEnabled);
+    emitSound(s, playPreview ? 'pickup' : 'menuMove');
   } else if (key === 'Escape' || key === 'Enter') {
     s.state = s.settingsPrevState;
     emitSound(s, 'menuSelect');
