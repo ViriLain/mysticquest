@@ -17,6 +17,7 @@ import { fireEvent } from './events';
 import { checkEndings, getChoicePrompt, getEffectColor } from './endings';
 import { ICON, iconLine } from './icons';
 import { saveToSlot } from './save';
+import { bumpEndingReached } from './statistics';
 import { loadCommandHistory, saveCommandHistory } from './command-history';
 import { notifyObjectiveEvent } from './objectives';
 import { addLine, addLineInstant, applyRegionTint, clearTerminal, displayAscii, emitSound, hideHeader, updateHeader } from './output';
@@ -204,6 +205,8 @@ function startDialogue(store: ReadyStore, ending: EndingDef): void {
 }
 
 function startEnding(store: ReadyStore, ending: EndingDef): void {
+  bumpEndingReached();
+
   // Track which endings have been seen for all_endings achievement
   const endingIds = Object.keys(endingsData);
   const endingKey = endingIds.find(id => endingsData[id].title === ending.title);

@@ -12,6 +12,7 @@ import { collectModifiers, totalModifier } from '../modifiers';
 import { addLine } from '../output';
 import { visitedCount, xpToNextLevel } from '../player';
 import { SKILL_TREE, canLearnSkill, getSkillsByTier } from '../skills';
+import { loadStats } from '../statistics';
 import type { AccessoryDef, ArmorDef, GameStore, ObjectiveDef, ReadyStore, RGBA, WeaponDef } from '../types';
 
 function weaponLookup(store: GameStore, id: string): WeaponDef | undefined {
@@ -268,7 +269,15 @@ export function showScore(store: ReadyStore): void {
     addLine(store, `Enemies killed: ${store.dungeon.score.enemiesKilled}`, C.STAT_COLOR);
     addLine(store, `Items found: ${store.dungeon.score.itemsFound}`, C.STAT_COLOR);
     addLine(store, `Seed: ${store.dungeon.seed}`, C.HELP_COLOR);
-  } else {
-    addLine(store, "I don't understand that. Type 'help' for commands.", C.ERROR_COLOR);
+    return;
   }
+
+  // Story mode: surface lifetime stats since there's no per-run score to
+  // show. These persist across saves and resets — a simple track record.
+  const lifetime = loadStats();
+  addLine(store, '');
+  addLine(store, '=== Lifetime Record ===', C.STAT_COLOR);
+  addLine(store, `Endings reached: ${lifetime.endingsReached}`, C.STAT_COLOR);
+  addLine(store, `Bosses defeated: ${lifetime.bossesDefeated}`, C.STAT_COLOR);
+  addLine(store, `Deaths: ${lifetime.deaths}`, C.STAT_COLOR);
 }
