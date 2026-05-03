@@ -90,4 +90,35 @@ describe('campaign polish', () => {
     expectLine(s, 'use');
     expectLine(s, 'mushrooms');
   });
+
+  it('a prepared story player can defeat the Evil King without debug stats', () => {
+    let s = newGame();
+    s.player!.currentRoom = 'darkness_stronghold';
+    s.player!.level = 8;
+    s.player!.maxHp = 85;
+    s.player!.hp = 85;
+    s.player!.attack = 12;
+    s.player!.defense = 7;
+    s.player!.weapons = ['ragnarok'];
+    s.player!.equippedWeapon = 'ragnarok';
+    s.player!.inventory.large_potion = 3;
+    s.player!.inventory.panacea = 1;
+    s.player!.equippedArmor = 'shadow_plate';
+    s.player!.skills.iron_will = true;
+    s.player!.skills.sharp_eyes = true;
+    s.player!.skills.thick_skin = true;
+
+    s = input(s, 'attack king');
+
+    for (let i = 0; i < 40 && s.state === 'combat'; i++) {
+      if (s.player!.hp <= 35 && s.player!.inventory.large_potion) {
+        s = input(s, 'use large potion');
+      } else {
+        s = input(s, 'attack');
+      }
+    }
+
+    expect(s.state).toBe('ending');
+    expectLine(s, 'The Hero');
+  });
 });
