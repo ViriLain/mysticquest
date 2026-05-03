@@ -31,3 +31,11 @@
 - The current final-boss data supports a prepared level 8 story player with Ragnarok, Shadow Plate, three large potions, one panacea, and several core defensive/offensive skills.
 - Earlier content polish improved hinting around preparation, hidden rewards, and late-game choices, so numeric tuning should remain conservative until manual playthrough notes prove a curve problem.
 - Keep an eye on Mountain Troll and Ruins Guardian during browser/manual playthroughs; they are the most likely bosses to reveal potion-stock or gear-placement pressure.
+
+## Verification
+
+- `npm test`: 53 files passed, 421 tests passed.
+- `npm run lint`: passed.
+- `npm run build`: passed.
+- `npm audit --json`: 0 total vulnerabilities.
+- Browser smoke covered the first-session combat/shop/journal/minimap/transition/boss-art surfaces with no app console warnings or errors.

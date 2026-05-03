@@ -87,7 +87,7 @@
 
 | Moment | Rating | Issue | Planned Action |
 | --- | --- | --- | --- |
-| Title/new game opening | Serviceable | Not audited visually in this pass yet. | Browser-smoke the opening and only change if it feels flat after region polish. |
+| Title/new game opening | Serviceable | Opening worked, but browser smoke exposed pre-gesture Web Audio console noise. | Completed: browser smoke now covers menu, new game, first room, first combat, and a clean app console; audio unlock is gated behind real click/key gestures. |
 | Manor boss and transition to Wilds | Serviceable | Cellar Shade has buildup but aftermath is rough. | Completed: `manor_wine_cellar`, `manor_dungeon`, and `manor_yard` now read as one progression beat. |
 | Wren and Ancient Map reveal | Strong | Wren grants map at level 3, but map also appears elsewhere, making the reveal less unique. | Completed: Wren's map/hidden-path guidance strengthened while keeping both acquisition paths. |
 | Darkness corruption reveal | Strong | Oblivion Gate is the clearest digital reveal. | Completed: earlier Darkness rooms now include static/code hints before the Oblivion Gate reveal. |
@@ -95,6 +95,17 @@
 | Evil King confrontation | Serviceable | Final room is strong but the choice/boss fork can feel mechanical. | Completed: stronghold prose and Usurper text now reinforce the host-cycle decision. |
 | Wanderer exit | Serviceable | Concept is strong; virtual exit needed direct coverage and a route fix. | Completed: route covered in Task 1 and Wastes ruins/map hint added in Task 4. |
 | Enlightened diner reveal | Serviceable | Strong ending concept, but diner interaction is under-signaled. | Completed: Whiskers and diner prose now support the mushroom-use ending. |
+
+## Release Verification
+
+Fresh verification after campaign polish and the browser-audio fix:
+
+- `npm test`: 53 files passed, 421 tests passed.
+- `npm run lint`: passed.
+- `npm run build`: passed; Vite transformed 122 modules and produced `dist/`.
+- `npm audit --json`: 0 total vulnerabilities.
+- Browser smoke against `npm run dev -- --host 127.0.0.1`: observed menu, new game, first room, first combat start and resolution, journal, minimap, Dusty's shop open/exit, Wastes region transition, and Cellar Shade boss ASCII. App console warnings/errors: none.
+- Ending paths remain covered by scenario tests for Hero, Usurper, Wanderer, and Enlightened, including the Wanderer virtual exit and Enlightened mushroom/diner path.
 
 ## Deferred Post-1.0
 

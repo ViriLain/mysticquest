@@ -5,7 +5,7 @@ import { captureVisualSnapshot, didVisualSnapshotChange, shouldRunReducerTick } 
 import { rgbaToCSS } from '../engine/constants';
 import { anySlotHasData } from '../engine/save';
 import {
-  initAudio, startAmbient, setRegionAmbient, sfxTypewriter, sfxSubmit, sfxPickup, sfxEquip,
+  initAudio, setRegionAmbient, sfxTypewriter, sfxSubmit, sfxPickup, sfxEquip,
   sfxError, sfxPlayerHit, sfxEnemyHit, sfxCritical, sfxDeath, sfxVictory,
   sfxLevelUp, sfxSave, sfxMenuMove, sfxMenuSelect, sfxBossAppear,
   sfxFleeSuccess, sfxFleeFail, sfxAchievement,
@@ -198,14 +198,22 @@ export default function Game() {
     }
   });
 
-  // Keep input focused + init audio on first interaction
+  // Keep input focused, but only unlock audio from a real user gesture.
   const audioInitRef = useRef(false);
   const focusInput = useCallback(() => {
     inputRef.current?.focus();
+  }, []);
+
+  const initAudioFromGesture = useCallback(() => {
+    inputRef.current?.focus();
     if (!audioInitRef.current) {
       audioInitRef.current = true;
-      initAudio();
-      startAmbient();
+      const s = storeRef.current;
+      const targetRegion = s.currentRegion || (s.state === 'menu' || s.state === 'boot' ? 'menu' : null);
+      const gestureSettings = loadSettings();
+      void initAudio().then(() => {
+        setRegionAmbient(gestureSettings.ambientEnabled ? targetRegion : null);
+      });
     }
   }, []);
 
@@ -237,6 +245,8 @@ export default function Game() {
 
   // Key handler
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    initAudioFromGesture();
+
     if (e.key === 'Tab') {
       e.preventDefault();
       const s = storeRef.current;
@@ -258,7 +268,7 @@ export default function Game() {
       storeRef.current = gameReducer(s, { type: 'TEXT_INPUT', text: e.key });
       forceRender();
     }
-  }, [forceRender]);
+  }, [forceRender, initAudioFromGesture]);
 
   // Settings-aware rendering. `colorCSS` is wrapped in useCallback so its
   // identity is stable across renders that share the same colorMode — that
@@ -288,7 +298,7 @@ export default function Game() {
   const hasSave = store.state === 'menu' ? anySlotHasData() : true;
 
   return (
-    <div className="crt-container" onClick={focusInput}>
+    <div className="crt-container" onClick={initAudioFromGesture}>
       {/* Tint overlay */}
       {store.effects.tint.a > 0 && (
         <div

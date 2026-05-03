@@ -8,9 +8,14 @@ function getCtx(): AudioContext {
 }
 
 // Ensure audio context is resumed (browsers require user gesture)
-export function initAudio(): void {
-  const c = getCtx();
-  if (c.state === 'suspended') c.resume();
+export function initAudio(): Promise<void> {
+  try {
+    const c = getCtx();
+    if (c.state === 'suspended') return c.resume().then(() => undefined);
+  } catch {
+    // Silently fail if audio is unavailable
+  }
+  return Promise.resolve();
 }
 
 function playTone(
@@ -21,7 +26,8 @@ function playTone(
   freqEnd?: number,
 ): void {
   try {
-    const c = getCtx();
+    const c = ctx;
+    if (!c) return;
     if (c.state === 'suspended') return;
 
     const osc = c.createOscillator();
@@ -44,7 +50,8 @@ function playTone(
 
 function playNoise(duration: number, volume = 0.04): void {
   try {
-    const c = getCtx();
+    const c = ctx;
+    if (!c) return;
     if (c.state === 'suspended') return;
 
     const bufferSize = Math.floor(c.sampleRate * duration);
@@ -188,9 +195,10 @@ const REGION_SOUNDS: Record<string, RegionSound> = {
 };
 
 function stopCurrentAmbient(): void {
+  if (!ctx) return;
   for (const gain of ambientGains) {
     try {
-      gain.gain.exponentialRampToValueAtTime(0.001, getCtx().currentTime + 0.8);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
     } catch { /* ignore */ }
   }
   // Schedule cleanup
@@ -211,16 +219,20 @@ function stopCurrentAmbient(): void {
 
 export function setRegionAmbient(region: string | null): void {
   if (region === currentAmbientRegion) return;
-  currentAmbientRegion = region;
+
+  if (!ctx || ctx.state === 'suspended') {
+    if (!region) currentAmbientRegion = null;
+    return;
+  }
 
   stopCurrentAmbient();
+  currentAmbientRegion = region;
 
   if (!region) return;
   const config = REGION_SOUNDS[region] || REGION_SOUNDS['menu'];
 
   try {
-    const c = getCtx();
-    if (c.state === 'suspended') return;
+    const c = ctx;
 
     const newNodes: OscillatorNode[] = [];
     const newGains: GainNode[] = [];
