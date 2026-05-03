@@ -43,9 +43,17 @@ function checkTrigger(
     const pct = (visitedCount(player) / nonHiddenRoomCount(world)) * 100;
     if (pct < (ending.rooms_percent ?? 100)) return false;
     if (ending.trigger_exit_target && ending.trigger_room) {
-      addDynamicExit(world, ending.trigger_room, ending.trigger_exit_dir || 'down', ending.trigger_exit_target);
+      const exitDirection = ending.trigger_exit_dir || 'down';
+      if (player.currentRoom === ending.trigger_room) {
+        addDynamicExit(world, ending.trigger_room, exitDirection, ending.trigger_exit_target);
+      }
+      return (
+        player.currentRoom === ending.trigger_room &&
+        context.exitTarget === ending.trigger_exit_target &&
+        context.exitDirection === exitDirection
+      );
     }
-    return player.currentRoom === (ending.trigger_exit_target || ending.trigger_room);
+    return player.currentRoom === ending.trigger_room;
   }
 
   if (t === 'multi_item_use') {
