@@ -25,8 +25,8 @@
     "terminal_effect": "red_corruption",
     "text": [
       "You place the crown upon your head.",
-      "The darkness flows through you.",
-      "You are the new king now.",
+      "The darkness does not attack. It recognizes you.",
+      "The throne accepts its new host.",
       "",
       "LAST MODIFIED: TODAY",
       "",
@@ -44,7 +44,7 @@
     "terminal_effect": "warm_amber",
     "text": [
       "You follow the passage marked on the ancient map.",
-      "It leads somewhere the corruption never reached.",
+      "It leads beneath the ruins, past the edge of the drawn world, to a place the corruption never reached.",
       "",
       "RUNNING EXIT_GAME.BAT...",
       "",
@@ -58,9 +58,9 @@
     "title": "The Enlightened",
     "terminal_effect": "psychedelic",
     "text": [
-      "The colors explode.",
-      "Everything is beautiful.",
-      "The corruption was never real.",
+      "The mushrooms hit the griddle. The colors explode.",
+      "The diner, the crown, the monsters, the code: all of it folds into crayon-bright certainty.",
+      "The corruption was never the whole truth.",
       "This was always just a kid's game.",
       "",
       "// best game ever made - jake",

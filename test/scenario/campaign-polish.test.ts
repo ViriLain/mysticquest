@@ -70,4 +70,24 @@ describe('campaign polish', () => {
     expect(s.state).toBe('dialogue');
     expectLine(s, 'The crown pulses with dark energy.');
   });
+
+  it('Whiskers gives a useful diner mushroom hint', () => {
+    let s = newGame();
+    s.player!.currentRoom = 'hidden_shroomy_forest';
+
+    s = input(s, 'ask whiskers about diner');
+
+    expectLine(s, 'diner');
+    expectLine(s, 'mushrooms');
+  });
+
+  it('the diner suggests using the mushrooms there', () => {
+    let s = newGame();
+    s.player!.currentRoom = 'hidden_diner';
+
+    s = input(s, 'look');
+
+    expectLine(s, 'use');
+    expectLine(s, 'mushrooms');
+  });
 });

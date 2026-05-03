@@ -78,23 +78,23 @@
 
 | Room | Rating | Current Role | Issue | Planned Action |
 | --- | --- | --- | --- | --- |
-| hidden_shroomy_forest | Strong | Whiskers, first mushrooms, secret-realm arrival. | Fun tone works, but can better hint that mushrooms matter. | Add Whiskers/diner ask topics and keep mushroom collection readable. |
-| hidden_diner | Serviceable | Enlightened ending and remaining mushrooms. | Great concept, but Carl is mentioned without being interactive and ending trigger is easy to miss. | Add clearer room prose that using mushrooms here is plausible; maybe hint through Whiskers. |
-| hidden_imagination_box | Strong | Secret weapon and kid-game reveal flavor. | Strong concept; no action needed unless set-piece pass wants more meta flavor. | Keep mostly intact; clean "Its" typo if touching file. |
-| hidden_hobbit_hole | Serviceable | Milo bonus boss. | Milo is introduced in prose but not through an NPC; bonus-boss status could be clearer. | Add buildup/aftermath and clarify that Milo is optional chaos. |
+| hidden_shroomy_forest | Strong | Whiskers, first mushrooms, secret-realm arrival. | Fun tone works, but can better hint that mushrooms matter. | Completed: mushroom importance reinforced and Whiskers diner/game topics added. |
+| hidden_diner | Serviceable | Enlightened ending and remaining mushrooms. | Great concept, but Carl is mentioned without being interactive and ending trigger is easy to miss. | Completed: diner prose now directly suggests using all four mushrooms there. |
+| hidden_imagination_box | Strong | Secret weapon and kid-game reveal flavor. | Strong concept; no action needed unless set-piece pass wants more meta flavor. | Completed: typo cleanup while preserving cardboard-box meta tone. |
+| hidden_hobbit_hole | Serviceable | Milo bonus boss. | Milo is introduced in prose but not through an NPC; bonus-boss status could be clearer. | Completed: Milo now reads as optional bonus-area drama with cleared aftermath. |
 
 ## Set Pieces
 
 | Moment | Rating | Issue | Planned Action |
 | --- | --- | --- | --- |
 | Title/new game opening | Serviceable | Not audited visually in this pass yet. | Browser-smoke the opening and only change if it feels flat after region polish. |
-| Manor boss and transition to Wilds | Serviceable | Cellar Shade has buildup but aftermath is rough. | Polish `manor_wine_cellar`, `manor_dungeon`, and `manor_yard` as one progression beat. |
-| Wren and Ancient Map reveal | Strong | Wren grants map at level 3, but map also appears elsewhere, making the reveal less unique. | Keep both acquisition paths unless balance audit says otherwise; strengthen Wren's explanation of what the map means. |
-| Darkness corruption reveal | Strong | Oblivion Gate is the clearest digital reveal. | Preserve and reinforce with smaller static/code hints earlier in Darkness. |
-| Last Keeper scene | Strong | Strong exposition; ward reward is mechanically invisible. | Clarify ward effect in dialogue and audit whether combat messaging should mention it. |
-| Evil King confrontation | Serviceable | Final room is strong but the choice/boss fork can feel mechanical. | Polish stronghold prose and ending text; keep triggers unchanged. |
-| Wanderer exit | Serviceable | Concept is strong; virtual exit needed direct coverage and a route fix. | Covered by Task 1; add Wastes ruins/map hint after content polish. |
-| Enlightened diner reveal | Serviceable | Strong ending concept, but diner interaction is under-signaled. | Add Whiskers/diner hints and a clearer diner description. |
+| Manor boss and transition to Wilds | Serviceable | Cellar Shade has buildup but aftermath is rough. | Completed: `manor_wine_cellar`, `manor_dungeon`, and `manor_yard` now read as one progression beat. |
+| Wren and Ancient Map reveal | Strong | Wren grants map at level 3, but map also appears elsewhere, making the reveal less unique. | Completed: Wren's map/hidden-path guidance strengthened while keeping both acquisition paths. |
+| Darkness corruption reveal | Strong | Oblivion Gate is the clearest digital reveal. | Completed: earlier Darkness rooms now include static/code hints before the Oblivion Gate reveal. |
+| Last Keeper scene | Strong | Strong exposition; ward reward is mechanically invisible. | Completed: ward effect and crown consequence are clearer in Keeper dialogue. |
+| Evil King confrontation | Serviceable | Final room is strong but the choice/boss fork can feel mechanical. | Completed: stronghold prose and Usurper text now reinforce the host-cycle decision. |
+| Wanderer exit | Serviceable | Concept is strong; virtual exit needed direct coverage and a route fix. | Completed: route covered in Task 1 and Wastes ruins/map hint added in Task 4. |
+| Enlightened diner reveal | Serviceable | Strong ending concept, but diner interaction is under-signaled. | Completed: Whiskers and diner prose now support the mushroom-use ending. |
 
 ## Deferred Post-1.0
 

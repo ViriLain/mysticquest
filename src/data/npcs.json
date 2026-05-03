@@ -413,7 +413,11 @@
       "ancient_map": "Sir Whiskers III says, \"Maps are adorable. Humans need paper to find doors. Cats simply know.\"",
       "badger_on_stick": "Sir Whiskers III says, \"An elegant weapon for a less civilized age. Also, do not feed it after midnight.\"",
       "falcon_punch": "Sir Whiskers III says, \"That is not a weapon. That is a lifestyle choice shouted at maximum volume.\"",
-      "magic_weapons": "Sir Whiskers III says, \"If it glows purple, hoard it. If it whispers, pretend you cannot hear it. Standard cat rules.\""
+      "magic_weapons": "Sir Whiskers III says, \"If it glows purple, hoard it. If it whispers, pretend you cannot hear it. Standard cat rules.\"",
+      "diner": "Sir Whiskers III says, \"The diner is east. Take all four colored mushrooms there and use them. Carl calls it cuisine. I call it narrative inevitability.\"",
+      "milo": "Sir Whiskers III says, \"Milo is optional, dramatic, and convinced he is the real final boss. Humor him if you want the loudest weapon.\"",
+      "kid": "Sir Whiskers III says, \"A kid made this world, or imagined it, or clicked it together after homework. Details blur when mushrooms are involved.\"",
+      "game": "Sir Whiskers III says, \"Of course this is a game. The question is whether being a game makes it less real or merely better organized.\""
     },
     "dialogue": {
       "start": {
