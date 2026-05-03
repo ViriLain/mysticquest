@@ -116,6 +116,17 @@ describe('action handlers', () => {
     expect(store.world?.rooms.manor_entry._ground_weapons).toEqual(['rusty_dagger']);
   });
 
+  it('drop rejects key items without claiming they are missing', () => {
+    const store = makeStoryStore();
+    store.player!.keyItems.rusty_key = true;
+
+    handleDrop(store, 'rusty key', itemData, weaponData, () => {});
+
+    expect(store.player!.keyItems.rusty_key).toBe(true);
+    expect(store.world?.rooms.manor_entry._ground_loot).toBeUndefined();
+    expect(store.typewriterQueue.map(line => line.text)).toContain("You can't drop that.");
+  });
+
   it('examine describes an enemy in the current room', () => {
     const store = makeStoryStore();
 

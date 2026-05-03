@@ -19,6 +19,12 @@ export function handleDrop(
   const room = getRoom(store.world, store.player.currentRoom);
   if (!room) return;
 
+  const keyItemMatches = findAllMatches(target, Object.keys(store.player.keyItems), itemData);
+  if (keyItemMatches.length > 0) {
+    addLine(store, "You can't drop that.", C.ERROR_COLOR);
+    return;
+  }
+
   const ownedItemIds = Object.keys(store.player.inventory);
   const itemMatches = findAllMatches(target, ownedItemIds, itemData);
   if (itemMatches.length > 1) {
