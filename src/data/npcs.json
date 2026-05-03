@@ -198,7 +198,10 @@
       "ancient_map": "The hermit runs one finger over the map without touching it. \"Old roads remember old sins. It may guide you where memory failed.\"",
       "excalibur": "The hermit says, \"A blade of light has no patience for corruption. But even a legend needs a steady hand.\"",
       "keeper_ward": "The hermit says, \"A ward is a promise made solid. If the Keeper grants one, carry it like a second heartbeat.\"",
-      "magic_weapons": "The hermit says, \"Magic in steel is memory with an edge. Ask what the weapon remembers before you swing it.\""
+      "magic_weapons": "The hermit says, \"Magic in steel is memory with an edge. Ask what the weapon remembers before you swing it.\"",
+      "ruins_guardian": "The hermit says, \"The Guardian was made to endure, not to bend. Look for the cracks. Every old protector has them.\"",
+      "wanderer_exit": "The hermit says, \"Some roads do not appear until the traveler has seen enough of the world to deserve leaving it.\"",
+      "buried_sanctum": "The hermit says, \"The mine did not end in stone. It broke into memory. If you find stairs beneath the temple, follow them with respect.\""
     },
     "dialogue": {
       "start": {
@@ -311,7 +314,9 @@
       "keyblade": "The Last Keeper says, \"A key-shaped blade is a strange mercy. Some locks are doors, and some locks are hearts.\"",
       "anduril": "The Last Keeper says, \"A reforged flame is a promise that ruin need not be final.\"",
       "ragnarok": "The Last Keeper says, \"A weapon named for endings should be drawn only when you accept what ending means.\"",
-      "magic_weapons": "The Last Keeper says, \"Enchanted weapons are arguments made permanent. Choose the argument you are willing to become.\""
+      "magic_weapons": "The Last Keeper says, \"Enchanted weapons are arguments made permanent. Choose the argument you are willing to become.\"",
+      "evil_king": "The Last Keeper says, \"The one on the throne is not the first host. The crown made a king into hunger once, and it will do so again if worn.\"",
+      "oblivion_guardian": "The Last Keeper says, \"The guardian at the gate is made of what the corruption deleted and could not forget.\""
     },
     "dialogue": {
       "start": {
@@ -380,7 +385,7 @@
       "blessing": {
         "text": [
           "You have come here seeking answers. I will give you what I can.",
-          "Take this ward. It will shield you from harm.",
+          "Take this ward. It will blunt the corruption's harm, though it cannot choose for you.",
           "Remember what happened here. Do not let the crown win."
         ],
         "choices": [

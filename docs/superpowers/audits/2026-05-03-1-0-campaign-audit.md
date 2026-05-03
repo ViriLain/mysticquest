@@ -52,27 +52,27 @@
 
 | Room | Rating | Current Role | Issue | Planned Action |
 | --- | --- | --- | --- | --- |
-| wastes_path | Serviceable | Region arrival. | Good mood, but as first Wastes room it could more clearly mark a new act. | Add arrival prose that contrasts the open wastes with the forest/manor. |
-| wastes_village | Strong | Hermit, shop, lore, enemy, supplies. | Strong role but crowded: NPC, enemy, item, search reward. | Clarify that the Hermit remains calm despite the wraith and make village lore easier to notice. |
-| wastes_desert | Strong | Sand Golem and Excalibur search. | Strong image; Excalibur is hidden with little setup. | Add search/description hint for buried light or impossible gleam. |
-| wastes_wastelands | Serviceable | Wraith fight, Vorpal Sword, approach to ruins. | Good "dead land" tone but needs stronger pull toward ruins. | Emphasize ruins as destination and danger; keep Vorpal Sword hidden but hinted. |
-| wastes_ruins | Strong | Ruins Guardian, Ancient Map, Wanderer exit. | Campaign-critical; currently says "end of a journey" but not enough about secret escape. | Add non-spoiler hints that the map aligns with a lower/hidden route after enough exploration. |
-| wastes_abandoned_mine | Strong | Mine route to Keeper. | Strong prose and good transition into deeper lore. | Keep mostly intact; add cleared description after cave crawler if needed. |
-| wastes_collapsed_temple | Strong | Crown-origin foreshadowing and sentinel. | Strong lore; can better point to sanctum below. | Add post-sentinel or base prose that makes descending feel intentional. |
-| wastes_buried_sanctum | Strong | Last Keeper and Keeper's Ward. | Strong lore room; needs clearer player-facing reward wording because ward is a flag, not inventory. | Ensure Keeper dialogue clearly explains protection and crown choice consequence. |
+| wastes_path | Serviceable | Region arrival. | Good mood, but as first Wastes room it could more clearly mark a new act. | Completed: arrival prose now contrasts the wastes with the green world behind. |
+| wastes_village | Strong | Hermit, shop, lore, enemy, supplies. | Strong role but crowded: NPC, enemy, item, search reward. | Completed: village prose now frames Hermit calm against the wraith and dry well. |
+| wastes_desert | Strong | Sand Golem and Excalibur search. | Strong image; Excalibur is hidden with little setup. | Completed: buried gleam hint added for hidden Excalibur. |
+| wastes_wastelands | Serviceable | Wraith fight, Vorpal Sword, approach to ruins. | Good "dead land" tone but needs stronger pull toward ruins. | Completed: ruins now read as destination and warning. |
+| wastes_ruins | Strong | Ruins Guardian, Ancient Map, Wanderer exit. | Campaign-critical; currently says "end of a journey" but not enough about secret escape. | Completed: prose now hints the map/floor relationship and lower hidden direction. |
+| wastes_abandoned_mine | Strong | Mine route to Keeper. | Strong prose and good transition into deeper lore. | Completed: mine prose tightened and crawler-cleared description added. |
+| wastes_collapsed_temple | Strong | Crown-origin foreshadowing and sentinel. | Strong lore; can better point to sanctum below. | Completed: stairs below and post-sentinel crown warning reinforced. |
+| wastes_buried_sanctum | Strong | Last Keeper and Keeper's Ward. | Strong lore room; needs clearer player-facing reward wording because ward is a flag, not inventory. | Completed: sanctum prose and Keeper blessing now clarify ward and crown consequence. |
 
 ## Darkness
 
 | Room | Rating | Current Role | Issue | Planned Action |
 | --- | --- | --- | --- | --- |
-| darkness_abyss | Strong | Region arrival and nightmare tone. | Strong mood; could more directly connect to digital corruption. | Add a subtle code/static detail to make the realm's nature clearer. |
-| darkness_shadowlands | Strong | Navigation/combat. | Strong image; no cleared aftermath. | Add cleared description after wraith defeat if content pass adds enough value. |
+| darkness_abyss | Strong | Region arrival and nightmare tone. | Strong mood; could more directly connect to digital corruption. | Completed: corrupted-pixel detail added to the abyss arrival. |
+| darkness_shadowlands | Strong | Navigation/combat. | Strong image; no cleared aftermath. | Completed: broken-frame detail and wraith-cleared aftermath added. |
 | darkness_graveyard | Strong | Combat, Dainsleif, potion search. | Strong scene and weapon placement. | Keep mostly intact; add payoff if ending/balance changes need it. |
 | darkness_evil_fort | Strong | Shadow Knight and shield. | Strong architecture but "Evil Fort" name is plain compared to prose. | Consider room-name/prose polish only if tests and content references stay stable. |
-| darkness_shadow_gate | Serviceable | Shadow Knight, Anduril, Berserker Tooth. | Strong rewards, but danger/reward relationship is under-signaled. | Add prose/search flavor that makes the gate feel like guarding forbidden gear. |
-| darkness_oblivion_gate | Strong | Oblivion Guardian and Dark Crown. | Excellent digital reveal; needs stronger crown pickup aftermath. | Polish guardian aftermath and crown search/pickup text if existing systems support it. |
-| darkness_evil_dimension | Serviceable | Pre-throne resource room. | Good pressure, but no enemy/NPC means it can read as a loot closet before final boss. | Strengthen pre-throne dread and resource-choice feeling. |
-| darkness_stronghold | Strong | Evil King and Usurper choice. | Strong premise; crown choice prompt needs more emotional weight. | Add room/ending text that makes "attack" versus "use crown" feel like a real decision. |
+| darkness_shadow_gate | Serviceable | Shadow Knight, Anduril, Berserker Tooth. | Strong rewards, but danger/reward relationship is under-signaled. | Completed: gate now frames hidden rewards as dangerous to notice. |
+| darkness_oblivion_gate | Strong | Oblivion Guardian and Dark Crown. | Excellent digital reveal; needs stronger crown pickup aftermath. | Completed: guardian-cleared description now isolates the crown as the remaining solid object. |
+| darkness_evil_dimension | Serviceable | Pre-throne resource room. | Good pressure, but no enemy/NPC means it can read as a loot closet before final boss. | Completed: resource room now reads as a last chance before the King. |
+| darkness_stronghold | Strong | Evil King and Usurper choice. | Strong premise; crown choice prompt needs more emotional weight. | Completed: stronghold prose now reacts to carrying the crown and reinforces host-cycle dread. |
 
 ## Hidden
 
