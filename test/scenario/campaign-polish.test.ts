@@ -3,6 +3,28 @@ import { expectLine } from '../fixtures/assert-output';
 import { input, newGame } from '../fixtures/mock-input';
 
 describe('campaign polish', () => {
+  it('the cellar door is visibly locked until the rusty key is found', () => {
+    let s = newGame();
+    s.player!.currentRoom = 'manor_north_wing';
+
+    s = input(s, 'go down');
+
+    expect(s.player!.currentRoom).toBe('manor_north_wing');
+    expectLine(s, 'cellar door is locked');
+    expectLine(s, 'Rusty Key');
+  });
+
+  it('the rusty key visibly unlocks the cellar door', () => {
+    let s = newGame();
+    s.player!.currentRoom = 'manor_north_wing';
+    s.player!.keyItems.rusty_key = true;
+
+    s = input(s, 'go down');
+
+    expect(s.player!.currentRoom).toBe('manor_wine_cellar');
+    expectLine(s, 'Rusty Key turns');
+  });
+
   it('Dusty gives readable cellar preparation guidance', () => {
     let s = newGame();
     s.player!.currentRoom = 'manor_main_hall';

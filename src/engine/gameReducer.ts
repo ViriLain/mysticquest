@@ -133,6 +133,7 @@ function enterRoom(store: ReadyStore, roomId: string): boolean {
       startCombat(store, bossId);
       return true;
     }
+    if (result.message) addLine(store, result.message, C.HELP_COLOR);
   }
 
   store.player.currentRoom = roomId;

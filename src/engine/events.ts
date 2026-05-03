@@ -35,7 +35,13 @@ export function fireEvent(
   }
   if (eventType === 'require') {
     if (!hasKeyItem(player, param) && !hasItem(player, param)) {
+      if (param === 'rusty_key') {
+        return { success: false, message: 'The cellar door is locked. You need the Rusty Key.' };
+      }
       return { success: false, message: 'You need something to get through here...' };
+    }
+    if (param === 'rusty_key') {
+      return { success: true, message: 'The Rusty Key turns in the cellar door. The lock gives way.' };
     }
     return { success: true };
   }

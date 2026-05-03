@@ -93,7 +93,7 @@
       "id": "manor_north_wing",
       "name": "North Wing",
       "region": "manor",
-      "description": "The north wing holds the bedrooms. Most doors are locked, but cold air seeps through the keyholes. The beds are made too perfectly for a house this abandoned. At the end of the hall, stairs descend into the cellar dark.",
+      "description": "The north wing holds the bedrooms. Most doors are locked, but cold air seeps through the keyholes. The beds are made too perfectly for a house this abandoned. At the end of the hall, a rusted cellar door blocks the stairs descending into the dark.",
       "exits": {"south": "manor_main_hall", "down": "manor_wine_cellar", "west": "manor_library"},
       "items": [],
       "enemies": [],
