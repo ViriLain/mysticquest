@@ -21,7 +21,7 @@ describe('displayRoom', () => {
       '----------------------------------------',
       'Entry',
       '',
-      'You are inside the entry room of an old manor. It is reasonably large, with old chairs and a coat rack on the west wall. The walls are upholstered, and an ornate chandelier hangs from the ceiling. A window to the south is the room\'s only source of light.',
+      'You stand in the entry room of the old manor. Dusty chairs face a cold fireplace, a coat rack leans against the west wall, and an ornate chandelier hangs overhead like it has been waiting for company. A pale window to the south is the room\'s only light.',
       '',
       '[!] A Shadow Rat lurks here.',
       '[*] You see a Small Potion here.',

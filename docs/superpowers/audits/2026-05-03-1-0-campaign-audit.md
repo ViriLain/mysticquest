@@ -21,32 +21,32 @@
 
 | Room | Rating | Current Role | Issue | Planned Action |
 | --- | --- | --- | --- | --- |
-| manor_entry | Serviceable | Opening fight, first pickup, first weapon. | Good onboarding content, but cleared text has typos and a jokey smear line that weakens tone. | Clean opening/cleared prose while keeping first-room clarity and quick reward scan. |
-| manor_entrance_hall | Serviceable | Early navigation and first lighting effect. | Atmospheric, but only functions as a pass-through. | Add stronger fork-room language that points toward danger upstairs/cellar without overexplaining. |
-| manor_west_entertaining | Strong | Combat/search reward with piano/portraits. | Good visual identity; lacks aftermath after rat is gone. | Add `description_cleared` that makes the piano/portraits feel less hostile and rewards clearing the room. |
-| manor_east_entertaining | Serviceable | Ghost fight and search reward. | Dining-table setup is clear but generic. | Add more "abandoned mid-dinner" detail and a cleared description after the ghost is defeated. |
-| manor_main_hall | Strong | Merchant hub and manor center. | Dusty carries this room; room prose is a little rough. | Polish prose and add Dusty ask topics for `cellar_shade`, `rusty_key`, and `manor`. |
-| manor_west_wing | Flat | Combat corridor. | No search/reward and no distinct purpose beyond a rat. | Add a stronger purpose in prose and a cleared description that makes the wallpaper movement stop. |
-| manor_east_wing | Strong | Ghost, shield, tonic, mirror flavor. | Strong image; typo cleanup needed. | Polish grammar and add cleared description after ghost defeat. |
-| manor_north_wing | Serviceable | Bedroom hallway and route downward. | Useful route, but prose does not hint why it matters. | Add subtler cellar/dungeon foreshadowing through cold air, keyholes, or sound below. |
-| manor_library | Serviceable | Lore/search and route to dome. | Good spatial concept, but search reward is minor and lore symbols are underused. | Add clearer digital-symbol hint and a mild prompt toward the dome. |
-| manor_library_dome | Strong | Ancient Map search and early mystery. | Cleared text works but could make the map feel more important. | Tighten prose and ensure the map reveal hints hidden routes without spoiling Wanderer. |
-| manor_wine_cellar | Strong | Cellar Shade boss and first gate. | Good buildup, but cleared text overuses exclamation and loses mood. | Polish boss buildup/aftermath; make victory feel like the manor loosens its grip. |
-| manor_dungeon | Serviceable | Post-boss reward room. | Strong setup but no payoff after Cellar Shade beyond loot. | Add prose tying the dungeon to the Shade and make Iron Sword pickup feel like a meaningful upgrade. |
-| manor_yard | Serviceable | Transition to Wilds/Wastes. | Functional crossroads, but does not sell leaving the starter region. | Strengthen act-transition language and hint that the world opens beyond the manor. |
+| manor_entry | Serviceable | Opening fight, first pickup, first weapon. | Good onboarding content, but cleared text has typos and a jokey smear line that weakens tone. | Completed: opening/cleared prose cleaned while preserving first-room clarity and reward scan. |
+| manor_entrance_hall | Serviceable | Early navigation and first lighting effect. | Atmospheric, but only functions as a pass-through. | Completed: fork-room language now points toward the hall, wings, and cellar pressure. |
+| manor_west_entertaining | Strong | Combat/search reward with piano/portraits. | Good visual identity; lacks aftermath after rat is gone. | Completed: added `description_cleared` that makes the piano/portraits less hostile. |
+| manor_east_entertaining | Serviceable | Ghost fight and search reward. | Dining-table setup is clear but generic. | Completed: strengthened abandoned-dinner setup and added ghost-cleared aftermath. |
+| manor_main_hall | Strong | Merchant hub and manor center. | Dusty carries this room; room prose is a little rough. | Completed: prose polished and Dusty ask topics added for `cellar_shade`, `rusty_key`, and `manor`. |
+| manor_west_wing | Flat | Combat corridor. | No search/reward and no distinct purpose beyond a rat. | Completed: stronger corridor prose and cleared description added. |
+| manor_east_wing | Strong | Ghost, shield, tonic, mirror flavor. | Strong image; typo cleanup needed. | Completed: grammar polished and ghost-cleared mirror aftermath added. |
+| manor_north_wing | Serviceable | Bedroom hallway and route downward. | Useful route, but prose does not hint why it matters. | Completed: cellar foreshadowing added through keyholes and descending cold. |
+| manor_library | Serviceable | Lore/search and route to dome. | Good spatial concept, but search reward is minor and lore symbols are underused. | Completed: symbols now imply broken instructions and point toward the dome. |
+| manor_library_dome | Strong | Ancient Map search and early mystery. | Cleared text works but could make the map feel more important. | Completed: map aftermath now hints hidden routes without spoiling Wanderer. |
+| manor_wine_cellar | Strong | Cellar Shade boss and first gate. | Good buildup, but cleared text overuses exclamation and loses mood. | Completed: boss buildup/aftermath polished with calmer victory tone. |
+| manor_dungeon | Serviceable | Post-boss reward room. | Strong setup but no payoff after Cellar Shade beyond loot. | Completed: dungeon prose now ties scratch marks and shadow origin together. |
+| manor_yard | Serviceable | Transition to Wilds/Wastes. | Functional crossroads, but does not sell leaving the starter region. | Completed: act-transition language now opens the wider broken world. |
 
 ## Wilds
 
 | Room | Rating | Current Role | Issue | Planned Action |
 | --- | --- | --- | --- | --- |
-| wilds_forest_entrance | Serviceable | Region arrival and first Wilds enemy. | Nice arrival, but "leaves and stuff" reads less intentional than charming. | Polish prose while preserving bright contrast from Manor. |
-| wilds_northern_forest | Strong | Combat, steel sword, old-tree identity. | Strong scene; could use cleared aftermath. | Add cleared description after spider defeat and keep mushroom imagery as Hidden foreshadowing. |
-| wilds_central_forest | Serviceable | Hub, chainmail, wolf. | Useful hub, but typo and weak region purpose. | Polish description and consider cleared text after wolf defeat. |
-| wilds_clearing | Strong | Wren, shop, spear, hidden path. | Core region room; hidden path clue is mostly in Wren dialogue, not room presentation. | Add room hint that the stone circle/mushrooms respond to searching; keep it non-spoilery. |
-| wilds_southern_forest | Strong | Spider threat and Hrunting. | Good tonal shift; could reward clearing. | Add cleared text showing the watching eyes retreat after spider defeat. |
-| wilds_stream | Serviceable | Recovery, search weapon, calmer space. | Pleasant but under-signals Gungnir as a secret reward. | Add a glint/current hint in prose or search result support. |
-| wilds_mountains | Serviceable | Climb, route to Darkness/Wastes, Tyrfing search. | Good vista but grammar issues; Troll buildup could be stronger before peak. | Polish climb language and hint that the peak is an ordeal. |
-| wilds_mountain_peak | Serviceable | Mountain Troll boss. | Climax exists, but text is too jokey after victory for 1.0 tone. | Strengthen boss buildup and aftermath; make the world vista feel like progression. |
+| wilds_forest_entrance | Serviceable | Region arrival and first Wilds enemy. | Nice arrival, but "leaves and stuff" reads less intentional than charming. | Completed: arrival prose polished while preserving bright contrast from Manor. |
+| wilds_northern_forest | Strong | Combat, steel sword, old-tree identity. | Strong scene; could use cleared aftermath. | Completed: cleared description added and mushrooms kept as Hidden foreshadowing. |
+| wilds_central_forest | Serviceable | Hub, chainmail, wolf. | Useful hub, but typo and weak region purpose. | Completed: description polished and cleared text added to make hub routes readable. |
+| wilds_clearing | Strong | Wren, shop, spear, hidden path. | Core region room; hidden path clue is mostly in Wren dialogue, not room presentation. | Completed: stone circle/mushroom clue added to room and Wren dialogue. |
+| wilds_southern_forest | Strong | Spider threat and Hrunting. | Good tonal shift; could reward clearing. | Completed: darker prose and cleared text showing the watching eyes retreat. |
+| wilds_stream | Serviceable | Recovery, search weapon, calmer space. | Pleasant but under-signals Gungnir as a secret reward. | Completed: stream prose now includes a glint beneath the current. |
+| wilds_mountains | Serviceable | Climb, route to Darkness/Wastes, Tyrfing search. | Good vista but grammar issues; Troll buildup could be stronger before peak. | Completed: climb language polished and peak pressure sharpened. |
+| wilds_mountain_peak | Serviceable | Mountain Troll boss. | Climax exists, but text is too jokey after victory for 1.0 tone. | Completed: boss buildup and aftermath rewritten for stronger progression. |
 
 ## Wastes
 
@@ -105,4 +105,3 @@
 | Large Dungeon Mode expansion | Dungeon Mode is bonus content for this release push. |
 | Runtime schema tooling | Content validation is already strong enough unless new JSON shapes are introduced. |
 | New NPC system for Carl/Milo | Hidden region can be clarified through existing room prose and Whiskers dialogue. |
-

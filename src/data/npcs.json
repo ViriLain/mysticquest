@@ -7,7 +7,10 @@
     "ask_topics": {
       "ancient_map": "Dusty squints at the map. \"That is older than the manor. If it shows you a path, assume the path was hidden for a reason.\"",
       "dark_crown": "Dusty lowers his voice. \"Black iron, whispering metal... no honest merchant wants that on the shelf. Keep it off your head.\"",
-      "magic_weapons": "Dusty says, \"Magic weapons don't sit quiet. If one hums, glows, or makes the air taste like pennies, treat it with respect.\""
+      "magic_weapons": "Dusty says, \"Magic weapons don't sit quiet. If one hums, glows, or makes the air taste like pennies, treat it with respect.\"",
+      "cellar_shade": "Dusty rubs his hands together. \"The Shade is why the manor emptied. Take a real weapon, take potions, and don't let the dark corner you.\"",
+      "rusty_key": "Dusty says, \"Old cellar key, by the look of it. If it turns in a lock below the bedrooms, make sure you're ready before you follow it.\"",
+      "manor": "Dusty glances up at the staircase. \"The manor used to be proud. Now it mostly remembers being afraid.\""
     },
     "dialogue": {
       "start": {
@@ -66,7 +69,7 @@
       "cellar_hint": {
         "text": [
           "The cellar... I wouldn't go down there unprepared.",
-          "There's a SHADE down there. Not like a normal shadow -- this thing is alive.",
+          "There's a Shade down there. Not like a normal shadow -- this thing is alive.",
           "You'll want a decent weapon and some potions before you even think about it."
         ],
         "choices": [
@@ -89,14 +92,16 @@
   "wilds_guide": {
     "name": "Forest Guide",
     "description": "A weathered woman in green leather sits on a mossy stump, whittling a stick. A hawk perches on her shoulder, watching you with sharp eyes.",
-    "match_words": ["guide", "woman", "ranger", "forest guide"],
+    "match_words": ["guide", "wren", "woman", "ranger", "forest guide"],
     "ask_fallback": "Wren narrows her eyes. \"If it matters, the forest will leave tracks. I do not know that one.\"",
     "ask_topics": {
       "ancient_map": "Wren taps the Ancient Map. \"It marks old paths that the forest tries to forget. If a route feels wrong, check the map and trust the hidden trail.\"",
       "mushrooms": "Wren says, \"The mushrooms are not just decoration. Follow them when the normal paths stop making sense.\"",
       "hrunting": "Wren says, \"Hrunting is older than these trees. If you carry it, listen for the hum before a fight; that is the blade waking up.\"",
       "tyrfing": "Wren frowns. \"Tyrfing is powerful, but cursed things always collect their price. Do not let it choose your battles for you.\"",
-      "magic_weapons": "Wren says, \"Magic weapons leave signs: a glow, a hum, a wrongness in the air. They are rare because most people are wise enough to hide them.\""
+      "magic_weapons": "Wren says, \"Magic weapons leave signs: a glow, a hum, a wrongness in the air. They are rare because most people are wise enough to hide them.\"",
+      "mountain_troll": "Wren says, \"The troll owns the peak because everyone else had the sense to leave. Bring steel, fire if you have it, and more healing than pride.\"",
+      "hidden_path": "Wren says, \"In the clearing, watch the mushrooms. The normal path goes around the stones. The strange one goes where roots should be.\""
     },
     "dialogue": {
       "start": {
@@ -136,7 +141,7 @@
       "secrets": {
         "text": [
           "Secrets? This forest is FULL of them.",
-          "There's a clearing to the north with old stones. If you look carefully at the south edge...",
+          "There's a clearing to the north with old stones. The mushrooms around it are not just decoration.",
           "Well. Let's just say not every path is obvious."
         ],
         "choices": [
