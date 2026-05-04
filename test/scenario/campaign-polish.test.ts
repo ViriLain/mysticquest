@@ -38,6 +38,50 @@ describe('campaign polish', () => {
     expectLine(s, 'potions');
   });
 
+  it('Dusty makes starter gear meaningful before shopping', () => {
+    let s = newGame();
+    s.player!.currentRoom = 'manor_main_hall';
+
+    s = input(s, 'talk dusty');
+    s = input(s, '1');
+
+    expectLine(s, 'Leather Vest');
+    expectLine(s, 'Iron Shield');
+    expectLine(s, 'salve');
+  });
+
+  it('Wren frames her supplies around mountain preparation', () => {
+    let s = newGame();
+    s.player!.currentRoom = 'wilds_clearing';
+
+    s = input(s, 'talk wren');
+    s = input(s, '1');
+
+    expect(s.state).toBe('dialogue');
+    expectLine(s, "Ranger's Hide");
+    expectLine(s, 'Antidotes');
+    expectLine(s, 'Mountain Troll');
+
+    s = input(s, '1');
+    expect(s.state).toBe('shop');
+  });
+
+  it('the Hermit frames late-game supplies around ruins and corruption', () => {
+    let s = newGame();
+    s.player!.currentRoom = 'wastes_village';
+
+    s = input(s, 'talk hermit');
+    s = input(s, '1');
+
+    expect(s.state).toBe('dialogue');
+    expectLine(s, 'Panacea');
+    expectLine(s, 'Desert Wrap');
+    expectLine(s, 'Guardian');
+
+    s = input(s, '1');
+    expect(s.state).toBe('shop');
+  });
+
   it('Wren hints the hidden mushroom path without spoiling the ending', () => {
     let s = newGame();
     s.player!.currentRoom = 'wilds_clearing';

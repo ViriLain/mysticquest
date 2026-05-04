@@ -8,9 +8,11 @@
       "ancient_map": "Dusty squints at the map. \"That is older than the manor. If it shows you a path, assume the path was hidden for a reason.\"",
       "dark_crown": "Dusty lowers his voice. \"Black iron, whispering metal... no honest merchant wants that on the shelf. Keep it off your head.\"",
       "magic_weapons": "Dusty says, \"Magic weapons don't sit quiet. If one hums, glows, or makes the air taste like pennies, treat it with respect.\"",
-      "cellar_shade": "Dusty rubs his hands together. \"The Shade is why the manor emptied. Take a real weapon, take potions, and don't let the dark corner you.\"",
+      "cellar_shade": "Dusty rubs his hands together. \"The Shade is why the manor emptied. Take a real weapon, take potions, maybe a Leather Vest, and don't let the dark corner you.\"",
       "rusty_key": "Dusty says, \"Old cellar key, by the look of it. If it turns in a lock below the bedrooms, make sure you're ready before you follow it.\"",
-      "manor": "Dusty glances up at the staircase. \"The manor used to be proud. Now it mostly remembers being afraid.\""
+      "manor": "Dusty glances up at the staircase. \"The manor used to be proud. Now it mostly remembers being afraid.\"",
+      "wares": "Dusty says, \"For the cellar? Leather Vest if you can afford it, Iron Shield if you like keeping ribs, salve for burns, antidote for anything with teeth that drips.\"",
+      "potions": "Dusty pats a crate. \"Small potion when you're nicked. Proper potion when you're scared. If you're going below, buy scared.\""
     },
     "dialogue": {
       "start": {
@@ -28,12 +30,14 @@
       },
       "shop": {
         "text": [
-          "Best potions this side of the wastes. Brewed 'em myself!",
-          "Here, take this one on the house. First customer in ages deserves a freebie."
+          "Best potions this side of the wastes. Brewed 'em myself, mostly without explosions.",
+          "For the cellar door and whatever waits past it, think practical: Leather Vest, Iron Shield, potions, and a salve if the shadows burn.",
+          "Here, take this potion on the house. First customer in ages deserves a fighting chance."
         ],
         "choices": [
           { "label": "Thanks!", "next": "shop_thanks", "effect": { "give_item": "potion" } },
           { "label": "Tell me about the cellar.", "next": "cellar_hint" },
+          { "label": "Let me browse the wares.", "next": null, "effect": { "open_shop": "manor_dusty" } },
           { "label": "Goodbye.", "next": null }
         ]
       },
@@ -100,8 +104,9 @@
       "hrunting": "Wren says, \"Hrunting is older than these trees. If you carry it, listen for the hum before a fight; that is the blade waking up.\"",
       "tyrfing": "Wren frowns. \"Tyrfing is powerful, but cursed things always collect their price. Do not let it choose your battles for you.\"",
       "magic_weapons": "Wren says, \"Magic weapons leave signs: a glow, a hum, a wrongness in the air. They are rare because most people are wise enough to hide them.\"",
-      "mountain_troll": "Wren says, \"The troll owns the peak because everyone else had the sense to leave. Bring steel, fire if you have it, and more healing than pride.\"",
-      "hidden_path": "Wren says, \"In the clearing, watch the mushrooms. The normal path goes around the stones. The strange one goes where roots should be.\""
+      "mountain_troll": "Wren says, \"The troll owns the peak because everyone else had the sense to leave. Bring steel, Ranger's Hide if you can afford it, fire if you have it, and more healing than pride.\"",
+      "hidden_path": "Wren says, \"In the clearing, watch the mushrooms. The normal path goes around the stones. The strange one goes where roots should be.\"",
+      "supplies": "Wren says, \"My supplies are for surviving mistakes: Ranger's Hide for claws, antidotes for spider venom, salves for burns, and a large potion for when the Mountain Troll proves me right.\""
     },
     "dialogue": {
       "start": {
@@ -110,11 +115,24 @@
           "I'm Wren. I know every path in these wilds. Ask your questions."
         ],
         "choices": [
-          { "label": "Show me your supplies", "next": null, "effect": { "open_shop": "wilds_wren" } },
+          { "label": "Show me your supplies", "next": "supplies" },
           { "label": "How do I get to the mountain?", "next": "mountain_path" },
           { "label": "Is there anything hidden in this forest?", "next": "secrets" },
           { "label": "Can you help me?", "next": "help_check" },
           { "label": "Goodbye.", "next": null }
+        ]
+      },
+      "supplies": {
+        "text": [
+          "I don't sell souvenirs. I sell ways to come back alive.",
+          "Ranger's Hide turns claws. Antidotes answer spider venom. Salves help when old magic burns instead of bleeds.",
+          "If you're climbing toward the Mountain Troll, carry a large potion and leave your pride in the clearing."
+        ],
+        "choices": [
+          { "label": "Open your supplies.", "next": null, "effect": { "open_shop": "wilds_wren" } },
+          { "label": "How do I get to the mountain?", "next": "mountain_path" },
+          { "label": "Any hidden paths?", "next": "secrets" },
+          { "label": "Not yet.", "next": null }
         ]
       },
       "mountain_path": {
@@ -201,7 +219,8 @@
       "magic_weapons": "The hermit says, \"Magic in steel is memory with an edge. Ask what the weapon remembers before you swing it.\"",
       "ruins_guardian": "The hermit says, \"The Guardian was made to endure, not to bend. Look for the cracks. Every old protector has them.\"",
       "wanderer_exit": "The hermit says, \"Some roads do not appear until the traveler has seen enough of the world to deserve leaving it.\"",
-      "buried_sanctum": "The hermit says, \"The mine did not end in stone. It broke into memory. If you find stairs beneath the temple, follow them with respect.\""
+      "buried_sanctum": "The hermit says, \"The mine did not end in stone. It broke into memory. If you find stairs beneath the temple, follow them with respect.\"",
+      "trinkets": "The hermit says, \"Panacea for corruption's little lies, Desert Wrap for the long heat, steel for the Guardian's teeth. Trinkets are only small until they save you.\""
     },
     "dialogue": {
       "start": {
@@ -211,12 +230,25 @@
           "I am what remains when all else is forgotten."
         ],
         "choices": [
-          { "label": "Do you have anything to trade?", "next": null, "effect": { "open_shop": "wastes_hermit" } },
+          { "label": "Do you have anything to trade?", "next": "trade" },
           { "label": "Who are you?", "next": "identity" },
           { "label": "What do you know about the ruins?", "next": "ruins_lore" },
           { "label": "I need healing.", "next": "heal" },
           { "label": "Know anything about the mine?", "next": "mine_hint" },
           { "label": "Leave him alone.", "next": null }
+        ]
+      },
+      "trade": {
+        "text": [
+          "Trade? I keep what the wastes failed to swallow.",
+          "Panacea, for poison of blood and thought. Desert Wrap, for heat that tries to peel you open. Steel Shield, for the Guardian's old anger.",
+          "Buy for the road you are actually walking: ruins first, mine below, crown after."
+        ],
+        "choices": [
+          { "label": "Show me the trinkets.", "next": null, "effect": { "open_shop": "wastes_hermit" } },
+          { "label": "I need healing first.", "next": "heal" },
+          { "label": "Tell me about the Guardian.", "next": "ruins_lore" },
+          { "label": "Not now.", "next": null }
         ]
       },
       "identity": {
