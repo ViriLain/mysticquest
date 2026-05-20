@@ -17,7 +17,7 @@ function MainMenuImpl({ selected, hasSave, colorCSS }: MainMenuProps) {
     <div className="menu-overlay">
       <div className="menu-title">
         <span style={{ color: colorCSS(MENU_COLOR) }}>MYSTICQUEST</span>
-        <span style={{ color: 'rgba(128, 204, 128, 0.6)' }}>{' '}v1.0</span>
+        <span style={{ color: 'rgba(128, 204, 128, 0.6)' }}>{' '}v{__APP_VERSION__}</span>
       </div>
       {MENU_OPTIONS.map((option, i) => {
         const isContinue = option === 'CONTINUE';

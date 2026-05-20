@@ -20,7 +20,10 @@ const REGION_COLORS: Record<string, string> = {
   wilds: '#a08040',
   darkness: '#a04040',
   wastes: '#a0a040',
-  hidden: '#ff00ff', // placeholder, will cycle rainbow
+  // `hidden` rooms render via the rainbow-cycle branch in getRegionColor below,
+  // so this hex is never actually drawn. It's a deliberate easter-egg color —
+  // do not "fix" it to a palette entry.
+  hidden: '#ff00ff',
   dungeon: '#8040a0',
 };
 

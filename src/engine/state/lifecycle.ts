@@ -13,7 +13,7 @@ export function startMenu(store: GameStore): void {
   clearTerminal(store);
   store.baseColor = [...C.BASE_COLOR];
   store.menuSelected = 0;
-  store.header = { title: 'MYSTICQUEST v1.0', hp: 0, maxHp: 0, level: 0, gold: 0, weapon: '' };
+  store.header = { title: `MYSTICQUEST v${__APP_VERSION__}`, hp: 0, maxHp: 0, level: 0, gold: 0, weapon: '' };
   clearRegionTint(store.effects);
 }
 

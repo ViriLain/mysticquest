@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import pkg from './package.json' with { type: 'json' }
 
 /**
  * Dev-only middleware: lets the in-game QUIT option stop `npm run dev` from
@@ -28,7 +29,15 @@ function devShutdownPlugin(): Plugin {
   };
 }
 
+// GitHub Pages serves the site under /<repo>/. Override via VITE_BASE for
+// custom domains or other hosts (e.g. VITE_BASE=/ for root-served deploys).
+const base = process.env.VITE_BASE ?? '/mysticquest/';
+
 // https://vite.dev/config/
 export default defineConfig({
+  base,
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   plugins: [react(), devShutdownPlugin()],
 })

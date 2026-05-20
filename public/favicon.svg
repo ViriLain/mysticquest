@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" fill="#000"/>
+  <g fill="#33ff66" font-family="ui-monospace, 'Courier New', monospace" font-weight="bold" font-size="20">
+    <text x="6" y="22">&gt;</text>
+    <rect x="20" y="9" width="6" height="14" opacity="0.9"/>
+  </g>
+</svg>

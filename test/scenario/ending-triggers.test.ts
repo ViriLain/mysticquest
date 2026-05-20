@@ -46,7 +46,7 @@ describe('ending triggers', () => {
 
     expect(s.state).toBe('exploring');
     expect(s.player?.currentRoom).toBe('darkness_stronghold');
-    expect(s.header.title).toBe('MYSTICQUEST v1.0');
+    expect(s.header.title).toBe(`MYSTICQUEST v${__APP_VERSION__}`);
     expectLine(s, 'Evil Stronghold');
   });
 });

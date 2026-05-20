@@ -39,7 +39,7 @@ describe('output helpers', () => {
 
     updateHeader(store);
 
-    expect(store.header.title).toBe('MYSTICQUEST v1.0');
+    expect(store.header.title).toBe(`MYSTICQUEST v${__APP_VERSION__}`);
     expect(store.header.hp).toBe(22);
     expect(store.header.maxHp).toBe(38);
     expect(store.header.level).toBe(3);

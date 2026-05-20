@@ -35,7 +35,7 @@ export function updateHeader(store: GameStore): void {
   if (!store.player) return;
   store.header.title = (store.gameMode === 'dungeon' && store.dungeon)
     ? `DUNGEON F${store.dungeon.floor}`
-    : 'MYSTICQUEST v1.0';
+    : `MYSTICQUEST v${__APP_VERSION__}`;
   store.header.hp = store.player.hp;
   store.header.maxHp = store.player.maxHp;
   store.header.level = store.player.level;

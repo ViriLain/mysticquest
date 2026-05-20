@@ -8,7 +8,7 @@ describe('new game flow', () => {
 
     expect(store.state).toBe('exploring');
     expect(store.player?.currentRoom).toBe('manor_entry');
-    expect(store.header.title).toBe('MYSTICQUEST v1.0');
+    expect(store.header.title).toBe(`MYSTICQUEST v${__APP_VERSION__}`);
     expect(store.header.hp).toBe(30);
     expect(store.header.maxHp).toBe(30);
     expect(store.header.level).toBe(1);
